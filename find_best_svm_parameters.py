@@ -34,7 +34,7 @@ def find_best_svm_params(train_x, train_y, dataset_name, out_folder_name):
                                     start_log2g, step_log2g, end_log2g)
     # Get subindexes
     pairs = load_pairs_array(dataset_name)
-    subindexes = generate_subindexes(pairs)
+    subindexes = generate_subindexes(pairs)  # TODO include pairsParts?
     # First CV
     t = Timer("SVM CV1 execution time:")
     svm = GridSearchCV(SVC(), param_grid, n_jobs=-1,

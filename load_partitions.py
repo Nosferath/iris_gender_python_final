@@ -92,9 +92,9 @@ def load_partitions_irisbee(dataset_eye: str, partition,
     data_mat = loadmat(str(root_path / (dataset_eye + '_240x20_irisbee.mat')))
     # Unpack .mat
     data_array = data_mat['dataArray']
-    label_array = data_mat['labelArray'][:, 0]  # Convert to 1-D
+    label_array = data_mat['labelArray']
     mask_array = data_mat['maskArray']
-    images_list = data_mat['imagesList'][:, 0]  # Convert to 1-D
+    images_list = data_mat['imagesList']
     # Random permute
     n_images = len(label_array)
     idx = np.random.permutation(n_images)
