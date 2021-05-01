@@ -45,7 +45,7 @@ def load_partitions_full(dataset_name: str, partition: int, mask_value: float,
         assert np.sum(label_array == 0) == np.sum(label_array == 1), \
             'Class balance did not work'
     # Apply mask
-    data_array[mask_array == 0] = mask_value
+    data_array[mask_array == 1] = mask_value
     # Generate train and test
     train_x, test_x, train_y, test_y, train_m, test_m, train_l, test_l = \
         train_test_split(data_array, label_array, mask_array, images_list,
@@ -71,7 +71,7 @@ def load_partitions(dataset_name: str, partition: int, mask_value: float,
     # (Optionally) scale and apply mask
     if scale_dataset:
         data_array = data_array / 255
-    data_array[mask_array == 0] = mask_value
+    data_array[mask_array == 1] = mask_value
     # Generate train and test
     train_x = data_array[idx_train, :]
     train_y = label_array[idx_train]
