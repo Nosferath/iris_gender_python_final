@@ -49,11 +49,11 @@ def train_mlp(train_x, train_y, test_x, test_y, model_idx: int):
 
 
 def full_test():
-    # datasets = ('left_240x20', 'right_240x20', 'left_240x40', 'right_240x40',
-    #             'left_480x80', 'right_480x80')
+    datasets = ('left_240x20', 'right_240x20', 'left_240x40', 'right_240x40',
+                'left_480x80', 'right_480x80')
     # datasets = ('left_240x40', 'right_240x40', 'left_480x80', 'right_480x80')
     database_name = 'UND_GFI'
-    dataset_eyes = ('left', 'right')
+    # dataset_eyes = ('left', 'right')
     results_folder = Path.cwd() / 'mlp_results'
     results_folder.mkdir(exist_ok=True)
     results_file = results_folder / 'full_results.csv'
@@ -62,13 +62,13 @@ def full_test():
     else:
         results = pd.DataFrame(columns=['database', 'dataset', 'partition',
                                         'method', 'accuracy'])
-    # for dataset, part in product(datasets, range(1, 11)):
-    for dataset_eye, part in product(dataset_eyes, range(1, 11)):
-        dataset = dataset_eye + '_240x20_irisbee'
-        # train_x, train_y, _, _, test_x, test_y, _, _ = load_partitions(
-        #     dataset, part, mask_value=0, scale_dataset=True)
-        train_x, train_y, _, _, test_x, test_y, _, _ = load_partitions_irisbee(
-            dataset_eye, part, test_proportion=0.4, scale_dataset=True)
+    # for dataset_eye, part in product(dataset_eyes, range(1, 11)):
+    for dataset, part in product(datasets, range(1, 11)):
+        # dataset = dataset_eye + '_240x20_irisbee'
+        train_x, train_y, _, _, test_x, test_y, _, _ = load_partitions(
+            dataset, part, mask_value=0, scale_dataset=True)
+        # train_x, train_y, _, _, test_x, test_y, _, _ = load_partitions_irisbee(
+        #     dataset_eye, part, test_proportion=0.4, scale_dataset=True)
         # orig_shape = (dataset.split('_')[-1]).split('x')
         # orig_shape = (int(orig_shape[1]), int(orig_shape[0]))
         for i in range(6):
