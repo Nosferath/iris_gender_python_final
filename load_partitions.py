@@ -7,6 +7,8 @@ from sklearn.model_selection import train_test_split
 
 def load_partitions_full(dataset_name: str, partition: int, mask_value: float,
                          test_proportion: float, scale_dataset: bool):
+    """This version of load_partitions generates its own balanced partitions.
+    Not used currently. Does not include newest scaling."""
     np.random.seed(partition)
     # Load data
     root_path = Path.cwd() / 'data'
@@ -56,6 +58,8 @@ def load_partitions_full(dataset_name: str, partition: int, mask_value: float,
 
 def load_partitions(dataset_name: str, partition: int, mask_value: float,
                     scale_dataset: bool):
+    """Function for loading non irisBee datasets and partitions. Uses .mat
+    files provided by MATLAB. Uses new scaling for 0-masking."""
     # Load data
     root_path = Path.cwd() / 'data'
     idx_path = Path.cwd() / 'partIdx'
@@ -70,7 +74,17 @@ def load_partitions(dataset_name: str, partition: int, mask_value: float,
     idx_test = idx_mat['idxTest'][0] - 1
     # (Optionally) scale and apply mask
     if scale_dataset:
-        data_array = data_array / 255
+        data_array[mask_array == 1] = 177
+        data_array[data_array == 255] = 254
+        max_values = data_array.max(axis=1)
+        max_values = np.repeat(max_values.reshape(-1, 1), data_array.shape[1],
+                               axis=1)
+        min_values = data_array.min(axis=1)
+        min_values = np.repeat(min_values.reshape(-1, 1), data_array.shape[1],
+                               axis=1)
+        data_array = np.divide(data_array - min_values,
+                               max_values - min_values)
+        data_array = (254.0 * data_array + 1) / 255.0
     data_array[mask_array == 1] = mask_value
     # Generate train and test
     train_x = data_array[idx_train, :]
@@ -84,8 +98,10 @@ def load_partitions(dataset_name: str, partition: int, mask_value: float,
     return train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l
 
 
-def load_partitions_irisbee(dataset_eye: str, partition,
-                            test_proportion: float, scale_dataset: bool):
+def load_partitions_irisbee_full(dataset_eye: str, partition: int,
+                                 test_proportion: float, scale_dataset: bool):
+    """Function for loading non irisBee datasets and partitions. Generates its
+    own partitions. Not used. Does not include new scaling."""
     np.random.seed(partition)
     # Load data
     root_path = Path.cwd() / 'data'

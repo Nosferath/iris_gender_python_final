@@ -74,7 +74,7 @@ def full_test():
         for i in range(6):
             method = "mlp_" + str(i)
             out_folder = "mlp_models"
-            print("Current dataset: {}, partition {}. Method: {}".format(
+            print("Curre nt dataset: {}, partition {}. Method: {}".format(
                 dataset, part, method))
             condition = (results.dataset == dataset) & \
                         (results.partition == part) & \
