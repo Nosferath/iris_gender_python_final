@@ -4,16 +4,7 @@ import numpy as np
 from scipy.io import loadmat
 from sklearn.model_selection import train_test_split
 
-
-def prepare_pairs_indexes(pairs: np.ndarray) -> np.ndarray:
-    """Takes the indexes from the pairs array, turns them to ints, and
-    ensures they start from 0. It has no effect if the pairs array has
-    been previously prepared.
-    """
-    pairs = pairs[:, :2].astype(int)
-    if np.min(pairs) == 1:
-        pairs = pairs - 1
-    return pairs
+from pairs import prepare_pairs_indexes, load_pairs_array
 
 
 def generate_standard_masks(mask_array: np.ndarray, pairs: np.ndarray):
@@ -155,9 +146,9 @@ def load_partitions_pairs_base(dataset_name: str, partition: int,
     if exclude and not pair_method:
         raise ValueError('If exclude is defined, pair_method must also be.')
     if pair_method:
-        pairs_path = Path.cwd() / 'pairs' / pair_method / dataset_name
-        pairs_mat = loadmat(str(pairs_path / (str(partition) + '.mat')))
-        pairs = pairs_mat['pairs']
+        pairs = load_pairs_array(dataset_name=dataset_name,
+                                 pair_method=pair_method,
+                                 partition=partition)
         train_m = generate_standard_masks(train_m, pairs)
         train_x = apply_std_mask(train_x, train_m, mask_value)
         if exclude:
@@ -204,6 +195,7 @@ def load_partitions_pairs_excl(dataset_name: str, partition: int,
     False/0. If exclude is to be used, use_max must be set accordingly.
     If exclude is defined, pair_method must also be defined.
     """
+    # TODO this should probably also return the modified pairs array
     train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l = \
         load_partitions_pairs_base(dataset_name, partition, mask_value,
                                    scale_dataset, pair_method, exclude,

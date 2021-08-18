@@ -1,15 +1,23 @@
 import numpy as np
+from sklearn.model_selection import KFold
 
 
 def generate_subindexes(pairs):
+    """Generate partition subindexes that are based on pairs, so that
+    elements of the same pair are always in the same partition.
+    (For Step 9)
+
+    THIS FUNCTION ASSUMES PAIRS HAVE BEEN REINDEXED
+
+    The returned array contains the fold index for each element.
+    """
     n_pairs = pairs.shape[0]
-    assert n_pairs % 5 == 0, 'Number of pairs to generate subindexes must be' \
-        ' divisible by 5.'
-    np.random.seed(42)
-    indexes = np.repeat([0, 1, 2, 3, 4], n_pairs / 5)
-    np.random.shuffle(indexes)
-    subindexes = np.zeros(n_pairs * 2, dtype=int)
-    for i in range(n_pairs):
-        cur_pair = pairs[i, :2].astype(int)
-        subindexes[cur_pair] = indexes[i]
+    kfold = KFold(n_splits=5, shuffle=False, random_state=42)
+    subindexes = np.full(2 * n_pairs, -1, dtype=int)
+    for fold_idx, fold in enumerate(kfold.split(np.arange(n_pairs))):
+        _, cur_fold = fold
+        for pair_idx in cur_fold:
+            cur_pair = pairs[pair_idx, :]
+            subindexes[cur_pair] = fold_idx
+    assert -1 not in subindexes, "Not all elements were set to a fold"
     return subindexes
