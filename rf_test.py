@@ -116,7 +116,6 @@ def main(find_params=True):
                                          out_params_name,
                                          PAIR_METHOD)
             params_list.append(params)
-            raise Exception('Test complete')  # DEBUG
     else:
         for data_idx in range(len(datasets)):
             dataset_name = datasets[data_idx]
@@ -148,6 +147,61 @@ def main(find_params=True):
             with open(out_folder / (dataset_name + '.mat'), 'wb') as f:
                 pickle.dump(results, f)
 
+
+def main_std(find_params=True):
+    datasets = ('left_240x20_fixed', 'right_240x20_fixed', 'left_240x40_fixed',
+                'right_240x40_fixed', 'left_480x80_fixed',
+                'right_480x80_fixed', 'left_240x20', 'right_240x20',
+                'left_240x40', 'right_240x40', 'left_480x80', 'right_480x80')
+    out_params_name = 'rf_params_std'
+    # Find best RF params, std mask
+    params_partition = 1
+    params_list = []
+    if find_params:
+        for data_idx in range(len(datasets)):
+            dataset_name = datasets[data_idx]
+            train_x, train_y, _, _, _, _, _, _, = load_partitions_pairs(
+                dataset_name, params_partition, MASK_VALUE, SCALE_DATASET,
+                PAIR_METHOD
+            )
+            params = find_best_rf_params(train_x,
+                                         train_y,
+                                         dataset_name,
+                                         params_partition,
+                                         out_params_name,
+                                         PAIR_METHOD)
+            params_list.append(params)
+    else:
+        for data_idx in range(len(datasets)):
+            dataset_name = datasets[data_idx]
+            with open(Path.cwd() / out_params_name
+                      / (dataset_name + '.pickle'), 'wb') as f:
+                params = pickle.load(f)
+                params_list.append(params)
+
+    # Perform RF test
+    out_folder = Path('rf_results_std')
+    out_folder.mkdir(exist_ok=True)
+    for data_idx in range(len(datasets)):
+        dataset_name = datasets[data_idx]
+        params: dict = params_list[data_idx]
+        ntrees = params['n_estimators']
+        max_feats = params['max_features']
+        results = np.zeros(N_PARTS)
+        for part in range(1, N_PARTS + 1):
+            train_x, train_y, _, _, test_x, test_y, _, _ = \
+                load_partitions_pairs(
+                    dataset_name, part, MASK_VALUE, SCALE_DATASET, PAIR_METHOD
+            )
+            rf = RandomForestClassifier(ntrees, max_features=max_feats,
+                                        n_jobs=-1, random_state=42)
+            rf.fit(train_x, train_y)
+            predicted = rf.predict(test_x)
+            cur_results = classification_report(test_y, predicted,
+                                                output_dict=True)
+            results[part-1] = cur_results
+            with open(out_folder / (dataset_name + '.mat'), 'wb') as f:
+                pickle.dump(results, f)
 
 
 if __name__ == '__main__':
