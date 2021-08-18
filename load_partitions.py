@@ -5,27 +5,7 @@ from scipy.io import loadmat
 from sklearn.model_selection import train_test_split
 
 from pairs import prepare_pairs_indexes, load_pairs_array
-
-
-def generate_standard_masks(mask_array: np.ndarray, pairs: np.ndarray):
-    """Generate the standard masks."""
-    std_masks = mask_array.copy()
-    n_pairs = pairs.shape[0]
-    pairs = prepare_pairs_indexes(pairs)
-    for i in range(n_pairs):
-        cur_pairs = pairs[i, :]
-        cur_masks = mask_array[cur_pairs, :]
-        std_mask = np.any(cur_masks, axis=0) * 1  # CHECK
-        std_masks[cur_pairs, :] = np.vstack([std_mask, std_mask])
-    return std_masks
-
-
-def apply_std_mask(x_array: np.ndarray, std_masks: np.ndarray,
-                   mask_value: float):
-    """Applies the std masks to the x array."""
-    masked_x_array = x_array.copy()
-    masked_x_array[std_masks == 1] = mask_value
-    return masked_x_array
+from standard_masks import generate_standard_masks, apply_std_mask
 
 
 def load_raw_dataset(dataset_name: str):

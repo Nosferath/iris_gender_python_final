@@ -8,6 +8,7 @@ from load_partitions import load_partitions, load_partitions_pairs, \
     load_partitions_pairs_excl
 from pairs import prepare_pairs_indexes, load_pairs_array
 from generate_subindexes import generate_subindexes
+from utils import Timer
 
 
 MASK_VALUE = 0
@@ -50,7 +51,15 @@ def find_best_rf_params(train_x: np.ndarray, train_y: np.ndarray,
     pairs = load_pairs_array(dataset_name=dataset_name,
                              pair_method=pair_method,
                              partition=partition)
-
+    subindexes = generate_subindexes(pairs)
+    # First CV
+    t = Timer('RF CV1 execution time:')
+    rf = GridSearchCV(RandomForestClassifier(), param_grid, n_jobs=-1,
+                      cv=PredefinedSplit(subindexes), verbose=1)
+    t.start()
+    rf.fit(train_x, train_y)
+    t.stop()
+    # TODO implement second CV
     return 0
 
 
@@ -73,6 +82,7 @@ def main():
                                      'rf_params',
                                      PAIR_METHOD)
         params_list[data_idx] = params
+        raise Exception('Test complete')
 
     # Perform RF test
     out_folder = Path('rf_results')
