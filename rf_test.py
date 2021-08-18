@@ -1,4 +1,5 @@
 from pathlib import Path
+import pickle
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
@@ -20,14 +21,15 @@ PAIR_METHOD = 'agrowth_hung_10'
 
 def get_rf_param_grid(start_ntrees, step_ntrees, end_ntrees, start_maxfeats,
                       step_maxfeats, end_maxfeats):
-    nsteps_ntrees = np.floor((end_ntrees - start_ntrees + step_ntrees)
-                             / step_ntrees)
-    nsteps_maxfeats = np.floor((end_maxfeats - start_maxfeats + step_maxfeats)
-                               / step_maxfeats)
+    nsteps_ntrees = int(np.floor((end_ntrees - start_ntrees + step_ntrees)
+                                 / step_ntrees))
+    nsteps_maxfeats = int(np.floor((end_maxfeats - start_maxfeats + step_maxfeats)
+                                   / step_maxfeats))
     ntrees = np.linspace(start_ntrees, end_ntrees, nsteps_ntrees, dtype=int)
     maxfeats = np.linspace(start_maxfeats, end_maxfeats, nsteps_maxfeats,
                            dtype=int)
-    param_grid = {'n_estimators': ntrees, 'max_features': maxfeats}
+    param_grid = {'n_estimators': np.unique(ntrees),
+                  'max_features': np.unique(maxfeats)}
     return param_grid
 
 
@@ -37,13 +39,13 @@ def find_best_rf_params(train_x: np.ndarray, train_y: np.ndarray,
     # Create out folder
     out_folder = Path(folder_name)
     out_folder.mkdir(exist_ok=True)
-    # Initialize param. grid
+    # Generate CV1 param. grid
     start_ntrees = 200
     step_ntrees = 200
     end_ntrees = 2000
     sqrt_feats = np.round(np.sqrt(train_x.shape[1]))
-    start_maxfeats = np.floor(sqrt_feats / 2.0)
-    step_maxfeats = np.ceil(start_maxfeats / 2.0)
+    start_maxfeats = int(np.floor(sqrt_feats / 2.0))
+    step_maxfeats = int(np.ceil(start_maxfeats / 2.0))
     end_maxfeats = start_maxfeats + 4*step_maxfeats
     param_grid = get_rf_param_grid(start_ntrees, step_ntrees, end_ntrees,
                                    start_maxfeats, step_maxfeats, end_maxfeats)
@@ -56,11 +58,40 @@ def find_best_rf_params(train_x: np.ndarray, train_y: np.ndarray,
     t = Timer('RF CV1 execution time:')
     rf = GridSearchCV(RandomForestClassifier(), param_grid, n_jobs=-1,
                       cv=PredefinedSplit(subindexes), verbose=1)
-    t.start()
+    t.start()  # DEBUG
     rf.fit(train_x, train_y)
-    t.stop()
-    # TODO implement second CV
-    return 0
+    t.stop()  # DEBUG
+    # Store CV1 results
+    cv1_results = rf.cv_results_
+    with open(out_folder / ('cv1_' + dataset_name + '.pickle'), 'wb') as f:
+        pickle.dump(cv1_results, f)
+    # Generate CV2 param. grid
+    best_ntrees = rf.best_params_['n_estimators']
+    best_maxfeats = rf.best_params_['max_features']
+    start_ntrees = best_ntrees - step_ntrees
+    end_ntrees = best_ntrees + step_ntrees
+    step_ntrees = int(step_ntrees / 5)
+    start_maxfeats = best_maxfeats - step_maxfeats
+    end_maxfeats = best_maxfeats + step_maxfeats
+    step_maxfeats = int(np.ceil(step_maxfeats / 5))
+    param_grid = get_rf_param_grid(start_ntrees, step_ntrees, end_ntrees,
+                                   start_maxfeats, step_maxfeats, end_maxfeats)
+    # Second CV
+    t = Timer(f'RF CV2 {dataset_name} execution time:')
+    rf = GridSearchCV(RandomForestClassifier(), param_grid, n_jobs=-1,
+                      cv=PredefinedSplit(subindexes), verbose=1)
+    t.start()  # DEBUG
+    rf.fit(train_x, train_y)
+    t.stop()  # DEBUG
+    # Store CV2 results
+    cv2_results = rf.cv_results_
+    with open(out_folder / ('cv2_' + dataset_name + '.pickle'), 'wb') as f:
+        pickle.dump(cv2_results, f)
+    cv2_params = rf.best_params_
+    with open(out_folder / (dataset_name + '.pickle'), 'wb') as f:
+        pickle.dump(cv2_params, f)
+
+    return cv2_params
 
 
 def main():
@@ -82,9 +113,12 @@ def main():
                                      'rf_params',
                                      PAIR_METHOD)
         params_list[data_idx] = params
-        raise Exception('Test complete')
+        raise Exception('Test complete')  # DEBUG
 
     # Perform RF test
     out_folder = Path('rf_results')
     out_folder.mkdir(exist_ok=True)
 
+
+if __name__ == '__main__':
+    main()

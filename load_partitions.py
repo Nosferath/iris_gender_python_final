@@ -13,7 +13,7 @@ def load_raw_dataset(dataset_name: str):
     root_folder = Path.cwd() / 'data'
     data_mat = loadmat(str(root_folder / (dataset_name + '.mat')))
     data_array = data_mat['dataArray']
-    label_array = data_mat['labelArray']
+    label_array = data_mat['labelArray'][:, 0]  # Convert to 1-D
     mask_array = data_mat['maskArray']
     images_list = data_mat['imagesList']
     images_list = [

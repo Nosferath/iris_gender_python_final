@@ -12,12 +12,12 @@ def generate_subindexes(pairs):
     The returned array contains the fold index for each element.
     """
     n_pairs = pairs.shape[0]
-    kfold = KFold(n_splits=5, shuffle=False, random_state=42)
+    kfold = KFold(n_splits=5, shuffle=True, random_state=42)
     subindexes = np.full(2 * n_pairs, -1, dtype=int)
     for fold_idx, fold in enumerate(kfold.split(np.arange(n_pairs))):
         _, cur_fold = fold
         for pair_idx in cur_fold:
-            cur_pair = pairs[pair_idx, :]
+            cur_pair = pairs[pair_idx, :].astype(int)
             subindexes[cur_pair] = fold_idx
     assert -1 not in subindexes, "Not all elements were set to a fold"
     return subindexes
