@@ -154,7 +154,7 @@ def main_std(find_params=True):
                 'right_480x80_fixed', 'left_240x20', 'right_240x20',
                 'left_240x40', 'right_240x40', 'left_480x80', 'right_480x80')
     out_params_name = 'rf_params_std'
-    # Find best RF params, std mask
+    # Find best RF params
     params_partition = 1
     params_list = []
     if find_params:
@@ -187,7 +187,7 @@ def main_std(find_params=True):
         params: dict = params_list[data_idx]
         ntrees = params['n_estimators']
         max_feats = params['max_features']
-        results = np.zeros(N_PARTS)
+        results = []
         for part in range(1, N_PARTS + 1):
             train_x, train_y, _, _, test_x, test_y, _, _ = \
                 load_partitions_pairs(
@@ -199,7 +199,7 @@ def main_std(find_params=True):
             predicted = rf.predict(test_x)
             cur_results = classification_report(test_y, predicted,
                                                 output_dict=True)
-            results[part-1] = cur_results
+            results.append(cur_results)
             with open(out_folder / (dataset_name + '.mat'), 'wb') as f:
                 pickle.dump(results, f)
 
