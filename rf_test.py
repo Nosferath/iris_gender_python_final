@@ -56,7 +56,7 @@ def find_best_rf_params(train_x: np.ndarray, train_y: np.ndarray,
                              partition=partition)
     subindexes = generate_subindexes(pairs)
     # First CV
-    t = Timer('RF CV1 execution time:')
+    t = Timer(f'RF CV2 {dataset_name} execution time:')
     rf = GridSearchCV(RandomForestClassifier(), param_grid, n_jobs=-1,
                       cv=PredefinedSplit(subindexes), verbose=1)
     t.start()  # DEBUG
@@ -69,7 +69,7 @@ def find_best_rf_params(train_x: np.ndarray, train_y: np.ndarray,
     # Generate CV2 param. grid
     best_ntrees = rf.best_params_['n_estimators']
     best_maxfeats = rf.best_params_['max_features']
-    start_ntrees = best_ntrees - step_ntrees
+    start_ntrees = max(best_ntrees - step_ntrees, 1)
     end_ntrees = best_ntrees + step_ntrees
     step_ntrees = int(step_ntrees / 5)
     start_maxfeats = best_maxfeats - step_maxfeats
@@ -132,7 +132,7 @@ def main(find_params=True):
         params: dict = params_list[data_idx]
         ntrees = params['n_estimators']
         max_feats = params['max_features']
-        results = np.zeros(N_PARTS)
+        results = []
         for part in range(1, N_PARTS + 1):
             train_x, train_y, _, _, test_x, test_y, _, _ = load_partitions(
                 dataset_name, part, MASK_VALUE, SCALE_DATASET
@@ -143,7 +143,7 @@ def main(find_params=True):
             predicted = rf.predict(test_x)
             cur_results = classification_report(test_y, predicted,
                                                 output_dict=True)
-            results[part-1] = cur_results
+            results.append(cur_results)
             with open(out_folder / (dataset_name + '.mat'), 'wb') as f:
                 pickle.dump(results, f)
 
