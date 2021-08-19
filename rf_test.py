@@ -56,7 +56,7 @@ def find_best_rf_params(train_x: np.ndarray, train_y: np.ndarray,
                              partition=partition)
     subindexes = generate_subindexes(pairs)
     # First CV
-    t = Timer(f'RF CV2 {dataset_name} execution time:')
+    t = Timer(f'RF CV1 {dataset_name} execution time:')
     rf = GridSearchCV(RandomForestClassifier(), param_grid, n_jobs=-1,
                       cv=PredefinedSplit(subindexes), verbose=1)
     t.start()  # DEBUG
@@ -120,7 +120,7 @@ def main(find_params=True):
         for data_idx in range(len(datasets)):
             dataset_name = datasets[data_idx]
             with open(Path.cwd() / out_params_name
-                      / (dataset_name + '.pickle'), 'wb') as f:
+                      / (dataset_name + '.pickle'), 'rb') as f:
                 params = pickle.load(f)
                 params_list.append(params)
 
@@ -144,7 +144,7 @@ def main(find_params=True):
             cur_results = classification_report(test_y, predicted,
                                                 output_dict=True)
             results.append(cur_results)
-            with open(out_folder / (dataset_name + '.mat'), 'wb') as f:
+            with open(out_folder / (dataset_name + '.pickle'), 'wb') as f:
                 pickle.dump(results, f)
 
 
@@ -175,7 +175,7 @@ def main_std(find_params=True):
         for data_idx in range(len(datasets)):
             dataset_name = datasets[data_idx]
             with open(Path.cwd() / out_params_name
-                      / (dataset_name + '.pickle'), 'wb') as f:
+                      / (dataset_name + '.pickle'), 'rb') as f:
                 params = pickle.load(f)
                 params_list.append(params)
 
@@ -200,7 +200,7 @@ def main_std(find_params=True):
             cur_results = classification_report(test_y, predicted,
                                                 output_dict=True)
             results.append(cur_results)
-            with open(out_folder / (dataset_name + '.mat'), 'wb') as f:
+            with open(out_folder / (dataset_name + '.pickle'), 'wb') as f:
                 pickle.dump(results, f)
 
 
