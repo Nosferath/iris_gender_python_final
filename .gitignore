@@ -2,3 +2,5 @@
 *models*
 __pycache__/
 *.pyc
+rf_cv_review/
+rf_std_cv_review/

@@ -6,6 +6,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 from sklearn.model_selection import GridSearchCV, PredefinedSplit
 
+from constants import datasets
 from load_partitions import load_partitions, load_partitions_pairs, \
     load_partitions_pairs_excl
 from pairs import prepare_pairs_indexes, load_pairs_array
@@ -96,10 +97,6 @@ def find_best_rf_params(train_x: np.ndarray, train_y: np.ndarray,
 
 
 def main(find_params=True):
-    datasets = ('left_240x20_fixed', 'right_240x20_fixed', 'left_240x40_fixed',
-                'right_240x40_fixed', 'left_480x80_fixed',
-                'right_480x80_fixed', 'left_240x20', 'right_240x20',
-                'left_240x40', 'right_240x40', 'left_480x80', 'right_480x80')
     out_params_name = 'rf_params'
     # Find best RF params
     params_partition = 1
@@ -149,10 +146,6 @@ def main(find_params=True):
 
 
 def main_std(find_params=True):
-    datasets = ('left_240x20_fixed', 'right_240x20_fixed', 'left_240x40_fixed',
-                'right_240x40_fixed', 'left_480x80_fixed',
-                'right_480x80_fixed', 'left_240x20', 'right_240x20',
-                'left_240x40', 'right_240x40', 'left_480x80', 'right_480x80')
     out_params_name = 'rf_params_std'
     # Find best RF params
     params_partition = 1

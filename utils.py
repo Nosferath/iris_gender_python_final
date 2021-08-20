@@ -2,9 +2,14 @@ from datetime import timedelta
 from itertools import product
 from time import time
 from pathlib import Path
+import pickle
 from shutil import move
 
+import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
+
+from constants import datasets
 
 
 class Timer:
@@ -84,3 +89,84 @@ def fix_folders(root_folder):
         img_list = list(cur_folder.glob('*.bmp'))
         for p in img_list:
             move(p, root_folder / f / p.name)
+
+
+def grid_plot(a: np.ndarray, b: np.ndarray, z: np.ndarray):
+    """Generates a grid plot from the inputs."""
+    assert len(a) == z.shape[0]
+    assert len(b) == z.shape[1]
+    fig, ax = plt.subplots()
+    ax.imshow(z)
+    # Show all ticks
+    ax.set_xticks(np.arange(len(b)))
+    ax.set_yticks(np.arange(len(a)))
+    # Label ticks with valaues
+    ax.set_xticklabels(b)
+    ax.set_yticklabels(a)
+    for i in range(len(a)):
+        for j in range(len(b)):
+            ax.text(j, i, np.round(z[i, j], 2),
+                    ha='center', va='center', color='w')
+    fig.tight_layout()
+    return fig, ax
+
+
+def generate_cv_grid_plot(dataset_name: str, cv: int, params_folder: str):
+    """Generates visualizations of the cross-validation results for the
+    chosen dataset.
+    """
+    assert cv in (1, 2), 'cv must be 1 or 2'
+    cv_file = Path(params_folder) / f'cv{cv}_{dataset_name}.pickle'
+    if not cv_file.exists():
+        raise FileNotFoundError(f'{params_folder}/{cv_file.name} not found')
+    with open(cv_file, 'rb') as f:
+        cv_results: dict = pickle.load(f)
+    params = cv_results['params']
+    results = cv_results['mean_test_score']
+    results_std = cv_results['std_test_score']
+    # Get unique values of params
+    param_types = list(params[0].keys())
+    name_a = param_types[0]
+    name_b = param_types[1]
+    list_a = np.unique(np.array([p[name_a] for p in params]))
+    list_b = np.unique(np.array([p[name_b] for p in params]))
+    # Convert results to a grid
+    n_a = len(list_a)
+    n_b = len(list_b)
+    results_grid = np.zeros((n_a, n_b), dtype='float64')
+    std_grid = np.zeros((n_a, n_b), dtype='float64')
+    for a in range(n_a):
+        for b in range(n_b):
+            i = b + n_b*a
+            results_grid[a, b] = results[i]
+            std_grid[a, b] = results_std[i]
+    # Generate results plot
+    fig, ax = grid_plot(list_a, list_b, results_grid * 100)
+    ax.set_ylabel(name_a)
+    ax.set_xlabel(name_b)
+    ax.set_title(f'{dataset_name}, CV{cv} results')
+    # Generate results std plot
+    fig_std, ax_std = grid_plot(list_a, list_b, std_grid * 100)
+    ax_std.set_ylabel(name_a)
+    ax_std.set_xlabel(name_b)
+    ax_std.set_title(f'{dataset_name}, CV{cv} results')
+    return fig, fig_std
+
+
+def review_cv_results(params_folder: str, out_folder: str):
+    out_folder = Path(out_folder)
+    out_folder.mkdir(exist_ok=True, parents=True)
+    for dataset in datasets:
+        for cv in (1, 2):
+            try:
+                fig, fig_std = generate_cv_grid_plot(dataset, cv, params_folder)
+            except FileNotFoundError:
+                print(f'File for {dataset} CV{cv} not found. Skipping.')
+                continue
+            figname = f'{dataset}_cv{cv}.png'
+            figstdname = f'{dataset}_cv{cv}_std.png'
+            fig.savefig(str(out_folder / figname), bbox_inches='tight',
+                        transparent=False)
+            fig_std.savefig(str(out_folder / figstdname), bbox_inches='tight',
+                            transparent=False)
+            plt.close('all')
