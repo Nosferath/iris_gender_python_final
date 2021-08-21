@@ -24,7 +24,7 @@ def get_ada_param_grid(start_nestimators, step_nestimators, end_nestimators,
     ))
     nestimators = np.linspace(start_nestimators, end_nestimators,
                               nsteps_nestimators, dtype=int)
-    lr = np.logspace(startlog2_lr, endlog2_lr, steplog2_lr, base=2)
+    lr = np.logspace(startlog2_lr, endlog2_lr, nsteps_log2lr, base=2)
     param_grid = {'n_estimators': nestimators,
                   'learning_rate': lr}
     return param_grid
