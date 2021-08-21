@@ -6,27 +6,19 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 from sklearn.model_selection import GridSearchCV, PredefinedSplit
 
-from constants import datasets
-from load_partitions import load_partitions, load_partitions_pairs, \
-    load_partitions_pairs_excl
-from pairs import prepare_pairs_indexes, load_pairs_array
+from constants import datasets, MASK_VALUE, SCALE_DATASET, N_PARTS, PAIR_METHOD
+from load_partitions import load_partitions, load_partitions_pairs
+from pairs import load_pairs_array
 from generate_subindexes import generate_subindexes
 from utils import Timer
-
-
-MASK_VALUE = 0
-TEST_PROPORTION = 0.4
-SCALE_DATASET = True
-N_PARTS = 10
-PAIR_METHOD = 'agrowth_hung_10'
 
 
 def get_rf_param_grid(start_ntrees, step_ntrees, end_ntrees, start_maxfeats,
                       step_maxfeats, end_maxfeats):
     nsteps_ntrees = int(np.floor((end_ntrees - start_ntrees + step_ntrees)
                                  / step_ntrees))
-    nsteps_maxfeats = int(np.floor((end_maxfeats - start_maxfeats + step_maxfeats)
-                                   / step_maxfeats))
+    nsteps_maxfeats = int(np.floor(
+        (end_maxfeats - start_maxfeats + step_maxfeats) / step_maxfeats))
     ntrees = np.linspace(start_ntrees, end_ntrees, nsteps_ntrees, dtype=int)
     maxfeats = np.linspace(start_maxfeats, end_maxfeats, nsteps_maxfeats,
                            dtype=int)
@@ -185,7 +177,7 @@ def main_std(find_params=True):
             train_x, train_y, _, _, test_x, test_y, _, _ = \
                 load_partitions_pairs(
                     dataset_name, part, MASK_VALUE, SCALE_DATASET, PAIR_METHOD
-            )
+                )
             rf = RandomForestClassifier(ntrees, max_features=max_feats,
                                         n_jobs=-1, random_state=42)
             rf.fit(train_x, train_y)
