@@ -39,7 +39,7 @@ def find_best_ada_params(train_x: np.ndarray, train_y: np.ndarray,
     # Generate CV1 param. grid
     start_nestimators = 200
     step_nestimators = 200
-    end_nestimators = 2000
+    end_nestimators = 1000
     startlog2_lr = -5
     steplog2_lr = 1
     endlog2_lr = 1
@@ -52,19 +52,25 @@ def find_best_ada_params(train_x: np.ndarray, train_y: np.ndarray,
                              partition=partition)
     subindexes = generate_subindexes(pairs)
     # First CV
-    t = Timer(f'Ada CV1 {dataset_name} execution time:')
-    ada = GridSearchCV(AdaBoostClassifier(), param_grid, n_jobs=-1,
-                       cv=PredefinedSplit(subindexes), verbose=1)
-    t.start()
-    ada.fit(train_x, train_y)
-    t.stop()
-    # Store CV1 results
-    cv1_results = ada.cv_results_
-    with open(out_folder / ('cv1_' + dataset_name + '.pickle'), 'wb') as f:
-        pickle.dump(cv1_results, f)
+    if dataset_name != 'left_240x20_fixed':  # TODO DELETE
+        t = Timer(f'Ada CV1 {dataset_name} execution time:')
+        ada = GridSearchCV(AdaBoostClassifier(), param_grid, n_jobs=-1,
+                           cv=PredefinedSplit(subindexes), verbose=1)
+        t.start()
+        ada.fit(train_x, train_y)
+        t.stop()
+        # Store CV1 results
+        cv1_results = ada.cv_results_
+        with open(out_folder / ('cv1_' + dataset_name + '.pickle'), 'wb') as f:
+            pickle.dump(cv1_results, f)
+        best_nestimators = ada.best_params_['n_estimators']
+        best_log2lr = np.log2(ada.best_params_['learning_rate'])
+    else:
+        with open(out_folder / ('cv1_' + dataset_name + '.pickle'), 'rb') as f:
+            cv1_results = pickle.load(f)
+        best_nestimators = cv1_results['n_estimators']
+        best_log2lr = np.log2(cv1_results['learning_rate'])
     # Generate CV2 param. grid
-    best_nestimators = ada.best_params_['n_estimators']
-    best_log2lr = np.log2(ada.best_params_['learning_rate'])
     start_nestimators = max(best_nestimators - step_nestimators, 1)
     end_nestimators = best_nestimators + step_nestimators
     step_nestimators = step_nestimators / 5
