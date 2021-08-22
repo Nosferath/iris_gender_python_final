@@ -2,6 +2,7 @@ import pickle
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.metrics import classification_report
 from sklearn.model_selection import GridSearchCV, PredefinedSplit
@@ -68,8 +69,10 @@ def find_best_ada_params(train_x: np.ndarray, train_y: np.ndarray,
     else:
         with open(out_folder / ('cv1_' + dataset_name + '.pickle'), 'rb') as f:
             cv1_results = pickle.load(f)
-        best_nestimators = cv1_results['n_estimators']
-        best_log2lr = np.log2(cv1_results['learning_rate'])
+        df = pd.DataFrame(cv1_results)
+        best_params = df[df.rank_test_score == 1].iloc[0]
+        best_nestimators = best_params['param_n_estimators']
+        best_log2lr = np.log2(best_params['param_learning_rate'])
     # Generate CV2 param. grid
     start_nestimators = max(best_nestimators - step_nestimators, 1)
     end_nestimators = best_nestimators + step_nestimators
