@@ -67,10 +67,10 @@ def find_best_ada_params(train_x: np.ndarray, train_y: np.ndarray,
     best_log2lr = np.log2(ada.best_params_['learning_rate'])
     start_nestimators = max(best_nestimators - step_nestimators, 1)
     end_nestimators = best_nestimators + step_nestimators
-    step_nestimators = int(step_nestimators / 5)
+    step_nestimators = step_nestimators / 5
     startlog2_lr = best_log2lr - steplog2_lr
     endlog2_lr = best_log2lr + steplog2_lr
-    steplog2_lr = int(steplog2_lr / 5)
+    steplog2_lr = steplog2_lr / 5
     param_grid = get_ada_param_grid(start_nestimators, step_nestimators,
                                     end_nestimators, startlog2_lr, steplog2_lr,
                                     endlog2_lr)
