@@ -175,7 +175,7 @@ def load_partitions_pairs_excl(dataset_name: str, partition: int,
     False/0. If exclude is to be used, use_max must be set accordingly.
     If exclude is defined, pair_method must also be defined.
     """
-    # TODO this should probably also return the modified pairs array
+    # FIXME this should probably also return the modified pairs array
     train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l = \
         load_partitions_pairs_base(dataset_name, partition, mask_value,
                                    scale_dataset, pair_method, exclude,
