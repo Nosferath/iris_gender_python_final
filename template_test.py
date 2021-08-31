@@ -14,7 +14,7 @@ from utils import Timer
 
 def get_param_grid(start_param_a, step_param_a, end_param_a,
                    start_param_b, step_param_b, end_param_b,
-                   param_a_name:str, param_b_name: str,  # Names for the dict
+                   param_a_name: str, param_b_name: str,  # Names for the dict
                    param_a_func: str, param_b_func: str,
                    type_a, type_b):
     """Base function for the get_x_param_grid functions."""
@@ -29,7 +29,7 @@ def get_param_grid(start_param_a, step_param_a, end_param_a,
                                 dtype=type_param)
         elif param_func == 'logspace2':
             param = np.logspace(start_param, end_param, nsteps, base=2,
-                                dtype=type_a)
+                                dtype=type_param)
         else:
             raise NotImplemented('This function has not been implemented for'
                                  'params.')
@@ -51,7 +51,8 @@ def find_best_params(train_x: np.ndarray, train_y: np.ndarray,
                      start_param_b, step_param_b, end_param_b,
                      param_a_islog2: bool, param_b_islog2: bool,
                      param_a_min1: bool, param_b_min1: bool,
-                     param_grid_fn, clasif_name: str, clasif_fn):
+                     param_grid_fn, clasif_name: str, clasif_fn,
+                     n_jobs: int):
     """Base function for finding classifier params.
 
     Parameters
@@ -77,6 +78,8 @@ def find_best_params(train_x: np.ndarray, train_y: np.ndarray,
     clasif_name : str
         Name of the classifier. Used for printing elapsed time.
     clasif_fn : sklearn classifier class function
+    n_jobs : int
+        Number of parallel workers to use. -1 uses all available.
     """
     # Create out folder
     out_folder = Path(folder_name)
@@ -91,7 +94,7 @@ def find_best_params(train_x: np.ndarray, train_y: np.ndarray,
     subindexes = generate_subindexes(pairs)
     # First CV
     t = Timer(f'{clasif_name} CV1 execution time:')
-    model = GridSearchCV(clasif_fn(), param_grid, n_jobs=-1,
+    model = GridSearchCV(clasif_fn(), param_grid, n_jobs=n_jobs,
                          cv=PredefinedSplit(subindexes), verbose=1)
     t.start()
     model.fit(train_x, train_y)
@@ -123,7 +126,7 @@ def find_best_params(train_x: np.ndarray, train_y: np.ndarray,
                                start_param_b, step_param_b, end_param_b)
     # Second CV
     t = Timer(f'{clasif_name} CV2 execution time:')
-    model = GridSearchCV(clasif_fn(), param_grid, n_jobs=-1,
+    model = GridSearchCV(clasif_fn(), param_grid, n_jobs=n_jobs,
                          cv=PredefinedSplit(subindexes), verbose=1)
     t.start()
     model.fit(train_x, train_y)
@@ -140,7 +143,8 @@ def find_best_params(train_x: np.ndarray, train_y: np.ndarray,
 
 
 def main_base(find_params: bool, out_params_name: str, find_params_fn,
-              out_results_name: str, clasif_fn, use_std_masks: bool):
+              out_results_name: str, clasif_fn, use_std_masks: bool,
+              n_jobs: int):
     """Base function for running classifier tests."""
     # Find best model params
     params_list = []
@@ -156,12 +160,13 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
                 train_x, train_y, _, _, _, _, _, _, = load_partitions(
                     dataset_name, PARAMS_PARTITION, MASK_VALUE, SCALE_DATASET
                 )
-            params = find_params_fn(train_x,
-                                    train_y,
-                                    dataset_name,
-                                    PARAMS_PARTITION,
-                                    out_params_name,
-                                    PAIR_METHOD)
+            params = find_params_fn(train_x=train_x,
+                                    train_y=train_y,
+                                    dataset_name=dataset_name,
+                                    partition=PARAMS_PARTITION,
+                                    folder_name=out_params_name,
+                                    pair_method=PAIR_METHOD,
+                                    n_jobs=n_jobs)
         else:
             with open(Path.cwd() / out_params_name
                       / (dataset_name + '.pickle'), 'rb') as f:
@@ -185,7 +190,7 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
                 train_x, train_y, _, _, test_x, test_y, _, _ = load_partitions(
                     dataset_name, part, MASK_VALUE, SCALE_DATASET
                 )
-            model = clasif_fn(**params, n_jobs=-1, random_state=42)
+            model = clasif_fn(**params, n_jobs=n_jobs, random_state=42)
             model.fit(train_x, train_y)
             predicted = model.predict(test_x)
             cur_results = classification_report(test_y, predicted,
