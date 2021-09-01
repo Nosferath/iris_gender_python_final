@@ -101,8 +101,8 @@ def grid_plot(a: np.ndarray, b: np.ndarray, z: np.ndarray):
     ax.set_xticks(np.arange(len(b)))
     ax.set_yticks(np.arange(len(a)))
     # Label ticks with valaues
-    ax.set_xticklabels(b)
-    ax.set_yticklabels(a)
+    ax.set_xticklabels(np.round(b, 4))
+    ax.set_yticklabels(np.round(a, 4))
     for i in range(len(a)):
         for j in range(len(b)):
             ax.text(j, i, np.round(z[i, j], 2),
@@ -149,7 +149,7 @@ def generate_cv_grid_plot(dataset_name: str, cv: int, params_folder: str):
     fig_std, ax_std = grid_plot(list_a, list_b, std_grid * 100)
     ax_std.set_ylabel(name_a)
     ax_std.set_xlabel(name_b)
-    ax_std.set_title(f'{dataset_name}, CV{cv} results')
+    ax_std.set_title(f'{dataset_name}, CV{cv} results, std')
     return fig, fig_std
 
 

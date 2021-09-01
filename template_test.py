@@ -93,7 +93,7 @@ def find_best_params(train_x: np.ndarray, train_y: np.ndarray,
                              partition=partition)
     subindexes = generate_subindexes(pairs)
     # First CV
-    t = Timer(f'{clasif_name} CV1 execution time:')
+    t = Timer(f'{clasif_name} CV1 {dataset_name} execution time:')
     model = GridSearchCV(clasif_fn(), param_grid, n_jobs=n_jobs,
                          cv=PredefinedSplit(subindexes), verbose=1)
     t.start()
@@ -116,16 +116,16 @@ def find_best_params(train_x: np.ndarray, train_y: np.ndarray,
     if param_a_min1:
         start_param_a = max(start_param_a, 1)
     end_param_a = best_a + step_param_a
-    step_param_a /= 5
+    step_param_a /= 2
     start_param_b = best_b - step_param_b
     if param_b_min1:
         start_param_b = max(start_param_b, 1)
     end_param_b = best_b + step_param_b
-    step_param_b /= 5
+    step_param_b /= 2
     param_grid = param_grid_fn(start_param_a, step_param_a, end_param_a,
                                start_param_b, step_param_b, end_param_b)
     # Second CV
-    t = Timer(f'{clasif_name} CV2 execution time:')
+    t = Timer(f'{clasif_name} CV2 {dataset_name} execution time:')
     model = GridSearchCV(clasif_fn(), param_grid, n_jobs=n_jobs,
                          cv=PredefinedSplit(subindexes), verbose=1)
     t.start()
@@ -190,7 +190,10 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
                 train_x, train_y, _, _, test_x, test_y, _, _ = load_partitions(
                     dataset_name, part, MASK_VALUE, SCALE_DATASET
                 )
-            model = clasif_fn(**params, n_jobs=n_jobs, random_state=42)
+            try:
+                model = clasif_fn(**params, n_jobs=n_jobs, random_state=42)
+            except TypeError:
+                model = clasif_fn(**params, random_state=42)
             model.fit(train_x, train_y)
             predicted = model.predict(test_x)
             cur_results = classification_report(test_y, predicted,
