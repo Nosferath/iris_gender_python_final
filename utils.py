@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 
 from constants import datasets
+from load_partitions import load_partitions, load_partitions_pairs
 
 
 class Timer:
@@ -26,6 +27,15 @@ class Timer:
         end = time()
         delta = timedelta(seconds=end - self.start_time)
         print(self.msg, str(delta))
+
+
+def find_dataset_shape(dataset_name: str):
+    """Finds the dataset shape from its name. Output format is
+    (rows, cols).
+    """
+    shape = dataset_name.split('_')[1]
+    shape = tuple(int(i) for i in shape.split('x')[::-1])
+    return shape
 
 
 def process_ndiris(root_folder, csv_path, dest_folder):
@@ -181,3 +191,30 @@ def review_results(results_folder: str):
         mean = cur_results.mean() * 100
         std = cur_results.std() * 100
         print(f'{file.stem}: {mean:.2f} +/- {std:.2f}')
+
+
+def generate_mask_visualization(dataset_name: str, pairs: str,
+                                partition=1):
+    """Generates a grayscale visualization of the masks of the dataset.
+
+    Parameters
+    ----------
+    dataset_name : str
+        Name of the dataset to use
+    pairs : str or None
+        Set to none if pairs are not to be used. Otherwise, set to the
+        pairing method name.
+    partition : int
+        Train partition to use. Default 1.
+    """
+    if pairs is None:
+        _, _, train_m, _, _, _, _, _ = load_partitions(dataset_name, partition,
+                                                       0, True)
+    else:
+        _, _, train_m, _, _, _, _, _ = load_partitions_pairs(
+            dataset_name, partition, 0, True, pairs)
+    masks = train_m.mean(axis=0)
+    masks = masks * 255
+    shape = find_dataset_shape(dataset_name)
+    masks = masks.reshape(shape)
+    return masks.astype('uint8')
