@@ -190,7 +190,7 @@ def review_results(results_folder: str):
         cur_results = np.array([d['accuracy'] for d in cur_results])
         mean = cur_results.mean() * 100
         std = cur_results.std() * 100
-        print(f'{file.stem}: {mean:.2f} +/- {std:.2f}')
+        print(f'{file.stem}:\t{mean:.2f} ± {std:.2f}')
 
 
 def generate_mask_visualization(dataset_name: str, pairs: str,

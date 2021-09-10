@@ -19,7 +19,8 @@ def generate_cmim_visualization(cmim_array: np.ndarray,
                                 n_parts_total: int,
                                 n_parts_displ: int):
     """Generates a visualization of the CMIM array by showing a sort of
-    heatmap of the most important features.
+    heatmap of the most important features. Up to 8 colors can be
+    currently displayed.
     """
     assert n_parts_displ <= n_parts_total, "Features to display must be " \
                                            "less than or equal to total."
@@ -31,6 +32,7 @@ def generate_cmim_visualization(cmim_array: np.ndarray,
     # Define colors
     colors = cm.get_cmap('Paired').colors
     colors = [[v*255 for v in c] for c in colors]
+    colors = colors[5::-1] + colors[-2:]
     if len(colors) < n_parts_displ:
         print('[WARN] Feature classes to display is more than available '
               'colors. Setting to number of colors instead.')
@@ -96,3 +98,6 @@ def review_all_cmim(cmim_folder: str, pairs: str, n_parts_total: int,
                                                     n_parts_displ)
         img = Image.fromarray(visualization)
         img.save(str(out_folder / f"{dataset_name}.png"))
+
+
+# def compare_
