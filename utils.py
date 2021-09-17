@@ -5,12 +5,9 @@ from pathlib import Path
 import pickle
 from shutil import move
 
-import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
 
 from constants import datasets
-from load_partitions import load_partitions, load_partitions_pairs
 
 
 class Timer:
@@ -41,6 +38,7 @@ def find_dataset_shape(dataset_name: str):
 def process_ndiris(root_folder, csv_path, dest_folder):
     """Separates ND-Iris dataset folders into subfolders according
     to sensor and eye, and gathers the labels of every image."""
+    import pandas as pd
     # Initialize destination folders
     dest_folder = Path(dest_folder)
     dest_folder.mkdir(exist_ok=True)
@@ -103,6 +101,7 @@ def fix_folders(root_folder):
 
 def grid_plot(a: np.ndarray, b: np.ndarray, z: np.ndarray):
     """Generates a grid plot from the inputs."""
+    import matplotlib.pyplot as plt
     assert len(a) == z.shape[0]
     assert len(b) == z.shape[1]
     fig, ax = plt.subplots()
@@ -164,6 +163,7 @@ def generate_cv_grid_plot(dataset_name: str, cv: int, params_folder: str):
 
 
 def review_cv_results(params_folder: str, out_folder: str):
+    import matplotlib.pyplot as plt
     out_folder = Path(out_folder)
     out_folder.mkdir(exist_ok=True, parents=True)
     for dataset in datasets:
@@ -201,18 +201,15 @@ def generate_mask_visualization(dataset_name: str, pairs: str,
     ----------
     dataset_name : str
         Name of the dataset to use
-    pairs : str or None
-        Set to none if pairs are not to be used. Otherwise, set to the
+    pairs : str or None/False
+        Set to None/False if pairs are not to be used. Otherwise, set to the
         pairing method name.
     partition : int
         Train partition to use. Default 1.
     """
-    if pairs is None:
-        _, _, train_m, _, _, _, _, _ = load_partitions(dataset_name, partition,
-                                                       0, True)
-    else:
-        _, _, train_m, _, _, _, _, _ = load_partitions_pairs(
-            dataset_name, partition, 0, True, pairs)
+    from load_partitions import load_partitions_pairs
+    _, _, train_m, _, _, _, _, _ = load_partitions_pairs(
+        dataset_name, partition, 0, True, pairs)
     masks = train_m.mean(axis=0)
     masks = masks * 255
     shape = find_dataset_shape(dataset_name)

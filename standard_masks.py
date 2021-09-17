@@ -1,5 +1,7 @@
 import numpy as np
 
+# DO NOT IMPORT LOCAL PACKAGES IN THIS MODULE
+
 
 def generate_standard_masks(mask_array: np.ndarray, pairs: np.ndarray):
     """From the pairs and mask array, generate a new mask array

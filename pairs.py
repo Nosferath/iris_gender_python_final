@@ -3,6 +3,8 @@ from pathlib import Path
 import numpy as np
 from scipy.io import loadmat
 
+# DO NOT IMPORT LOCAL PACKAGES IN THIS MODULE
+
 
 def prepare_pairs_indexes(pairs: np.ndarray) -> np.ndarray:
     """Takes the indexes from the pairs array, turns them to ints, and
