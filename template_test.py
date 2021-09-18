@@ -144,8 +144,38 @@ def find_best_params(train_x: np.ndarray, train_y: np.ndarray,
 
 def main_base(find_params: bool, out_params_name: str, find_params_fn,
               out_results_name: str, clasif_fn, use_std_masks: bool,
-              n_jobs: int):
-    """Base function for running classifier tests."""
+              n_cmim: int, n_jobs: int):
+    """Base function for running classifier tests.
+
+    Parameters
+    ----------
+    find_params : bool
+        If True, parameters for the model will be obtained using the
+        find_params_fn, and any pre-existing parameters will be
+        overwritten. If False, parameters will be loaded from file.
+    out_params_name : str
+        Name of the folder where the parameters will be stored to or
+        loaded from.
+    find_params_fn
+        Function that will be used for finding the parameters.
+    out_results_name : str
+        Name of the folder where the results will be stored.
+    clasif_fn
+        Classifier function. Normally, a function from sklearn.
+    use_std_masks : bool
+        If true, mask pairs will be loaded from pairs/<folder>, where
+        folder is the one set in constants.PAIR_METHOD, and will be
+        applied to the dataset.
+    n_cmim : int
+        Must be 0 or greater. If 0, CMIM will not be used. Otherwise, it
+        indicates how many feature groups will be used. How many groups
+        are there is set in constants.CMIM_GROUPS.
+    n_jobs : int
+        Sets the number of jobs for parallel tasks. If -1, it will use
+        all workers available. Recommended to set as max - 1 so the
+        computer does not get stuck it is going to be used while it
+        iterates.
+    """
     # Find best model params
     params_list = []
     for data_idx in range(len(datasets)):
@@ -156,10 +186,12 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
                     dataset_name, PARAMS_PARTITION, MASK_VALUE, SCALE_DATASET,
                     PAIR_METHOD
                 )
+                # TODO add CMIM
             else:
                 train_x, train_y, _, _, _, _, _, _, = load_partitions(
                     dataset_name, PARAMS_PARTITION, MASK_VALUE, SCALE_DATASET
                 )
+                # TODO add CMIM
             params = find_params_fn(train_x=train_x,
                                     train_y=train_y,
                                     dataset_name=dataset_name,

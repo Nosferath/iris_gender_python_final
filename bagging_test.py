@@ -48,6 +48,7 @@ def main(find_params=True, n_jobs=-1):
               out_results_name='bag_results',
               clasif_fn=BaggingClassifier,
               use_std_masks=False,
+              n_cmim=0,
               n_jobs=n_jobs)
 
 
@@ -58,4 +59,27 @@ def main_std(find_params=True, n_jobs=-1):
               out_results_name='bag_results_std',
               clasif_fn=BaggingClassifier,
               use_std_masks=True,
+              n_cmim=0,
+              n_jobs=n_jobs)
+
+
+def main_cmim(n_cmim: int, find_params=True, n_jobs=-1):
+    main_base(find_params=find_params,
+              out_params_name=f'bag_params_cmim_{n_cmim}',
+              find_params_fn=find_best_bag_params,
+              out_results_name=f'bag_results_cmim_{n_cmim}',
+              clasif_fn=BaggingClassifier,
+              use_std_masks=False,
+              n_cmim=n_cmim,
+              n_jobs=n_jobs)
+
+
+def main_std_cmim(n_cmim: int, find_params=True, n_jobs=-1):
+    main_base(find_params=find_params,
+              out_params_name=f'bag_params_std_cmim_{n_cmim}',
+              find_params_fn=find_best_bag_params,
+              out_results_name=f'bag_results_std_cmim_{n_cmim}',
+              clasif_fn=BaggingClassifier,
+              use_std_masks=True,
+              n_cmim=n_cmim,
               n_jobs=n_jobs)

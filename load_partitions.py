@@ -4,6 +4,7 @@ import numpy as np
 from scipy.io import loadmat
 from sklearn.model_selection import train_test_split
 
+from constants import CMIM_GROUPS
 from pairs import prepare_pairs_indexes, load_pairs_array
 from standard_masks import generate_standard_masks, apply_std_mask
 
@@ -160,6 +161,19 @@ def load_partitions_pairs(dataset_name: str, partition: int, mask_value: float,
         load_partitions_pairs_base(dataset_name, partition, mask_value,
                                    scale_dataset, pair_method, 0, False)
     return train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l
+
+
+def apply_cmim_to_arrays(train_x: np.ndarray, test_x: np.ndarray,
+                         dataset_name: str, pair_method: str, n_cmim: int):
+    """Keeps only the n_cmim groups of most important features according
+    to CMIM, on the train_x and test_x arrays.
+    """
+    from cmim import load_cmim_array
+    cmim_array = load_cmim_array(dataset_name, pair_method)
+    feats_per_group = int(train_x.shape[1] / CMIM_GROUPS)
+    feats_total = n_cmim * feats_per_group
+    selected = cmim_array[:feats_total]
+    return train_x[:, selected], test_x[:, selected]
 
 
 def load_partitions_pairs_excl(dataset_name: str, partition: int,

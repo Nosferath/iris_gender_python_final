@@ -9,3 +9,6 @@ SCALE_DATASET = True
 N_PARTS = 10
 PAIR_METHOD = 'agrowth_hung_10'
 PARAMS_PARTITION = 1
+CMIM_GROUPS = 8
+CMIM_FOLDER = 'cmimArrays'
+CMIM_STD_FOLDER = 'cmimArraysStd'

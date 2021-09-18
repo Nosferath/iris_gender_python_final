@@ -10,3 +10,5 @@ cmimArrayVisualizations*/
 cmimArrayStdVisualizations*/
 cmimMaskPrevalence/
 cmimStdMaskPrevalence/
+.ipynb_checkpoints
+*.ipynb

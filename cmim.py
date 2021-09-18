@@ -3,10 +3,11 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 from scipy.io import loadmat
-import seaborn as sns
+
+from constants import CMIM_FOLDER, CMIM_STD_FOLDER
 
 
-def load_cmim_array(filepath, fix_indexing=True):
+def load_cmim_array_from_path(filepath, fix_indexing=True):
     """Loads the CMIM array and fixes 1-indexing."""
     cmim_array = loadmat(str(filepath))
     cmim_array = cmim_array['cmimArray']
@@ -17,6 +18,16 @@ def load_cmim_array(filepath, fix_indexing=True):
     if len(cmim_array.shape) == 2:
         cmim_array = cmim_array.reshape(-1)
     return cmim_array
+
+
+def load_cmim_array(dataset_name: str, pair_method: str):
+    """Loads the CMIM array and fixes 1-indexing. If pair_method is None
+    or False, the array is loaded from the CMIM_FOLDER. Otherwise, it is
+    loaded from the CMIM_STD_FOLDER regardless of the pair method.
+    """
+    path = Path(CMIM_STD_FOLDER) if pair_method else Path(CMIM_FOLDER)
+    path = path / f'{dataset_name}.mat'
+    return load_cmim_array_from_path(path)
 
 
 def generate_cmim_visualization(cmim_array: np.ndarray,
@@ -94,7 +105,7 @@ def review_all_cmim(cmim_folder: str, pairs: str, n_parts_total: int,
     out_folder.mkdir(parents=True, exist_ok=True)
     for file in cmim_files:
         dataset_name = file.stem
-        cmim_array = load_cmim_array(file)
+        cmim_array = load_cmim_array_from_path(file)
         base_image = generate_mask_visualization(dataset_name, pairs)
         visualization = generate_cmim_visualization(cmim_array,
                                                     base_image,
@@ -144,7 +155,7 @@ def visualize_mask_prevalence(cmim_folder: str, pairs: str, out_folder: str,
     out_folder.mkdir(parents=True, exist_ok=True)
     for file in cmim_files:
         dataset_name = file.stem
-        cmim_array = load_cmim_array(file)
+        cmim_array = load_cmim_array_from_path(file)
         _, _, train_m, _, _, _, _, _ = load_partitions_pairs(
             dataset_name, partition, mask_value=0, scale_dataset=True,
             pair_method=pairs
@@ -162,8 +173,8 @@ def visualize_mask_prevalence(cmim_folder: str, pairs: str, out_folder: str,
         # Generate plot
         plt.rcParams.update({'font.size': 12})
         fig, ax = plt.subplots()
-        ax.plot(x, prevalence, '.')
-        ax.plot(x[:-int(avg_width/2)], moving[:-int(avg_width/2)],
+        ax.plot(x, 100*prevalence, '.')
+        ax.plot(x[:-int(avg_width/2)], 100*moving[:-int(avg_width/2)],
                 linewidth=2.5)
         areas = np.linspace(1, x.max(), n_parts_total)
         for i in range(n_parts_total - 1):
@@ -172,7 +183,7 @@ def visualize_mask_prevalence(cmim_folder: str, pairs: str, out_folder: str,
         ax.set_xlabel('Feature order')
         ax.set_ylabel('Mask prevalence [%]')
         ax.set_xlim([0, len(prevalence)+1])
-        ax.set_ylim([0, prevalence.max()])
+        ax.set_ylim([0, 100*prevalence.max()])
         ax.set_title(f'Mask prevalence per feature, dataset={dataset_name}')
         fig.savefig(str(out_folder / f'{dataset_name}.png'))
         fig.clf()

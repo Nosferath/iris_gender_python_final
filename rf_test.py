@@ -47,6 +47,7 @@ def main(find_params=True, n_jobs=-1):
               out_results_name='rf_results',
               clasif_fn=RandomForestClassifier,
               use_std_masks=False,
+              n_cmim=0,
               n_jobs=n_jobs)
 
 
@@ -57,6 +58,39 @@ def main_std(find_params=True, n_jobs=-1):
               out_results_name='rf_results_std',
               clasif_fn=RandomForestClassifier,
               use_std_masks=True,
+              n_cmim=0,
+              n_jobs=n_jobs)
+
+
+def main_cmim(n_cmim: int, find_params=True, n_jobs=-1):
+    """About n_cmim: When using CMIM, one must set the number of fea-
+    tures to use. Currently, I am separating the features into 8 groups,
+    and testing with the first 2 or 4 groups, as these groups have less
+    masked features. That 2 or 4 would be the n_cmim parameter.
+    """
+    main_base(find_params=find_params,
+              out_params_name=f'rf_params_cmim_{n_cmim}',
+              find_params_fn=find_best_rf_params,
+              out_results_name=f'rf_results_cmim_{n_cmim}',
+              clasif_fn=RandomForestClassifier,
+              use_std_masks=False,
+              n_cmim=n_cmim,
+              n_jobs=n_jobs)
+
+
+def main_std_cmim(n_cmim: int, find_params=True, n_jobs=-1):
+    """About n_cmim: When using CMIM, one must set the number of fea-
+    tures to use. Currently, I am separating the features into 8 groups,
+    and testing with the first 2 or 4 groups, as these groups have less
+    masked features. That 2 or 4 would be the n_cmim parameter.
+    """
+    main_base(find_params=find_params,
+              out_params_name=f'rf_params_std_cmim_{n_cmim}',
+              find_params_fn=find_best_rf_params,
+              out_results_name=f'rf_results_std_cmim_{n_cmim}',
+              clasif_fn=RandomForestClassifier,
+              use_std_masks=True,
+              n_cmim=n_cmim,
               n_jobs=n_jobs)
 
 
