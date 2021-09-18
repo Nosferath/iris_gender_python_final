@@ -5,9 +5,10 @@ import numpy as np
 from sklearn.metrics import classification_report
 from sklearn.model_selection import GridSearchCV, PredefinedSplit
 
-from constants import datasets, MASK_VALUE, SCALE_DATASET, PAIR_METHOD, N_PARTS, PARAMS_PARTITION
+from constants import datasets, MASK_VALUE, SCALE_DATASET, PAIR_METHOD, \
+    N_PARTS, PARAMS_PARTITION
 from generate_subindexes import generate_subindexes
-from load_partitions import load_partitions, load_partitions_pairs
+from load_partitions import load_partitions_cmim
 from pairs import load_pairs_array
 from utils import Timer
 
@@ -177,21 +178,15 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
         iterates.
     """
     # Find best model params
+    pair_method = PAIR_METHOD if use_std_masks else False
     params_list = []
     for data_idx in range(len(datasets)):
         dataset_name = datasets[data_idx]
         if find_params:
-            if use_std_masks:
-                train_x, train_y, _, _, _, _, _, _, = load_partitions_pairs(
-                    dataset_name, PARAMS_PARTITION, MASK_VALUE, SCALE_DATASET,
-                    PAIR_METHOD
-                )
-                # TODO add CMIM
-            else:
-                train_x, train_y, _, _, _, _, _, _, = load_partitions(
-                    dataset_name, PARAMS_PARTITION, MASK_VALUE, SCALE_DATASET
-                )
-                # TODO add CMIM
+            train_x, train_y, _, _, _, _, _, _, = load_partitions_cmim(
+                dataset_name, PARAMS_PARTITION, MASK_VALUE, SCALE_DATASET,
+                pair_method, n_cmim
+            )
             params = find_params_fn(train_x=train_x,
                                     train_y=train_y,
                                     dataset_name=dataset_name,
@@ -213,14 +208,10 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
         params: dict = params_list[data_idx]
         results = []
         for part in range(1, N_PARTS + 1):
-            if use_std_masks:
-                train_x, train_y, _, _, test_x, test_y, _, _ = \
-                    load_partitions_pairs(
-                        dataset_name, part, MASK_VALUE, SCALE_DATASET, PAIR_METHOD
-                    )
-            else:
-                train_x, train_y, _, _, test_x, test_y, _, _ = load_partitions(
-                    dataset_name, part, MASK_VALUE, SCALE_DATASET
+            train_x, train_y, _, _, test_x, test_y, _, _ = \
+                load_partitions_cmim(
+                    dataset_name, part, MASK_VALUE, SCALE_DATASET, pair_method,
+                    n_cmim
                 )
             try:
                 model = clasif_fn(**params, n_jobs=n_jobs, random_state=42)
