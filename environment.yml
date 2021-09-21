@@ -1,8 +1,10 @@
 name: iris_gender4
 channels:
+  - bioconda
   - conda-forge
   - defaults
 dependencies:
+  - bioinfokit=2.0.6
   - ipython=7.24.1
   - libopencv=4.5.2
   - matplotlib=3.4.2
@@ -19,7 +21,8 @@ dependencies:
   - scipy=1.6.3
   - seaborn
   - setuptools=49.6.0
-  - tqdm=4.61.1=pyhd8ed1ab_0
+  - statsmodels=0.12.2
+  - tqdm=4.61.1
   - pip:
     - sloth==1.0
 prefix: D:\Users\x_met\Anaconda3\envs\iris_gender4

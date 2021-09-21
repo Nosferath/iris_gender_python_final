@@ -98,7 +98,7 @@ def review_all_cmim(cmim_folder: str, pairs: str, n_parts_total: int,
     out_folder : str
         Path to where the visualizations will be saved.
     """
-    from utils import generate_mask_visualization
+    from results_processing import generate_mask_visualization
     cmim_folder = Path(cmim_folder)
     cmim_files = cmim_folder.glob('*.mat')
     out_folder = Path(out_folder)
@@ -176,8 +176,8 @@ def visualize_mask_prevalence(cmim_folder: str, pairs: str, out_folder: str,
         ax.plot(x, 100*prevalence, '.')
         ax.plot(x[:-int(avg_width/2)], 100*moving[:-int(avg_width/2)],
                 linewidth=2.5)
-        areas = np.linspace(1, x.max(), n_parts_total)
-        for i in range(n_parts_total - 1):
+        areas = np.linspace(1, x.max(), n_parts_total+1)
+        for i in range(n_parts_total):
             ax.axvspan(areas[i], areas[i+1], facecolor=colors[i], alpha=0.5)
         ax.grid('on')
         ax.set_xlabel('Feature order')
