@@ -106,8 +106,11 @@ def generate_mask_visualization(dataset_name: str, pairs: str,
 
 
 def anova_test(results_folder: str, std_results_folder: str, out_folder: str):
-    """Performs the ANOVA test on the results obtained for this classifier"""
+    """Performs a two-way ANOVA test on the results obtained for this
+     classifier. The variables to compare are pairing and mask-fixing.
+     """
     from itertools import product
+    from bioinfokit.analys import stat
     import matplotlib.pyplot as plt
     import pandas as pd
     import scipy.stats as stats
@@ -126,6 +129,8 @@ def anova_test(results_folder: str, std_results_folder: str, out_folder: str):
     for file in results_files:
         dataset = file.stem
         fixed = dataset.endswith('fixed')
+        if fixed:
+            dataset = dataset[:-6]
         uses_pairs = file.parent.name.endswith('std')
         with open(file, 'rb') as f:
             results = np.array([r['accuracy'] for r in pickle.load(f)])
@@ -136,13 +141,34 @@ def anova_test(results_folder: str, std_results_folder: str, out_folder: str):
             }, ignore_index=True)
     # Test whether samples follow normal distribution with Q-Q plot
     for paired, fixed in product((True, False), (True, False)):
-        condition = (df.uses_pairs == paired) & (df.fixed == fixed)
-        stats.probplot(df[condition]['result'], dist='norm', plot=plt)
-        plt.title(f"Probability plot - Fixed: {fixed}, Paired: {paired}")
-        plt.savefig(out_folder / f"qq_f{str(fixed)[0]}_p{str(paired)[0]}.png")
+        condition = (df['uses_pairs'] == paired) & (df['fixed'] == fixed)
+        fig, ax = plt.subplots()
+        stats.probplot(df[condition]['result'], dist='norm', plot=ax)
+        ax.set_title(f"Probability plot - Fixed: {fixed}, Paired: {paired}",
+                     fontsize=18)
+        ax.xaxis.label.set_size(15)
+        ax.yaxis.label.set_size(15)
+        ax.tick_params(labelsize=15)
+        fig.tight_layout()
+        fig.savefig(out_folder / f"qq_f{str(fixed)[0]}_p{str(paired)[0]}.png")
+        plt.close()
+    # Test whether samples follow normal distribution with Shapiro-Wilk
+    res = stat()
+    res.tukey_hsd(
+        df=df, res_var='result', xfac_var=['fixed', 'uses_pairs'],
+        anova_model='result ~ C(fixed) + C(uses_pairs) + '
+                    'C(fixed):C(uses_pairs)'
+    )
+    _, pvalue = stats.shapiro(res.anova_model_out.resid)
+    if pvalue <= 0.01:
+        print(f'Shapiro-Wilk test p-value is less or equal than 0.01 '
+              f'({pvalue:.2f})\nCondition is NOT satisfied.')
+    else:
+        print(f'Shapiro-Wilk test p-value is greater than 0.01 ({pvalue:.2f})'
+              f'\nCondition is satisfied.')
     # Test homogeneity of variance assumption
-    ratio = df.groupby(['fixed', 'uses_pairs']).std().max()
-    ratio /= df.groupby(['fixed', 'uses_pairs']).std().min()
+    ratio = df.groupby(['fixed', 'uses_pairs']).std().max().values[0]
+    ratio /= df.groupby(['fixed', 'uses_pairs']).std().min().values[0]
     if ratio < 2:
         print(f'Ratio between groups is less than 2 ({ratio:.2f})\n'
               f'Condition is satisfied.')
@@ -152,5 +178,5 @@ def anova_test(results_folder: str, std_results_folder: str, out_folder: str):
     # Perform two-way ANOVA
     model = ols('result ~ C(fixed) + C(uses_pairs) + C(fixed):C(uses_pairs)',
                 data=df).fit()
-    sm.stats.anova_lm(model, typ=2)
+    print(sm.stats.anova_lm(model, typ=2))
     return df

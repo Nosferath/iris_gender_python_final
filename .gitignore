@@ -12,3 +12,4 @@ cmimMaskPrevalence/
 cmimStdMaskPrevalence/
 .ipynb_checkpoints
 *.ipynb
+*_anova/
