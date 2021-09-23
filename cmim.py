@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 from scipy.io import loadmat
 
-from constants import CMIM_FOLDER, CMIM_STD_FOLDER
+from constants import CMIM_FOLDER, CMIM_STD_FOLDER, datasets
 
 
 def load_cmim_array_from_path(filepath, fix_indexing=True):
@@ -77,6 +77,26 @@ def generate_cmim_visualization(cmim_array: np.ndarray,
         out_image[y, x, :] = cur_color
 
     return out_image
+
+
+def review_all_masks(pairs: str, out_folder: str):
+    """Generates visualizations for all CMIM arrays in the folder.
+
+    Parameters
+    ----------
+    pairs : str or None/False
+        Set to None/False if pairs are not to be used. Otherwise, set to the
+        pairing method name.
+    out_folder : str
+        Path to where the visualizations will be saved.
+    """
+    from results_processing import generate_mask_visualization
+    out_folder = Path(out_folder)
+    out_folder.mkdir(parents=True, exist_ok=True)
+    for dataset_name in datasets:
+        base_image = generate_mask_visualization(dataset_name, pairs)
+        img = Image.fromarray(base_image)
+        img.save(str(out_folder / f"{dataset_name}.png"))
 
 
 def review_all_cmim(cmim_folder: str, pairs: str, n_parts_total: int,
@@ -177,18 +197,18 @@ def visualize_mask_prevalence(cmim_folder: str, pairs: str, out_folder: str,
         ax.plot(x[:-int(avg_width/2)], 100*moving[:-int(avg_width/2)],
                 linewidth=2.5, label=f'Moving avg. (w={avg_width})')
         areas = np.linspace(1, x.max(), n_parts_total+1)
-        # for i in range(n_parts_total):
-        #    ax.axvspan(areas[i], areas[i+1], facecolor=colors[i], alpha=0.5)
+        for i in range(n_parts_total):
+            ax.axvspan(areas[i], areas[i+1], facecolor=colors[i], alpha=0.5)
         ax.grid('on')
         ax.legend()
         ax.set_xlabel('Feature order')
         ax.set_ylabel('Mask prevalence [%]')
-        # ax.set_xlim([0, len(preval)+1])
-        ax.set_xlim([0, 50])
-        # ax.set_ylim([0, 100*preval.max()])
-        ax.set_ylim([0, 100 * preval[:50].max()+1])
+        ax.set_xlim([0, len(preval)+1])
+        # ax.set_xlim([0, 50])
+        ax.set_ylim([0, 100*preval.max()])
+        # ax.set_ylim([0, 100 * preval[:50].max()+1])
         ax.set_title(f'Mask prevalence per feature, dataset={dataset_name}')
-        fig.savefig(str(out_folder / f'{dataset_name}_zoom.png'))
+        fig.savefig(str(out_folder / f'{dataset_name}.png'))
         fig.clf()
         plt.close(fig)
         del sum_masks, sum_feats, preval

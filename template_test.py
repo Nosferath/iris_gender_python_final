@@ -145,7 +145,7 @@ def find_best_params(train_x: np.ndarray, train_y: np.ndarray,
 
 def main_base(find_params: bool, out_params_name: str, find_params_fn,
               out_results_name: str, clasif_fn, use_std_masks: bool,
-              n_cmim: int, n_jobs: int):
+              n_cmim: int, n_jobs: int, check_feat_rank: bool = False):
     """Base function for running classifier tests.
 
     Parameters
@@ -170,19 +170,25 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
     n_cmim : int
         Must be 0 or greater. If 0, CMIM will not be used. Otherwise, it
         indicates how many feature groups will be used. How many groups
-        are there is set in constants.CMIM_GROUPS.
+        are there in total is set in constants.CMIM_GROUPS.
     n_jobs : int
         Sets the number of jobs for parallel tasks. If -1, it will use
         all workers available. Recommended to set as max - 1 so the
         computer does not get stuck it is going to be used while it
         iterates.
+    check_feat_rank : bool
+        Indicates whether a feature importance check is to be performed.
+        If so, params are not calculated, regardless of find_params.
     """
+    if check_feat_rank and not hasattr(clasif_fn, 'feature_importances_'):
+        print('[ERROR] This classifier does not have feature importances.')
+        return
     # Find best model params
     pair_method = PAIR_METHOD if use_std_masks else False
     params_list = []
     for data_idx in range(len(datasets)):
         dataset_name = datasets[data_idx]
-        if find_params:
+        if find_params and not check_feat_rank:
             train_x, train_y, _, _, _, _, _, _, = load_partitions_cmim(
                 dataset_name, PARAMS_PARTITION, MASK_VALUE, SCALE_DATASET,
                 pair_method, n_cmim
@@ -218,9 +224,14 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
             except TypeError:
                 model = clasif_fn(**params, random_state=42)
             model.fit(train_x, train_y)
-            predicted = model.predict(test_x)
-            cur_results = classification_report(test_y, predicted,
-                                                output_dict=True)
-            results.append(cur_results)
-            with open(out_folder / (dataset_name + '.pickle'), 'wb') as f:
-                pickle.dump(results, f)
+            # Normal classifier mode
+            if not check_feat_rank:
+                predicted = model.predict(test_x)
+                cur_results = classification_report(test_y, predicted,
+                                                    output_dict=True)
+                results.append(cur_results)
+                with open(out_folder / (dataset_name + '.pickle'), 'wb') as f:
+                    pickle.dump(results, f)
+            # Check feature importance mode
+            else:
+                return model  # TODO finish implementation
