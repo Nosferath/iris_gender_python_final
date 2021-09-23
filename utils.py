@@ -117,6 +117,23 @@ def grid_plot(a: np.ndarray, b: np.ndarray, z: np.ndarray):
     return fig, ax
 
 
+def import_matlab_results(in_root: str, in_folders: list, out_folders: list):
+    import pickle
+    from scipy.io import loadmat
+    in_root = Path(in_root)
+    for i in range(len(in_folders)):
+        cur_folder = in_root / in_folders[i]
+        out_folder = Path(out_folders[i])
+        out_folder.mkdir(exist_ok=True, parents=True)
+        cur_files = list(cur_folder.glob('*.mat'))
+        for file in cur_files:
+            name = file.stem
+            mat = loadmat(str(file))
+            results = [{'accuracy': v[0]} for v in mat['results']]
+            with open(out_folder / f'{name}.pickle', 'wb') as f:
+                pickle.dump(results, f)
+
+
 def plot_feature_importances(importances: np.ndarray):
     shapes = {4800: (20, 240), 9600: (40, 240), 38400: (80, 480)}
     cur_shape = shapes[importances.size]
