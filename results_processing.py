@@ -132,7 +132,7 @@ def anova_test(results_folder: str, std_results_folder: str, out_folder: str,
         fixed = dataset.endswith('fixed')
         if fixed:
             dataset = dataset[:-6]
-        uses_pairs = file.parent.name.endswith('std')
+        uses_pairs = 'std' in file.parent.name
         with open(file, 'rb') as f:
             results = np.array([r['accuracy'] for r in pickle.load(f)])
         for i in range(results.size):

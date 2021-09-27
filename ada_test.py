@@ -87,3 +87,15 @@ def main_std_cmim(n_cmim: int, find_params=True, n_jobs=-1):
               use_std_masks=True,
               n_cmim=n_cmim,
               n_jobs=n_jobs)
+
+
+def check_feature_importance(n_jobs):
+    main_base(find_params=False,
+              out_params_name='ada_params',
+              find_params_fn=find_best_ada_params,
+              out_results_name='ada_importance',
+              clasif_fn=AdaBoostClassifier,
+              use_std_masks=False,
+              n_cmim=0,
+              n_jobs=n_jobs,
+              check_feat_rank=True)

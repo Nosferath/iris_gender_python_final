@@ -134,7 +134,12 @@ def import_matlab_results(in_root: str, in_folders: list, out_folders: list):
                 pickle.dump(results, f)
 
 
-def plot_feature_importances(importances: np.ndarray):
+def plot_feature_importances(importances: np.ndarray, out_path):
+    import matplotlib.pyplot as plt
     shapes = {4800: (20, 240), 9600: (40, 240), 38400: (80, 480)}
     cur_shape = shapes[importances.size]
     importances = importances.reshape(cur_shape)
+    plt.imshow(importances, cmap='inferno')
+    plt.axis('off')
+    plt.savefig(out_path, bbox_inches='tight', pad_inches=0)
+    plt.close()

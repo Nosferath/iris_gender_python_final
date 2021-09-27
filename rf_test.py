@@ -95,15 +95,15 @@ def main_std_cmim(n_cmim: int, find_params=True, n_jobs=-1):
 
 
 def check_feature_importance(n_jobs):
-    return main_base(find_params=False,
-                     out_params_name='rf_params',
-                     find_params_fn=find_best_rf_params,
-                     out_results_name='rf_importance',
-                     clasif_fn=RandomForestClassifier,
-                     use_std_masks=False,
-                     n_cmim=0,
-                     n_jobs=n_jobs,
-                     check_feat_rank=True)
+    main_base(find_params=False,
+              out_params_name='rf_params',
+              find_params_fn=find_best_rf_params,
+              out_results_name='rf_importance',
+              clasif_fn=RandomForestClassifier,
+              use_std_masks=False,
+              n_cmim=0,
+              n_jobs=n_jobs,
+              check_feat_rank=True)
 
 
 if __name__ == '__main__':

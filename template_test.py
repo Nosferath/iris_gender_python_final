@@ -10,7 +10,7 @@ from constants import datasets, MASK_VALUE, SCALE_DATASET, PAIR_METHOD, \
 from generate_subindexes import generate_subindexes
 from load_partitions import load_partitions_cmim
 from pairs import load_pairs_array
-from utils import Timer
+from utils import Timer, plot_feature_importances
 
 
 def get_param_grid(start_param_a, step_param_a, end_param_a,
@@ -234,4 +234,8 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
                     pickle.dump(results, f)
             # Check feature importance mode
             else:
-                return model  # TODO finish implementation
+                results.append(model.feature_importances_)
+        if check_feat_rank:
+            out_file = out_folder / f'{dataset_name}.png'
+            importances = np.array(results).mean(axis=0)
+            plot_feature_importances(importances, out_file)
