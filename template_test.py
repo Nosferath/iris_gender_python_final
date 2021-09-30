@@ -235,7 +235,13 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
             # Check feature importance mode
             else:
                 results.append(model.feature_importances_)
+                if part == 1:
+                    out_name = dataset_name + '_model.pickle'
+                    with open(out_folder / out_name, 'wb') as f:
+                        pickle.dump(model, f)
         if check_feat_rank:
+            with open(out_folder / f'{dataset_name}.pickle', 'wb') as f:
+                pickle.dump(results, f)
             out_file = out_folder / f'{dataset_name}.png'
             importances = np.array(results).mean(axis=0)
             plot_feature_importances(importances, out_file)

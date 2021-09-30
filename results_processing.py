@@ -105,6 +105,22 @@ def generate_mask_visualization(dataset_name: str, pairs: str,
     return masks.astype('uint8')
 
 
+def visualize_all_masks(out_folder: str, use_pairs: bool):
+    """Generates visualizations for all masks"""
+    import matplotlib.pyplot as plt
+    from constants import PAIR_METHOD
+    out_folder = Path(out_folder)
+    out_folder.mkdir(exist_ok=True, parents=True)
+    pairs = PAIR_METHOD if use_pairs else False
+    for dataset in datasets:
+        masks = generate_mask_visualization(dataset, pairs)
+        plt.imshow(masks, cmap='jet_r')
+        plt.axis('off')
+        out_path = out_folder / f'{dataset}.png'
+        plt.savefig(out_path, bbox_inches='tight', pad_inches=0)
+        plt.close()
+
+
 def anova_test(results_folder: str, std_results_folder: str, out_folder: str,
                crit_a='fixed', crit_b='uses_pairs'):
     """Performs a two-way ANOVA test on the results obtained for this

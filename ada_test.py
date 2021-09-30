@@ -99,3 +99,15 @@ def check_feature_importance(n_jobs):
               n_cmim=0,
               n_jobs=n_jobs,
               check_feat_rank=True)
+
+
+def check_feature_importance_std(n_jobs):
+    main_base(find_params=False,
+              out_params_name='ada_params_std',
+              find_params_fn=find_best_ada_params,
+              out_results_name='ada_importance_std',
+              clasif_fn=AdaBoostClassifier,
+              use_std_masks=True,
+              n_cmim=0,
+              n_jobs=n_jobs,
+              check_feat_rank=True)

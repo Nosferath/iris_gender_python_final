@@ -139,7 +139,7 @@ def plot_feature_importances(importances: np.ndarray, out_path):
     shapes = {4800: (20, 240), 9600: (40, 240), 38400: (80, 480)}
     cur_shape = shapes[importances.size]
     importances = importances.reshape(cur_shape)
-    plt.imshow(importances, cmap='inferno')
+    plt.imshow(importances, cmap='jet')
     plt.axis('off')
     plt.savefig(out_path, bbox_inches='tight', pad_inches=0)
     plt.close()
