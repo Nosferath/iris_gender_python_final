@@ -122,7 +122,8 @@ def visualize_all_masks(out_folder: str, use_pairs: bool):
 
 
 def anova_test(results_folder: str, std_results_folder: str, out_folder: str,
-               crit_a='fixed', crit_b='uses_pairs'):
+               crit_a='fixed', crit_b='uses_pairs', name_a='Fixed masks',
+               name_b='Mask pairs', boxplot_title=None):
     """Performs a two-way ANOVA test on the results obtained for this
      classifier. The variables to compare are pairing and mask-fixing.
      """
@@ -131,8 +132,11 @@ def anova_test(results_folder: str, std_results_folder: str, out_folder: str,
     import matplotlib.pyplot as plt
     import pandas as pd
     import scipy.stats as stats
+    import seaborn as sns
     import statsmodels.api as sm
     from statsmodels.formula.api import ols
+    name_a = crit_a if name_a is None else name_a
+    name_b = crit_b if name_b is None else name_b
     out_folder = Path(out_folder)
     out_folder.mkdir(exist_ok=True, parents=True)
     results_folder = Path(results_folder)
@@ -163,7 +167,7 @@ def anova_test(results_folder: str, std_results_folder: str, out_folder: str,
         condition = (df[crit_a] == c_a) & (df[crit_b] == c_b)
         fig, ax = plt.subplots()
         stats.probplot(df[condition]['result'], dist='norm', plot=ax)
-        ax.set_title(f"Probability plot - {crit_a}: {c_a}, {crit_b}: {c_b}",
+        ax.set_title(f"Probability plot - {name_a}: {c_a}, {name_b}: {c_b}",
                      fontsize=15)
         ax.xaxis.label.set_size(15)
         ax.yaxis.label.set_size(15)
@@ -197,4 +201,12 @@ def anova_test(results_folder: str, std_results_folder: str, out_folder: str,
     # Perform two-way ANOVA
     model = ols(model_str, data=df).fit()
     print(sm.stats.anova_lm(model, typ=2))
+    # Generate box-plots
+    ax = sns.boxplot(x=crit_a, y='result', hue=crit_b, data=df, notch=True)
+    ax.set_xlabel(name_a)
+    ax.set_ylabel('Accuracy')
+    ax.legend(title=name_b)
+    ax.set_title(boxplot_title)
+    plt.savefig(out_folder / f'box_plot.png')
+    plt.close()
     return df
