@@ -130,6 +130,7 @@ def anova_test(results_folder: str, std_results_folder: str, out_folder: str,
     from itertools import product
     from bioinfokit.analys import stat
     import matplotlib.pyplot as plt
+    from matplotlib.ticker import MaxNLocator
     import pandas as pd
     import scipy.stats as stats
     import seaborn as sns
@@ -189,6 +190,35 @@ def anova_test(results_folder: str, std_results_folder: str, out_folder: str,
     else:
         print(f'Shapiro-Wilk test p-value is greater than 0.01 ({pvalue:.2f})'
               f'\nCondition is satisfied.')
+    # Plot distribution of data using histograms
+    for c_a in crit_a_values:
+        cur_df = df[df[crit_a] == c_a]
+        # min_val = np.floor(cur_df.result.min()*100)/100
+        # max_val = np.ceil(cur_df.result.max()*100)/100
+        min_val = 0.49
+        max_val = 0.67
+        # sns.set_style("whitegrid")
+        sns.set_context("talk")
+        ax = sns.histplot(data=cur_df, x='result', hue=crit_b, binwidth=0.01,
+                          binrange=(min_val, max_val))
+        ax.grid(True, linewidth=0.5, alpha=0.5)
+        ax.set_title(f'Distribution of results - {name_a}={c_a}',
+                     fontsize=17)
+        ax.set_xlabel('Accuracy')
+        ax.set_ylim((0, 20))
+        ax.set_xlim((0.49, 0.68))
+        ax.set_xticks(np.arange(0.49, 0.67, 0.03))
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.xaxis.label.set_size(15)
+        ax.yaxis.label.set_size(15)
+        ax.tick_params(labelsize=15)
+        plt.tight_layout()
+        legend = ax.get_legend()
+        handles = legend.legendHandles
+        legend.remove()
+        ax.legend(handles, crit_b_values, title=name_b)
+        plt.savefig(out_folder / f'hist_a{c_a}.png')
+        plt.close()
     # Test homogeneity of variance assumption
     ratio = df.groupby([crit_a, crit_b]).std().max().values[0]
     ratio /= df.groupby([crit_a, crit_b]).std().min().values[0]
@@ -202,11 +232,18 @@ def anova_test(results_folder: str, std_results_folder: str, out_folder: str,
     model = ols(model_str, data=df).fit()
     print(sm.stats.anova_lm(model, typ=2))
     # Generate box-plots
-    ax = sns.boxplot(x=crit_a, y='result', hue=crit_b, data=df, notch=True)
-    ax.set_xlabel(name_a)
-    ax.set_ylabel('Accuracy')
-    ax.legend(title=name_b)
-    ax.set_title(boxplot_title)
-    plt.savefig(out_folder / f'box_plot.png')
-    plt.close()
+    with plt.style.context('seaborn-whitegrid'):
+        # sns.set_style("whitegrid")
+        sns.set_context("notebook")
+        ax = sns.boxplot(x=crit_a, y='result', hue=crit_b, data=df, notch=True)
+        ax.set_xlabel(name_a)
+        ax.set_ylabel('Accuracy')
+        ax.xaxis.label.set_size(15)
+        ax.yaxis.label.set_size(15)
+        ax.tick_params(labelsize=15)
+        ax.legend(title=name_b)
+        ax.set_title(boxplot_title, fontsize=17)
+        plt.tight_layout()
+        plt.savefig(out_folder / f'box_plot.png')
+        plt.close()
     return df
