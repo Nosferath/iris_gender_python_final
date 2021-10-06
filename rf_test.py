@@ -103,7 +103,8 @@ def check_feature_importance(n_jobs):
               use_std_masks=False,
               n_cmim=0,
               n_jobs=n_jobs,
-              check_feat_rank=True)
+              check_feat_rank=True,
+              do_double_feat_sort=False)
 
 
 def check_feature_importance_std(n_jobs):
@@ -115,7 +116,8 @@ def check_feature_importance_std(n_jobs):
               use_std_masks=True,
               n_cmim=0,
               n_jobs=n_jobs,
-              check_feat_rank=True)
+              check_feat_rank=True,
+              do_double_feat_sort=True)
 
 
 if __name__ == '__main__':

@@ -8,7 +8,7 @@ from sklearn.model_selection import GridSearchCV, PredefinedSplit
 from constants import datasets, MASK_VALUE, SCALE_DATASET, PAIR_METHOD, \
     N_PARTS, PARAMS_PARTITION
 from generate_subindexes import generate_subindexes
-from load_partitions import load_partitions_cmim
+from load_partitions import load_partitions_cmim, load_partitions_pairs
 from pairs import load_pairs_array
 from utils import Timer, plot_feature_importances
 
@@ -145,7 +145,8 @@ def find_best_params(train_x: np.ndarray, train_y: np.ndarray,
 
 def main_base(find_params: bool, out_params_name: str, find_params_fn,
               out_results_name: str, clasif_fn, use_std_masks: bool,
-              n_cmim: int, n_jobs: int, check_feat_rank: bool = False):
+              n_cmim: int, n_jobs: int, check_feat_rank: bool = False,
+              do_double_feat_sort: bool = False):
     """Base function for running classifier tests.
 
     Parameters
@@ -179,10 +180,16 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
     check_feat_rank : bool
         Indicates whether a feature importance check is to be performed.
         If so, params are not calculated, regardless of find_params.
+    do_double_feat_sort : bool
+        If True, features are sorted by mask prevalence before being
+        re-sorted by importance. Has no effect if check_feat_rank is
+        False.
     """
     if check_feat_rank and not hasattr(clasif_fn, 'feature_importances_'):
         print('[ERROR] This classifier does not have feature importances.')
         return
+    if check_feat_rank:
+        from results_processing import plot_mask_prevalence
     # Find best model params
     pair_method = PAIR_METHOD if use_std_masks else False
     params_list = []
@@ -223,6 +230,13 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
                 model = clasif_fn(**params, n_jobs=n_jobs, random_state=42)
             except TypeError:
                 model = clasif_fn(**params, random_state=42)
+            # Do not train if in check_feat_rank mode and the results
+            # already exist
+            results_file = out_folder / f'{dataset_name}.pickle'
+            if check_feat_rank and results_file.exists():
+                with open(results_file, 'rb') as f:
+                    results = pickle.load(f)
+                break
             model.fit(train_x, train_y)
             # Normal classifier mode
             if not check_feat_rank:
@@ -240,8 +254,28 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
                     with open(out_folder / out_name, 'wb') as f:
                         pickle.dump(model, f)
         if check_feat_rank:
-            with open(out_folder / f'{dataset_name}.pickle', 'wb') as f:
-                pickle.dump(results, f)
+            results_file = out_folder / f'{dataset_name}.pickle'
+            if not results_file.exists():
+                with open(results_file, 'wb') as f:
+                    pickle.dump(results, f)
             out_file = out_folder / f'{dataset_name}.png'
             importances = np.array(results).mean(axis=0)
             plot_feature_importances(importances, out_file)
+            # Check mask prevalence
+            ranks = np.argsort(importances)[::-1]
+            partition = 1
+            avg_width = 40
+            n_parts_total = 8
+            out_name = f'masks_{dataset_name}'
+            title = f'Mask prevalence per feature, dataset={dataset_name}'
+            _, _, train_m, _, _, _, _, _ = load_partitions_pairs(
+                dataset_name, partition, MASK_VALUE, SCALE_DATASET, pair_method
+            )
+            if do_double_feat_sort:
+                plot_mask_prevalence(ranks, train_m, avg_width, n_parts_total,
+                                     out_name, out_folder, title,
+                                     importances)
+            else:
+                plot_mask_prevalence(ranks, train_m, avg_width, n_parts_total,
+                                     out_name, out_folder, title,
+                                     None)

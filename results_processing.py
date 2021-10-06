@@ -247,3 +247,126 @@ def anova_test(results_folder: str, std_results_folder: str, out_folder: str,
         plt.savefig(out_folder / f'box_plot.png')
         plt.close()
     return df
+
+
+def generate_anova_plots():
+    df = anova_test('rf_results', 'rf_results_std', 'rf_anova',
+                    boxplot_title='Box plot for Random Forest results')
+    df = anova_test('ada_results', 'ada_results_std', 'ada_anova',
+                    boxplot_title='Box plot for AdaBoost results')
+    df = anova_test('bag_results', 'bag_results_std', 'bag_anova',
+                    boxplot_title='Box plot for Bagging results')
+    df = anova_test('svm_results', 'svm_results_std', 'svm_anova',
+                    boxplot_title='Box plot for SVM results')
+    df = anova_test(
+        'rf_results_cmim_2', 'rf_results_std_cmim_2', 'rf_anova/cmim_2',
+        boxplot_title='Box plot for Random Forest results, CMIM 2/8')
+    df = anova_test(
+        'rf_results_cmim_4', 'rf_results_std_cmim_4', 'rf_anova/cmim_4',
+        boxplot_title='Box plot for Random Forest results, CMIM 4/8')
+    df = anova_test('ada_results_cmim_2', 'ada_results_std_cmim_2',
+                    'ada_anova/cmim_2',
+                    boxplot_title='Box plot for AdaBoost results, CMIM 2/8')
+    df = anova_test('ada_results_cmim_4', 'ada_results_std_cmim_4',
+                    'ada_anova/cmim_4',
+                    boxplot_title='Box plot for AdaBoost results, CMIM 4/8')
+    df = anova_test('bag_results_cmim_2', 'bag_results_std_cmim_2',
+                    'bag_anova/cmim_2',
+                    boxplot_title='Box plot for Bagging results, CMIM 2/8')
+    df = anova_test('bag_results_cmim_4', 'bag_results_std_cmim_4',
+                    'bag_anova/cmim_4',
+                    boxplot_title='Box plot for Bagging results, CMIM 4/8')
+    df = anova_test('svm_results_cmim_2', 'svm_results_std_cmim_2',
+                    'svm_anova/cmim_2',
+                    boxplot_title='Box plot for SVM results, CMIM 2/8')
+    df = anova_test('svm_results_cmim_4', 'svm_results_std_cmim_4',
+                    'svm_anova/cmim_4',
+                    boxplot_title='Box plot for SVM results, CMIM 4/8')
+
+
+def plot_mask_prevalence(order_array: np.ndarray, masks: np.ndarray,
+                         avg_width: int, n_parts_total: int, out_filename: str,
+                         out_folder: str, title: str,
+                         importances: np.ndarray = None,
+                         ada_mode: bool = False):
+    import matplotlib.pyplot as plt
+    from matplotlib import cm
+    # Generate out_folder
+    out_folder = Path(out_folder)
+    out_folder.mkdir(exist_ok=True, parents=True)
+    # Define colors
+    colors = cm.get_cmap('Paired').colors
+    colors = [[v for v in c] for c in colors]
+    colors = colors[5::-1] + colors[-2:]
+    # Calculate sum of masks, in cmim-order
+    # sum_masks = masks.sum(axis=0)[order_array]
+    sum_masks = masks.sum(axis=0)
+    # Generate number of features
+    sum_feats = np.repeat(masks.shape[0], len(order_array))
+    # Calculate prevalence for each feature
+    preval = np.divide(sum_masks, sum_feats)
+    xlim = len(preval) + 1
+    if importances is not None and ada_mode:
+        idxs = np.argsort(preval)
+        preval = preval[idxs]
+        importances = importances[idxs]
+        dtype = np.dtype([('importances', importances.dtype),
+                          ('preval', preval.dtype)])
+        struct = np.empty(len(importances), dtype=dtype)
+        # Minus is added in order to sort from greater to lesser
+        struct['importances'] = -importances
+        struct['preval'] = preval
+        idxs = np.argsort(struct, order='importances')
+        # order_array = np.argsort(importances)
+        importances = importances[idxs]
+        preval = preval[idxs]
+        # xlim = np.where(importances == 0)[0][0] + 1
+        xlim = 300
+    elif importances is not None:
+        importances = importances[np.argsort(importances)[::-1]]
+    x = np.arange(len(preval)) + 1
+    # Calculate moving average
+    moving = np.convolve(preval, np.ones(avg_width), 'same') / avg_width
+    # Generate plot
+    plt.rcParams.update({'font.size': 12})
+    fig, ax = plt.subplots()
+    l1 = ax.plot(x, 100 * preval, '.',
+                 label='Mask prevalence', color='tab:blue')
+    l2 = ax.plot(x[:-int(avg_width / 2)], 100 * moving[:-int(avg_width / 2)],
+                 label=f'Moving avg. (w={avg_width})',
+                 color='tab:orange')
+    areas = np.linspace(1, x.max(), n_parts_total + 1)
+    for i in range(n_parts_total):
+        ax.axvspan(areas[i], areas[i + 1], facecolor=colors[i], alpha=0.5)
+    ax.grid('on')
+    ax.set_xlabel('Feature order')
+    ax.set_ylabel('Mask prevalence [%]')
+    ax.set_xlim([0, xlim])
+    # ax.set_xlim([0, 50])
+    ax.set_ylim([0, 100 * preval[:xlim - 1].max()])
+    # ax.set_ylim([0, 100 * preval[:50].max()+1])
+    ax.set_title(title)
+    ax.legend()
+    if importances is not None:
+        # Color labels and ticks blue
+        ax.set_ylabel('Mask prevalence [%]', color='tab:blue')
+        ax.tick_params(axis='y', labelcolor='tab:blue')
+        # Create new axis sharing x
+        ax2 = ax.twinx()
+        # Set new axis labels and ticks red
+        ax2.set_ylabel('Feature importance', color='tab:red')
+        ax2.tick_params(axis='y', labelcolor='tab:red')
+        # Plot
+        l3 = ax2.plot(x, importances,
+                      label='Feature importance', color='tab:red')
+        ax2.set_ylim(bottom=0)
+        # Generate legend
+        lns = l1 + l2 + l3
+        labs = [line.get_label() for line in lns]
+        ax.legend(lns, labs, loc=1)
+    fig.tight_layout()
+    # fig.savefig(str(out_folder / f'00000{out_filename}.png'))
+    fig.savefig(str(out_folder / f'{out_filename}.png'))
+    fig.clf()
+    plt.close(fig)
+    del sum_masks, sum_feats, preval

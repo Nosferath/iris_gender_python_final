@@ -143,39 +143,3 @@ def plot_feature_importances(importances: np.ndarray, out_path):
     plt.axis('off')
     plt.savefig(out_path, bbox_inches='tight', pad_inches=0)
     plt.close()
-
-
-def generate_anova_plots():
-    from results_processing import anova_test
-    df = anova_test('rf_results', 'rf_results_std', 'rf_anova',
-                    boxplot_title='Box plot for Random Forest results')
-    df = anova_test('ada_results', 'ada_results_std', 'ada_anova',
-                    boxplot_title='Box plot for AdaBoost results')
-    df = anova_test('bag_results', 'bag_results_std', 'bag_anova',
-                    boxplot_title='Box plot for Bagging results')
-    df = anova_test('svm_results', 'svm_results_std', 'svm_anova',
-                    boxplot_title='Box plot for SVM results')
-    df = anova_test(
-        'rf_results_cmim_2', 'rf_results_std_cmim_2', 'rf_anova/cmim_2',
-        boxplot_title='Box plot for Random Forest results, CMIM 2/8')
-    df = anova_test(
-        'rf_results_cmim_4', 'rf_results_std_cmim_4', 'rf_anova/cmim_4',
-        boxplot_title='Box plot for Random Forest results, CMIM 4/8')
-    df = anova_test('ada_results_cmim_2', 'ada_results_std_cmim_2',
-                    'ada_anova/cmim_2',
-                    boxplot_title='Box plot for AdaBoost results, CMIM 2/8')
-    df = anova_test('ada_results_cmim_4', 'ada_results_std_cmim_4',
-                    'ada_anova/cmim_4',
-                    boxplot_title='Box plot for AdaBoost results, CMIM 4/8')
-    df = anova_test('bag_results_cmim_2', 'bag_results_std_cmim_2',
-                    'bag_anova/cmim_2',
-                    boxplot_title='Box plot for Bagging results, CMIM 2/8')
-    df = anova_test('bag_results_cmim_4', 'bag_results_std_cmim_4',
-                    'bag_anova/cmim_4',
-                    boxplot_title='Box plot for Bagging results, CMIM 4/8')
-    df = anova_test('svm_results_cmim_2', 'svm_results_std_cmim_2',
-                    'svm_anova/cmim_2',
-                    boxplot_title='Box plot for SVM results, CMIM 2/8')
-    df = anova_test('svm_results_cmim_4', 'svm_results_std_cmim_4',
-                    'svm_anova/cmim_4',
-                    boxplot_title='Box plot for SVM results, CMIM 4/8')
