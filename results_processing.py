@@ -234,15 +234,18 @@ def anova_test(results_folder: str, std_results_folder: str, out_folder: str,
     # Generate box-plots
     with plt.style.context('seaborn-whitegrid'):
         # sns.set_style("whitegrid")
-        sns.set_context("notebook")
+        sns.set_context("talk")
         ax = sns.boxplot(x=crit_a, y='result', hue=crit_b, data=df, notch=True)
         ax.set_xlabel(name_a)
         ax.set_ylabel('Accuracy')
-        ax.xaxis.label.set_size(15)
-        ax.yaxis.label.set_size(15)
-        ax.tick_params(labelsize=15)
-        ax.legend(title=name_b)
-        ax.set_title(boxplot_title, fontsize=17)
+        # ax.xaxis.label.set_size(15)
+        # ax.yaxis.label.set_size(15)
+        # ax.tick_params(labelsize=15)
+        # ax.legend(title=name_b, fontsize='medium', bbox_to_anchor=(1.05, 1),
+        #           loc=2, borderaxespad=0.)
+        # ax.set_title(boxplot_title, fontsize=17)
+        ax.legend([],[], frameon=False)
+        ax.set_title(boxplot_title)
         plt.tight_layout()
         plt.savefig(out_folder / f'box_plot.png')
         plt.close()
@@ -289,6 +292,49 @@ def plot_mask_prevalence(order_array: np.ndarray, masks: np.ndarray,
                          out_folder: str, title: str,
                          importances: np.ndarray = None,
                          ada_mode: bool = False):
+    """Generates a plot for showing the percentage of samples that have
+    masks on each feature (mask prevalence of the feature). The features
+    are ordered based on the order_array, which can be from CMIM or from
+    a feature importance vector.
+
+    If an importances array is included, and depending on whether
+    ada_mode is True or False, additional sorting is performed, and the
+    feature importance is displayed alongside the mask prevalence.
+
+    Parameters
+    ----------
+    order_array : np.ndarray
+        Contains the order in which every individual feature is
+        displayed. It can be a CMIM array, or an order based on
+        np.argsort using feature importances.
+    masks : np.ndarray
+        All the masks of the dataset, in [n_samples, n_features] shape.
+        It can be either the training set only, or both training and
+        test.
+    avg_width : int
+        A moving average is displayed over the individual prevalences.
+        This parameter sets the width of the moving average. For CMIM,
+        40 is a good number.
+    n_parts_total : int
+        Used for dividing the plot into colored zones. With CMIM, I have
+        been using 8. The colors match the colors used when displaying
+        the location of CMIM features. If colors are not wanted, set
+        this number to 0. Maximum 8.
+    out_filename : str
+        The name of the file to generate, without the extension. Usually
+        the dataset name.
+    out_folder : str
+        The folder (relative or absolute) where the plots will be saved.
+    title : str
+        The title for the plot.
+    importances : np.ndarray
+        Array containing the feature importances. Set to None if unused.
+    ada_mode : bool
+        If True, features are sorted by importance first, prevalence
+        second. Otherwise, features are sorted only by importance (and
+        technically, by their original order second). See more details
+        below.
+    """
     import matplotlib.pyplot as plt
     from matplotlib import cm
     # Generate out_folder
@@ -298,7 +344,7 @@ def plot_mask_prevalence(order_array: np.ndarray, masks: np.ndarray,
     colors = cm.get_cmap('Paired').colors
     colors = [[v for v in c] for c in colors]
     colors = colors[5::-1] + colors[-2:]
-    # Calculate sum of masks, in cmim-order
+    # Calculate sum of masks
     # sum_masks = masks.sum(axis=0)[order_array]
     sum_masks = masks.sum(axis=0)
     # Generate number of features
@@ -307,6 +353,9 @@ def plot_mask_prevalence(order_array: np.ndarray, masks: np.ndarray,
     preval = np.divide(sum_masks, sum_feats)
     xlim = len(preval) + 1
     if importances is not None and ada_mode:
+        # Ada_mode requires sorting both by importance and then by mask
+        # prevalence, for a more well-ordered plot, as many values are
+        # repeated.
         idxs = np.argsort(preval)
         preval = preval[idxs]
         importances = importances[idxs]
@@ -317,13 +366,21 @@ def plot_mask_prevalence(order_array: np.ndarray, masks: np.ndarray,
         struct['importances'] = -importances
         struct['preval'] = preval
         idxs = np.argsort(struct, order='importances')
-        # order_array = np.argsort(importances)
         importances = importances[idxs]
         preval = preval[idxs]
         # xlim = np.where(importances == 0)[0][0] + 1
         xlim = 300
     elif importances is not None:
-        importances = importances[np.argsort(importances)[::-1]]
+        # Non-ada mode (i.e. RF mode) only sorts by importance, not by
+        # mask size. This is the same as not including importance, but
+        # this version also sorts the importances for plotting.
+        idxs = np.argsort(importances)[::-1]
+        importances = importances[idxs]
+        preval = preval[idxs]
+    else:
+        # If importances are not included, the order_array is used for
+        # sorting prevalence as usual.
+        preval = preval[order_array]
     x = np.arange(len(preval)) + 1
     # Calculate moving average
     moving = np.convolve(preval, np.ones(avg_width), 'same') / avg_width
