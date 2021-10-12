@@ -146,7 +146,7 @@ def find_best_params(train_x: np.ndarray, train_y: np.ndarray,
 def main_base(find_params: bool, out_params_name: str, find_params_fn,
               out_results_name: str, clasif_fn, use_std_masks: bool,
               n_cmim: int, n_jobs: int, check_feat_rank: bool = False,
-              do_double_feat_sort: bool = False):
+              do_double_feat_sort: bool = False, permut_import: bool = False):
     """Base function for running classifier tests.
 
     Parameters
@@ -183,13 +183,18 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
     do_double_feat_sort : bool
         If True, features are sorted by mask prevalence before being
         re-sorted by importance. Has no effect if check_feat_rank is
-        False.
+        False. Also known as "ada mode".
+    permut_import : bool
+        If check_feat_rank is also True, premutation importances will be
+        used. Ignored otherwise.
     """
     if check_feat_rank and not hasattr(clasif_fn, 'feature_importances_'):
         print('[ERROR] This classifier does not have feature importances.')
         return
     if check_feat_rank:
         from results_processing import plot_mask_prevalence
+        if permut_import:
+            from sklearn.inspection import permutation_importance
     # Find best model params
     pair_method = PAIR_METHOD if use_std_masks else False
     params_list = []
@@ -233,7 +238,7 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
             # Do not train if in check_feat_rank mode and the results
             # already exist
             results_file = out_folder / f'{dataset_name}.pickle'
-            if check_feat_rank and results_file.exists():
+            if check_feat_rank and results_file.exists() and not permut_import:
                 with open(results_file, 'rb') as f:
                     results = pickle.load(f)
                 break
@@ -248,7 +253,14 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
                     pickle.dump(results, f)
             # Check feature importance mode
             else:
-                results.append(model.feature_importances_)
+                if permut_import:
+                    results.append(
+                        permutation_importance(model, test_x, test_y,
+                                               n_repeats=10, n_jobs=n_jobs,
+                                               random_state=42)
+                    )
+                else:
+                    results.append(model.feature_importances_)
                 if part == 1:
                     out_name = dataset_name + '_model.pickle'
                     with open(out_folder / out_name, 'wb') as f:

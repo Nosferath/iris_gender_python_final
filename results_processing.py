@@ -332,8 +332,8 @@ def plot_mask_prevalence(order_array: np.ndarray, masks: np.ndarray,
     ada_mode : bool
         If True, features are sorted by importance first, prevalence
         second. Otherwise, features are sorted only by importance (and
-        technically, by their original order second). See more details
-        below.
+        technically, by their original order second). Ignored if no
+        importances array was given. See more details below.
     """
     import matplotlib.pyplot as plt
     from matplotlib import cm

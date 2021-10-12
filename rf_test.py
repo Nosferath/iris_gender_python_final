@@ -98,26 +98,28 @@ def check_feature_importance(n_jobs):
     main_base(find_params=False,
               out_params_name='rf_params',
               find_params_fn=find_best_rf_params,
-              out_results_name='rf_importance',
+              out_results_name='rf_importance_p',
               clasif_fn=RandomForestClassifier,
               use_std_masks=False,
               n_cmim=0,
               n_jobs=n_jobs,
               check_feat_rank=True,
-              do_double_feat_sort=False)
+              do_double_feat_sort=False,
+              permut_import=True)
 
 
 def check_feature_importance_std(n_jobs):
     main_base(find_params=False,
               out_params_name='rf_params_std',
               find_params_fn=find_best_rf_params,
-              out_results_name='rf_importance_std',
+              out_results_name='rf_importance_std_p',
               clasif_fn=RandomForestClassifier,
               use_std_masks=True,
               n_cmim=0,
               n_jobs=n_jobs,
               check_feat_rank=True,
-              do_double_feat_sort=True)
+              do_double_feat_sort=True,
+              permut_import=True)
 
 
 if __name__ == '__main__':
