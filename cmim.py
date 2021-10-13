@@ -186,34 +186,17 @@ def visualize_mask_prevalence(cmim_folder: str, pairs: str, out_folder: str,
         plot_mask_prevalence(cmim_array, masks, avg_width, n_parts_total,
                              dataset_name, out_folder, title)
 
-        # # Calculate sum of masks, in cmim-order
-        # sum_masks = masks.sum(axis=0)[cmim_array]
-        # # Generate number of features
-        # sum_feats = np.repeat(masks.shape[0], len(cmim_array))
-        # # Calculate prevalence for each feature
-        # preval = np.divide(sum_masks, sum_feats)
-        # x = np.arange(len(preval)) + 1
-        # # Calculate moving average
-        # moving = np.convolve(preval, np.ones(avg_width), 'same') / avg_width
-        # # Generate plot
-        # plt.rcParams.update({'font.size': 12})
-        # fig, ax = plt.subplots()
-        # ax.plot(x, 100*preval, '.', label='Mask prevalence')
-        # ax.plot(x[:-int(avg_width/2)], 100*moving[:-int(avg_width/2)],
-        #         linewidth=2.5, label=f'Moving avg. (w={avg_width})')
-        # areas = np.linspace(1, x.max(), n_parts_total+1)
-        # for i in range(n_parts_total):
-        #     ax.axvspan(areas[i], areas[i+1], facecolor=colors[i], alpha=0.5)
-        # ax.grid('on')
-        # ax.legend()
-        # ax.set_xlabel('Feature order')
-        # ax.set_ylabel('Mask prevalence [%]')
-        # ax.set_xlim([0, len(preval)+1])
-        # # ax.set_xlim([0, 50])
-        # ax.set_ylim([0, 100*preval.max()])
-        # # ax.set_ylim([0, 100 * preval[:50].max()+1])
-        # ax.set_title(title)
-        # fig.savefig(str(out_folder / f'{dataset_name}.png'))
-        # fig.clf()
-        # plt.close(fig)
-        # del sum_masks, sum_feats, preval
+
+def artificial_mod_dataset(train_x: np.ndarray, train_y: np.ndarray,
+                           test_x: np.ndarray, test_y: np.ndarray):
+    """Artificially adds elements to the dataset based on the gender of
+    the subject. Used for testing whether CMIM is working properly."""
+    h, w = 20, 240
+    mh = int(h / 5)  # Mod height
+    mw = int(w / 60)  # Mod width
+    my = int(2 * h / 5)  # Start in Y
+    mx = int(5 * w / 6)  # Start in X
+
+    # Generate base mask
+    base = np.zeros((h, w))
+    base[my: my + mh, mx: mx + mw] = 1
