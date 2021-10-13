@@ -191,7 +191,9 @@ def artificial_mod_dataset(train_x: np.ndarray, train_y: np.ndarray,
                            test_x: np.ndarray, test_y: np.ndarray):
     """Artificially adds elements to the dataset based on the gender of
     the subject. Used for testing whether CMIM is working properly."""
-    h, w = 20, 240
+    shapes = {4800: (20, 240), 9600: (40, 240), 19200: (80, 480)}
+    n_feats = train_x.shape[1]
+    h, w = shapes[n_feats]
     mh = int(h / 5)  # Mod height
     mw = int(w / 60)  # Mod width
     my = int(2 * h / 5)  # Start in Y
@@ -200,3 +202,18 @@ def artificial_mod_dataset(train_x: np.ndarray, train_y: np.ndarray,
     # Generate base mask
     base = np.zeros((h, w))
     base[my: my + mh, mx: mx + mw] = 1
+
+    # Flatten mask based on C-style indexing
+    base = base.flatten()
+    # Repear mask for every example in train and test
+    base_train = np.tile(base, (train_x.shape[0], 1)) == 1
+    base_test = np.tile(base, (test_x.shape[0], 1)) == 1
+    # Apply right value for every gender
+    value = np.max(train_x)
+    values_train = ((1 - train_y) * value).reshape((-1, 1))
+    values_train = np.tile(values_train, (1, n_feats))
+    values_test = ((1 - test_y) * value).reshape((-1, 1))
+    values_test = np.tile(values_test, (1, n_feats))
+    train_x[base_train] = values_train[base_train]
+    test_x[base_test] = values_test[base_test]
+    return train_x, test_x
