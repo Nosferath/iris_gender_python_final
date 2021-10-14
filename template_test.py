@@ -146,7 +146,8 @@ def find_best_params(train_x: np.ndarray, train_y: np.ndarray,
 def main_base(find_params: bool, out_params_name: str, find_params_fn,
               out_results_name: str, clasif_fn, use_std_masks: bool,
               n_cmim: int, n_jobs: int, check_feat_rank: bool = False,
-              do_double_feat_sort: bool = False, permut_import: bool = False):
+              do_double_feat_sort: bool = False, permut_import: bool = False,
+              dataset_loading_fn=load_partitions_cmim):
     """Base function for running classifier tests.
 
     Parameters
@@ -187,6 +188,10 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
     permut_import : bool
         If check_feat_rank is also True, premutation importances will be
         used. Ignored otherwise.
+    dataset_loading_fn : function
+        Function for loading the dataset. Default: load_partitions_cmim.
+        Must have the same signature as load_partitions_cmim, and return
+        the same number and order of values.
     """
     if check_feat_rank and not hasattr(clasif_fn, 'feature_importances_'):
         print('[ERROR] This classifier does not have feature importances.')
@@ -201,7 +206,7 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
     for data_idx in range(len(datasets)):
         dataset_name = datasets[data_idx]
         if find_params and not check_feat_rank:
-            train_x, train_y, _, _, _, _, _, _, = load_partitions_cmim(
+            train_x, train_y, _, _, _, _, _, _, = dataset_loading_fn(
                 dataset_name, PARAMS_PARTITION, MASK_VALUE, SCALE_DATASET,
                 pair_method, n_cmim
             )
@@ -227,7 +232,7 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
         results = []
         for part in range(1, N_PARTS + 1):
             train_x, train_y, _, _, test_x, test_y, _, _ = \
-                load_partitions_cmim(
+                dataset_loading_fn(
                     dataset_name, part, MASK_VALUE, SCALE_DATASET, pair_method,
                     n_cmim
                 )
@@ -280,8 +285,9 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
             n_parts_total = 8
             out_name = f'masks_{dataset_name}'
             title = f'Mask prevalence per feature, dataset={dataset_name}'
-            _, _, train_m, _, _, _, _, _ = load_partitions_pairs(
-                dataset_name, partition, MASK_VALUE, SCALE_DATASET, pair_method
+            _, _, train_m, _, _, _, _, _ = dataset_loading_fn(
+                dataset_name, partition, MASK_VALUE, SCALE_DATASET,
+                pair_method, n_cmim=0
             )
             if do_double_feat_sort:
                 plot_mask_prevalence(ranks, train_m, avg_width, n_parts_total,

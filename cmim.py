@@ -162,7 +162,6 @@ def visualize_mask_prevalence(cmim_folder: str, pairs: str, out_folder: str,
         are being used currently, so this has no effect. Default: 1.
     """
     from matplotlib import cm
-    import matplotlib.pyplot as plt
     from load_partitions import load_partitions_pairs
     from results_processing import plot_mask_prevalence
     # Define colors
