@@ -84,7 +84,7 @@ def find_best_params(train_x: np.ndarray, train_y: np.ndarray,
     """
     # Create out folder
     out_folder = Path(folder_name)
-    out_folder.mkdir(exist_ok=True)
+    out_folder.mkdir(exist_ok=True, parents=True)
     # Generate CV1 param. grid
     param_grid = param_grid_fn(start_param_a, step_param_a, end_param_a,
                                start_param_b, step_param_b, end_param_b)

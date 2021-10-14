@@ -1,5 +1,7 @@
 import numpy as np
 from sklearn.ensemble import AdaBoostClassifier
+
+from constants import MODEL_PARAMS_FOLDER
 from template_test import get_param_grid, find_best_params, main_base
 
 
@@ -37,7 +39,7 @@ def find_best_ada_params(train_x: np.ndarray, train_y: np.ndarray,
 
 def main(find_params=True, n_jobs=-1):
     main_base(find_params=find_params,
-              out_params_name='ada_params',
+              out_params_name=MODEL_PARAMS_FOLDER + '/ada_params',
               find_params_fn=find_best_ada_params,
               out_results_name='ada_results',
               clasif_fn=AdaBoostClassifier,
@@ -48,7 +50,7 @@ def main(find_params=True, n_jobs=-1):
 
 def main_std(find_params=True, n_jobs=-1):
     main_base(find_params=find_params,
-              out_params_name='ada_params_std',
+              out_params_name=MODEL_PARAMS_FOLDER + '/ada_params_std',
               find_params_fn=find_best_ada_params,
               out_results_name='ada_results_std',
               clasif_fn=AdaBoostClassifier,
@@ -64,7 +66,8 @@ def main_cmim(n_cmim: int, find_params=True, n_jobs=-1):
     masked features. That 2 or 4 would be the n_cmim parameter.
     """
     main_base(find_params=find_params,
-              out_params_name=f'ada_params_cmim_{n_cmim}',
+              out_params_name=MODEL_PARAMS_FOLDER +
+                              f'/ada_params_cmim_{n_cmim}',
               find_params_fn=find_best_ada_params,
               out_results_name=f'ada_results_cmim_{n_cmim}',
               clasif_fn=AdaBoostClassifier,
@@ -80,7 +83,8 @@ def main_std_cmim(n_cmim: int, find_params=True, n_jobs=-1):
     masked features. That 2 or 4 would be the n_cmim parameter.
     """
     main_base(find_params=find_params,
-              out_params_name=f'ada_params_std_cmim_{n_cmim}',
+              out_params_name=MODEL_PARAMS_FOLDER +
+                              f'/ada_params_std_cmim_{n_cmim}',
               find_params_fn=find_best_ada_params,
               out_results_name=f'ada_results_std_cmim_{n_cmim}',
               clasif_fn=AdaBoostClassifier,
@@ -92,7 +96,7 @@ def main_std_cmim(n_cmim: int, find_params=True, n_jobs=-1):
 def main_mod(find_params=True, n_jobs=-1):
     from load_partitions import load_partitions_cmim_mod
     main_base(find_params=find_params,
-              out_params_name='ada_params_mod',
+              out_params_name=MODEL_PARAMS_FOLDER + '/ada_params_mod',
               find_params_fn=find_best_ada_params,
               out_results_name='ada_results_mod',
               clasif_fn=AdaBoostClassifier,
@@ -105,7 +109,7 @@ def main_mod(find_params=True, n_jobs=-1):
 def main_std_mod(find_params=True, n_jobs=-1):
     from load_partitions import load_partitions_cmim_mod
     main_base(find_params=find_params,
-              out_params_name='ada_params_std_mod',
+              out_params_name=MODEL_PARAMS_FOLDER + '/ada_params_std_mod',
               find_params_fn=find_best_ada_params,
               out_results_name='ada_results_std_mod',
               clasif_fn=AdaBoostClassifier,
@@ -117,7 +121,7 @@ def main_std_mod(find_params=True, n_jobs=-1):
 
 def check_feature_importance(n_jobs):
     main_base(find_params=False,
-              out_params_name='ada_params',
+              out_params_name=MODEL_PARAMS_FOLDER + '/ada_params',
               find_params_fn=find_best_ada_params,
               out_results_name='ada_importance_p',
               clasif_fn=AdaBoostClassifier,
@@ -131,7 +135,7 @@ def check_feature_importance(n_jobs):
 
 def check_feature_importance_std(n_jobs):
     main_base(find_params=False,
-              out_params_name='ada_params_std',
+              out_params_name=MODEL_PARAMS_FOLDER + '/ada_params_std',
               find_params_fn=find_best_ada_params,
               out_results_name='ada_importance_std_p',
               clasif_fn=AdaBoostClassifier,

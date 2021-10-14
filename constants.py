@@ -12,3 +12,4 @@ PARAMS_PARTITION = 1
 CMIM_GROUPS = 8
 CMIM_FOLDER = 'cmimArrays'
 CMIM_STD_FOLDER = 'cmimArraysStd'
+MODEL_PARAMS_FOLDER = 'model_params'
