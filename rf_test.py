@@ -94,6 +94,32 @@ def main_std_cmim(n_cmim: int, find_params=True, n_jobs=-1):
               n_jobs=n_jobs)
 
 
+def main_mod(find_params=True, n_jobs=-1):
+    from load_partitions import load_partitions_cmim_mod
+    main_base(find_params=find_params,
+              out_params_name='rf_params_mod',
+              find_params_fn=find_best_rf_params,
+              out_results_name='rf_results_mod',
+              clasif_fn=RandomForestClassifier,
+              use_std_masks=False,
+              n_cmim=0,
+              n_jobs=n_jobs,
+              dataset_loading_fn=load_partitions_cmim_mod)
+
+
+def main_std_mod(find_params=True, n_jobs=-1):
+    from load_partitions import load_partitions_cmim_mod
+    main_base(find_params=find_params,
+              out_params_name='rf_params_std_mod',
+              find_params_fn=find_best_rf_params,
+              out_results_name='rf_results_std_mod',
+              clasif_fn=RandomForestClassifier,
+              use_std_masks=True,
+              n_cmim=0,
+              n_jobs=n_jobs,
+              dataset_loading_fn=load_partitions_cmim_mod)
+
+
 def check_feature_importance(n_jobs):
     main_base(find_params=False,
               out_params_name='rf_params',

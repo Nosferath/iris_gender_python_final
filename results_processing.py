@@ -4,7 +4,7 @@ import pickle
 import numpy as np
 
 from constants import datasets
-from utils import grid_plot, find_dataset_shape
+from utils import grid_plot
 
 
 def generate_cv_grid_plot(dataset_name: str, cv: int, params_folder: str):
@@ -81,34 +81,11 @@ def review_results(results_folder: str):
         print(f'{file.stem}:\t{mean:.2f} ± {std:.2f}')
 
 
-def generate_mask_visualization(dataset_name: str, pairs: str,
-                                partition=1):
-    """Generates a grayscale visualization of the masks of the dataset.
-
-    Parameters
-    ----------
-    dataset_name : str
-        Name of the dataset to use
-    pairs : str or None/False
-        Set to None/False if pairs are not to be used. Otherwise, set to the
-        pairing method name.
-    partition : int
-        Train partition to use. Default 1.
-    """
-    from load_partitions import load_partitions_pairs
-    _, _, train_m, _, _, _, _, _ = load_partitions_pairs(
-        dataset_name, partition, 0, True, pairs)
-    masks = train_m.mean(axis=0)
-    masks = masks * 255
-    shape = find_dataset_shape(dataset_name)
-    masks = masks.reshape(shape)
-    return masks.astype('uint8')
-
-
 def visualize_all_masks(out_folder: str, use_pairs: bool):
     """Generates visualizations for all masks"""
     import matplotlib.pyplot as plt
     from constants import PAIR_METHOD
+    from load_partitions import generate_mask_visualization
     out_folder = Path(out_folder)
     out_folder.mkdir(exist_ok=True, parents=True)
     pairs = PAIR_METHOD if use_pairs else False
@@ -427,3 +404,52 @@ def plot_mask_prevalence(order_array: np.ndarray, masks: np.ndarray,
     fig.clf()
     plt.close(fig)
     del sum_masks, sum_feats, preval
+
+
+def visualize_mask_prevalence(cmim_folder: str, pairs: str, out_folder: str,
+                              avg_width: int, n_parts_total: int, partition=1):
+    """Visualizes the percentage of masked examples for each feature, in
+    the same order as they were selected. The values are individual,
+    i.e., at each number of features, only the percentage for that
+    feature is shown.
+
+    Parameters
+    ----------
+    cmim_folder : str
+        Folder with CMIM arrays.
+    pairs : str or None/False
+        Set to None/False if pairs are not to be used. Otherwise, set to the
+        pairing method name.
+    out_folder : str
+        Path to where the visualizations will be saved.
+    avg_width : str
+        Width of the moving average window
+    n_parts_total : int
+        Number of parts in which to divide the total number of features.
+        Used for visualizing which features are in which group with
+        vertical colored areas.
+    partition : int
+        Partition to use for splitting the dataset. Both train and test
+        are being used currently, so this has no effect. Default: 1.
+    """
+    from matplotlib import cm
+    from cmim import load_cmim_array_from_path
+    from load_partitions import load_partitions_pairs
+    # Define colors
+    colors = cm.get_cmap('Paired').colors
+    colors = [[v for v in c] for c in colors]
+    colors = colors[5::-1] + colors[-2:]
+    # Define folders
+    cmim_folder = Path(cmim_folder)
+    cmim_files = cmim_folder.glob('*.mat')
+    for file in cmim_files:
+        dataset_name = file.stem
+        cmim_array = load_cmim_array_from_path(file)
+        _, _, train_m, _, _, _, _, _ = load_partitions_pairs(
+            dataset_name, partition, mask_value=0, scale_dataset=True,
+            pair_method=pairs
+        )
+        masks = train_m  # TODO quizás es mejor volver a train+test
+        title = f'Mask prevalence per feature, dataset={dataset_name}'
+        plot_mask_prevalence(cmim_array, masks, avg_width, n_parts_total,
+                             dataset_name, out_folder, title)

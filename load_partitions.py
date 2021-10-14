@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 from constants import CMIM_GROUPS
 from pairs import prepare_pairs_indexes, load_pairs_array
 from standard_masks import generate_standard_masks, apply_std_mask
+from utils import find_dataset_shape
 
 
 def load_raw_dataset(dataset_name: str):
@@ -265,3 +266,25 @@ def load_partitions_irisbee_full(dataset_eye: str, partition: int,
                          test_size=test_proportion, stratify=label_array,
                          random_state=partition)
     return train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l
+
+
+def generate_mask_visualization(dataset_name: str, pairs: str, partition=1):
+    """Generates a grayscale visualization of the masks of the dataset.
+
+    Parameters
+    ----------
+    dataset_name : str
+        Name of the dataset to use
+    pairs : str or None/False
+        Set to None/False if pairs are not to be used. Otherwise, set to the
+        pairing method name.
+    partition : int
+        Train partition to use. Default 1.
+    """
+    _, _, train_m, _, _, _, _, _ = load_partitions_pairs(
+        dataset_name, partition, 0, True, pairs)
+    masks = train_m.mean(axis=0)
+    masks = masks * 255
+    shape = find_dataset_shape(dataset_name)
+    masks = masks.reshape(shape)
+    return masks.astype('uint8')

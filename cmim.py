@@ -90,7 +90,7 @@ def review_all_masks(pairs: str, out_folder: str):
     out_folder : str
         Path to where the visualizations will be saved.
     """
-    from results_processing import generate_mask_visualization
+    from load_partitions import generate_mask_visualization
     out_folder = Path(out_folder)
     out_folder.mkdir(parents=True, exist_ok=True)
     for dataset_name in datasets:
@@ -118,7 +118,7 @@ def review_all_cmim(cmim_folder: str, pairs: str, n_parts_total: int,
     out_folder : str
         Path to where the visualizations will be saved.
     """
-    from results_processing import generate_mask_visualization
+    from load_partitions import generate_mask_visualization
     cmim_folder = Path(cmim_folder)
     cmim_files = cmim_folder.glob('*.mat')
     out_folder = Path(out_folder)
@@ -133,57 +133,6 @@ def review_all_cmim(cmim_folder: str, pairs: str, n_parts_total: int,
                                                     n_parts_displ)
         img = Image.fromarray(visualization)
         img.save(str(out_folder / f"{dataset_name}.png"))
-
-
-def visualize_mask_prevalence(cmim_folder: str, pairs: str, out_folder: str,
-                              avg_width: int, n_parts_total: int, partition=1):
-    """Visualizes the percentage of masked examples for each feature, in
-    the same order as they were selected. The values are individual,
-    i.e., at each number of features, only the percentage for that
-    feature is shown.
-
-    Parameters
-    ----------
-    cmim_folder : str
-        Folder with CMIM arrays.
-    pairs : str or None/False
-        Set to None/False if pairs are not to be used. Otherwise, set to the
-        pairing method name.
-    out_folder : str
-        Path to where the visualizations will be saved.
-    avg_width : str
-        Width of the moving average window
-    n_parts_total : int
-        Number of parts in which to divide the total number of features.
-        Used for visualizing which features are in which group with
-        vertical colored areas.
-    partition : int
-        Partition to use for splitting the dataset. Both train and test
-        are being used currently, so this has no effect. Default: 1.
-    """
-    from matplotlib import cm
-    from load_partitions import load_partitions_pairs
-    from results_processing import plot_mask_prevalence
-    # Define colors
-    colors = cm.get_cmap('Paired').colors
-    colors = [[v for v in c] for c in colors]
-    colors = colors[5::-1] + colors[-2:]
-    # Define folders
-    cmim_folder = Path(cmim_folder)
-    cmim_files = cmim_folder.glob('*.mat')
-    out_folder = Path(out_folder)
-    out_folder.mkdir(parents=True, exist_ok=True)
-    for file in cmim_files:
-        dataset_name = file.stem
-        cmim_array = load_cmim_array_from_path(file)
-        _, _, train_m, _, _, _, _, _ = load_partitions_pairs(
-            dataset_name, partition, mask_value=0, scale_dataset=True,
-            pair_method=pairs
-        )
-        masks = train_m  # TODO quizás es mejor volver a train+test
-        title = f'Mask prevalence per feature, dataset={dataset_name}'
-        plot_mask_prevalence(cmim_array, masks, avg_width, n_parts_total,
-                             dataset_name, out_folder, title)
 
 
 def artificial_mod_dataset(train_x: np.ndarray, train_y: np.ndarray,
