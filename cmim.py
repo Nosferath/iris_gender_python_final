@@ -139,7 +139,7 @@ def artificial_mod_dataset(train_x: np.ndarray, train_y: np.ndarray,
                            test_x: np.ndarray, test_y: np.ndarray):
     """Artificially adds elements to the dataset based on the gender of
     the subject. Used for testing whether CMIM is working properly."""
-    shapes = {4800: (20, 240), 9600: (40, 240), 19200: (80, 480)}
+    shapes = {4800: (20, 240), 9600: (40, 240), 38400: (80, 480)}
     n_feats = train_x.shape[1]
     h, w = shapes[n_feats]
     mh = int(h / 5)  # Mod height
