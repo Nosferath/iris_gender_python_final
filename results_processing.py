@@ -221,7 +221,7 @@ def anova_test(results_folder: str, std_results_folder: str, out_folder: str,
         # ax.legend(title=name_b, fontsize='medium', bbox_to_anchor=(1.05, 1),
         #           loc=2, borderaxespad=0.)
         # ax.set_title(boxplot_title, fontsize=17)
-        ax.legend([],[], frameon=False)
+        ax.legend([], [], frameon=False)
         ax.set_title(boxplot_title)
         plt.tight_layout()
         plt.savefig(out_folder / f'box_plot.png')

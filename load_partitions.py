@@ -86,7 +86,9 @@ def load_partitions(dataset_name: str, partition: int, mask_value: float,
     idx_test = idx_mat['idxTest'][0] - 1
     # (Optionally) scale and apply mask
     if scale_dataset:
-        data_array[mask_array == 1] = 177
+        temp_mask = np.repeat(np.mean(data_array, axis=1).reshape(-1, 1),
+                              data_array.shape[1], axis=1)
+        data_array[mask_array == 1] = temp_mask[mask_array == 1]
         data_array[data_array == 255] = 254
         max_values = data_array.max(axis=1)
         max_values = np.repeat(max_values.reshape(-1, 1), data_array.shape[1],
