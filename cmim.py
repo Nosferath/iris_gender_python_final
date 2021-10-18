@@ -58,7 +58,7 @@ def generate_cmim_visualization(cmim_array: np.ndarray,
         return np.unravel_index(idx, (h, w))
 
     # Define conversion from feature importance to color
-    n_color = int(len(cmim_array) / n_parts_total)  # Features per color
+    n_color = int(base_image.size / n_parts_total)  # Features per color
 
     def index_to_color(imp):
         return colors[imp // n_color]
@@ -70,7 +70,7 @@ def generate_cmim_visualization(cmim_array: np.ndarray,
         out_image = base_image.copy()
 
     # Apply colors to out_image
-    for i in range(n_parts_displ * n_color):
+    for i in range(min(n_parts_displ * n_color, cmim_array.size)):
         cur_cmim = cmim_array[i]
         y, x = index_to_coords(cur_cmim)
         cur_color = index_to_color(i)
@@ -148,6 +148,7 @@ def artificial_mod_dataset(train_x: np.ndarray, train_y: np.ndarray,
     mx = int(5 * w / 6)  # Start in X
 
     # Generate base mask
+    # print(f'n_feats = {n_feats}. Square coords: ({my}:{my+mh},{mx}:{mx+mw})')
     base = np.zeros((h, w))
     base[my: my + mh, mx: mx + mw] = 1
 

@@ -10,6 +10,32 @@ from standard_masks import generate_standard_masks, apply_std_mask
 from utils import find_dataset_shape
 
 
+def scale_x_arr(x_arr: np.ndarray, mask_array: np.ndarray,
+                mask_value: float = 0):
+    """Scales each individual sample of the x_arr, such that all non-
+    masked values are between 1/255 and 1.0, leaving the value 0 for
+    masks.
+    """
+    temp_mask = np.repeat(
+        np.median(x_arr, axis=1).reshape(-1, 1),
+        x_arr.shape[1], axis=1
+    )
+    x_arr[mask_array == 1] = temp_mask[mask_array == 1]
+    x_arr[x_arr >= 255] = 254
+    max_values = x_arr.max(axis=1)
+    max_values = np.repeat(max_values.reshape(-1, 1),
+                           x_arr.shape[1],
+                           axis=1)
+    min_values = x_arr.min(axis=1)
+    min_values = np.repeat(min_values.reshape(-1, 1),
+                           x_arr.shape[1],
+                           axis=1)
+    x_arr = np.divide(x_arr - min_values, max_values - min_values)
+    x_arr = (254.0 * x_arr + 1) / 255.0
+    x_arr[mask_array == 1] = mask_value
+    return x_arr
+
+
 def load_raw_dataset(dataset_name: str):
     """Loads a full (non-partitioned) dataset from a .mat file."""
     root_folder = Path.cwd() / 'data'
@@ -86,20 +112,9 @@ def load_partitions(dataset_name: str, partition: int, mask_value: float,
     idx_test = idx_mat['idxTest'][0] - 1
     # (Optionally) scale and apply mask
     if scale_dataset:
-        temp_mask = np.repeat(np.mean(data_array, axis=1).reshape(-1, 1),
-                              data_array.shape[1], axis=1)
-        data_array[mask_array == 1] = temp_mask[mask_array == 1]
-        data_array[data_array == 255] = 254
-        max_values = data_array.max(axis=1)
-        max_values = np.repeat(max_values.reshape(-1, 1), data_array.shape[1],
-                               axis=1)
-        min_values = data_array.min(axis=1)
-        min_values = np.repeat(min_values.reshape(-1, 1), data_array.shape[1],
-                               axis=1)
-        data_array = np.divide(data_array - min_values,
-                               max_values - min_values)
-        data_array = (254.0 * data_array + 1) / 255.0
-    data_array[mask_array == 1] = mask_value
+        data_array = scale_x_arr(data_array, mask_array, mask_value)
+    else:
+        data_array[mask_array == 1] = mask_value
     # Generate train and test
     train_x = data_array[idx_train, :]
     train_y = label_array[idx_train]
@@ -150,6 +165,9 @@ def load_partitions_pairs_base(dataset_name: str, partition: int,
             train_y = train_y[to_exclude_bool]
             train_m = train_m[to_exclude_bool, :]
             train_l = train_l[to_exclude_bool]
+        if scale_dataset:
+            train_x = scale_x_arr(train_x, train_m, mask_value)
+            test_x = scale_x_arr(test_x, test_m, mask_value)
     return train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l
 
 
