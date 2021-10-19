@@ -112,3 +112,29 @@ def main_std_mod(find_params=True, n_jobs=-1):
               n_cmim=0,
               n_jobs=n_jobs,
               dataset_loading_fn=load_partitions_cmim_mod)
+
+
+def main_mod_v2(find_params=True, n_jobs=-1):
+    from load_partitions import load_partitions_cmim_mod_v2
+    main_base(find_params=find_params,
+              out_params_name=MODEL_PARAMS_FOLDER + '/bag_params_mod_v2',
+              find_params_fn=find_best_bag_params,
+              out_results_name='bag_results_mod_v2',
+              clasif_fn=BaggingClassifier,
+              use_std_masks=False,
+              n_cmim=0,
+              n_jobs=n_jobs,
+              dataset_loading_fn=load_partitions_cmim_mod_v2)
+
+
+def main_std_mod_v2(find_params=True, n_jobs=-1):
+    from load_partitions import load_partitions_cmim_mod_v2
+    main_base(find_params=find_params,
+              out_params_name=MODEL_PARAMS_FOLDER + '/bag_params_std_mod_v2',
+              find_params_fn=find_best_bag_params,
+              out_results_name='bag_results_std_mod_v2',
+              clasif_fn=BaggingClassifier,
+              use_std_masks=True,
+              n_cmim=0,
+              n_jobs=n_jobs,
+              dataset_loading_fn=load_partitions_cmim_mod_v2)
