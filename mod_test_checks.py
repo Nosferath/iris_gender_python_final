@@ -25,6 +25,7 @@ def check_square_locations(out_folder='cmim_mod_checks'):
                 x_arr = np.vstack([train_x, test_x])
                 max_vals = np.max(x_arr, axis=1)
                 assert np.all(max_vals == 1), 'Not all max values are 1'
+                # Visualize modification and print coords
                 train_x, train_y, _, train_l, test_x, test_y, _, test_l = \
                     load_partitions_cmim_mod(dataset, part, 0, True,
                                              pair_method, 0)
