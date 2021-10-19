@@ -4,7 +4,7 @@ import numpy as np
 from scipy.io import loadmat
 from sklearn.model_selection import train_test_split
 
-from constants import CMIM_GROUPS
+from constants import CMIM_GROUPS, ROOT_DATA_FOLDER
 from pairs import prepare_pairs_indexes, load_pairs_array
 from standard_masks import generate_standard_masks, apply_std_mask
 from utils import find_dataset_shape
@@ -36,9 +36,9 @@ def scale_x_arr(x_arr: np.ndarray, mask_array: np.ndarray,
     return x_arr
 
 
-def load_raw_dataset(dataset_name: str):
+def load_raw_dataset(dataset_name: str, root_folder=ROOT_DATA_FOLDER):
     """Loads a full (non-partitioned) dataset from a .mat file."""
-    root_folder = Path.cwd() / 'data'
+    root_folder = Path.cwd() / root_folder
     data_mat = loadmat(str(root_folder / (dataset_name + '.mat')))
     data_array = data_mat['dataArray']
     label_array = data_mat['labelArray'][:, 0]  # Convert to 1-D
@@ -52,13 +52,14 @@ def load_raw_dataset(dataset_name: str):
 
 
 def load_partitions_full(dataset_name: str, partition: int, mask_value: float,
-                         test_proportion: float, scale_dataset: bool):
+                         test_proportion: float, scale_dataset: bool,
+                         root_folder=ROOT_DATA_FOLDER):
     """This version of load_partitions generates its own balanced partitions.
     Not used currently. Does not include newest scaling."""
     np.random.seed(partition)
     # Load data
     data_array, label_array, mask_array, images_list = load_raw_dataset(
-        dataset_name)
+        dataset_name, root_folder)
     # Balance and (optionally) scale dataset
     n_images = len(label_array)
     idx = np.random.permutation(n_images)
@@ -98,13 +99,13 @@ def load_partitions_full(dataset_name: str, partition: int, mask_value: float,
 
 
 def load_partitions(dataset_name: str, partition: int, mask_value: float,
-                    scale_dataset: bool):
+                    scale_dataset: bool, root_folder=ROOT_DATA_FOLDER):
     """Loads a partitioned dataset. Uses .mat files provided by MATLAB.
     Uses new scaling for 0-masking.
     """
     # Load data
     data_array, label_array, mask_array, images_list = load_raw_dataset(
-        dataset_name)
+        dataset_name, root_folder)
     idx_path = Path.cwd() / 'partIdx'
     idx_mat = loadmat(str(idx_path / dataset_name / (str(partition) + '.mat')))
     # Unpack .mat
@@ -129,7 +130,8 @@ def load_partitions(dataset_name: str, partition: int, mask_value: float,
 
 def load_partitions_pairs_base(dataset_name: str, partition: int,
                                mask_value: float, scale_dataset: bool,
-                               pair_method: str, exclude: int, use_max: bool):
+                               pair_method: str, exclude: int, use_max: bool,
+                               root_folder=ROOT_DATA_FOLDER):
     """Base function for both load_partitions_pairs and load_partitions_
     pairs_excl. If pair_method or exclude are not to be used, they must
     be set to False. If exclude is to be used, use_max must be set
@@ -141,7 +143,8 @@ def load_partitions_pairs_base(dataset_name: str, partition: int,
     method will have their masks standardized. (Step 2, 6 and 7)
     """
     train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l = \
-        load_partitions(dataset_name, partition, mask_value, scale_dataset)
+        load_partitions(dataset_name, partition, mask_value, scale_dataset,
+                        root_folder)
     if exclude and not pair_method:
         raise ValueError('If exclude is defined, pair_method must also be.')
     if pair_method:
@@ -172,7 +175,8 @@ def load_partitions_pairs_base(dataset_name: str, partition: int,
 
 
 def load_partitions_pairs(dataset_name: str, partition: int, mask_value: float,
-                          scale_dataset: bool, pair_method: str):
+                          scale_dataset: bool, pair_method: str,
+                          root_folder=ROOT_DATA_FOLDER):
     """Loads the partition. If pair_method is False, it is identical to
     regular load_partitions. Otherwise, pair_method should be a string
     for a pair type (a folder in the pairs folder). The pairs from that
@@ -180,7 +184,8 @@ def load_partitions_pairs(dataset_name: str, partition: int, mask_value: float,
     """
     train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l = \
         load_partitions_pairs_base(dataset_name, partition, mask_value,
-                                   scale_dataset, pair_method, 0, False)
+                                   scale_dataset, pair_method, 0, False,
+                                   root_folder)
     return train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l
 
 
@@ -201,7 +206,8 @@ def apply_cmim_to_partition(train_x: np.ndarray, test_x: np.ndarray,
 
 
 def load_partitions_cmim(dataset_name: str, partition: int, mask_value: float,
-                         scale_dataset: bool, pair_method: str, n_cmim: int):
+                         scale_dataset: bool, pair_method: str, n_cmim: int,
+                         root_folder=ROOT_DATA_FOLDER):
     """Loads the partition. It keeps only the n_cmim groups of most
     important features according to CMIM, on the train_x and test_x
     arrays.
@@ -211,7 +217,7 @@ def load_partitions_cmim(dataset_name: str, partition: int, mask_value: float,
 
     train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l = \
         load_partitions_pairs(dataset_name, partition, mask_value,
-                              scale_dataset, pair_method)
+                              scale_dataset, pair_method, root_folder)
 
     train_x, test_x = apply_cmim_to_partition(train_x, test_x, dataset_name,
                                               pair_method, n_cmim)
@@ -240,9 +246,25 @@ def load_partitions_cmim_mod(dataset_name: str, partition: int,
     return train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l
 
 
+def load_partitions_cmim_mod_v2(dataset_name: str, partition: int,
+                                mask_value: float, scale_dataset: bool,
+                                pair_method: str, n_cmim: int):
+    """Loads the partition, but using the v2 modification of datasets,
+    which has noisy black circles for males and noisy white circles for
+    females.
+    """
+    train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l = \
+        load_partitions_cmim(dataset_name, partition, mask_value,
+                             scale_dataset, pair_method, n_cmim,
+                             root_folder='dataMod')
+
+    return train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l
+
+
 def load_partitions_pairs_excl(dataset_name: str, partition: int,
                                mask_value: float, scale_dataset: bool,
-                               pair_method: str, exclude: int, use_max: bool):
+                               pair_method: str, exclude: int, use_max: bool,
+                               root_folder=ROOT_DATA_FOLDER):
     """Loads the partition, performs pairing and excludes a number of
     pairs (worst pairs for the pair_method); exclude is the number of
     pairs to exclude. pair_method should be a string for a pair type (a
@@ -257,7 +279,7 @@ def load_partitions_pairs_excl(dataset_name: str, partition: int,
     train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l = \
         load_partitions_pairs_base(dataset_name, partition, mask_value,
                                    scale_dataset, pair_method, exclude,
-                                   use_max)
+                                   use_max, root_folder)
     return train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l
 
 

@@ -13,3 +13,4 @@ CMIM_GROUPS = 8
 CMIM_FOLDER = 'cmimArrays'
 CMIM_STD_FOLDER = 'cmimArraysStd'
 MODEL_PARAMS_FOLDER = 'model_params'
+ROOT_DATA_FOLDER = 'data'
