@@ -19,4 +19,4 @@ cmimStdMaskPrevalence/
 test.png
 mask_distribution/
 _old_tests/
-cmim_mod_checks/
+cmim_mod*_checks/

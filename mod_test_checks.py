@@ -11,7 +11,8 @@ def check_square_locations(out_folder='cmim_mod_checks'):
      modified areas.
     """
     from PIL import Image
-    from load_partitions import load_partitions_cmim, load_partitions_cmim_mod
+    from load_partitions import load_partitions_cmim, \
+        load_partitions_cmim_mod_v2
     out_folder = Path(out_folder)
     out_folder.mkdir(exist_ok=True, parents=True)
     for dataset in datasets:
@@ -27,7 +28,7 @@ def check_square_locations(out_folder='cmim_mod_checks'):
                 assert np.all(max_vals == 1), 'Not all max values are 1'
                 # Visualize modification and print coords
                 train_x, train_y, _, train_l, test_x, test_y, _, test_l = \
-                    load_partitions_cmim_mod(dataset, part, 0, True,
+                    load_partitions_cmim_mod_v2(dataset, part, 0, True,
                                              pair_method, 0)
                 for i in np.random.randint(train_x.shape[0], size=4):
                     cur_x = train_x[i, :].reshape(shape)
@@ -36,7 +37,7 @@ def check_square_locations(out_folder='cmim_mod_checks'):
                     out_name = dataset + '_' + str(part) + '_' + out_name
                     out_file = out_folder / out_name
                     img = Image.fromarray((cur_x*255).astype('uint8'))
-                    # img.save(out_file)
+                    img.save(out_file)
                 for i in np.random.randint(test_x.shape[0], size=4):
                     cur_x = test_x[i, :].reshape(shape)
                     cur_y = test_y[i]
@@ -44,4 +45,4 @@ def check_square_locations(out_folder='cmim_mod_checks'):
                     out_name = dataset + '_' + str(part) + '_' + out_name
                     out_file = out_folder / out_name
                     img = Image.fromarray((cur_x*255).astype('uint8'))
-                    # img.save(out_file)
+                    img.save(out_file)
