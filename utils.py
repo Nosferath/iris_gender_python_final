@@ -145,4 +145,26 @@ def plot_feature_importances(importances: np.ndarray, out_path):
     plt.close()
 
 
+def move_mod_v2():
+    """This function moves all files from dataMod and the modV2 conti-
+    nuous CMIM arrays to the same folders used by the regular data,
+    while adding a _mod_v2 suffix to the files. This allows these files
+    to be used with the same functions as the regular data.
+
+    Used only once.
+    """
+    from shutil import move
+    mod_folders = (Path('dataMod'), Path('cmimArraysModV2Cont'),
+                   Path('cmimArraysStdModV2Cont'))
+    out_folders = (Path('data'), Path('cmimArraysCont'),
+                   Path('cmimArraysStdCont'))
+    suf = '_mod_v2.mat'
+    # Move data and CMIM files
+    for cur_folder, cur_out in zip(mod_folders, out_folders):
+        for file in cur_folder.glob('*.mat'):
+            out_name = file.stem + suf
+            move(file, cur_out / out_name)
+        cur_folder.unlink()
+
+
 # def plot_mask_distribution
