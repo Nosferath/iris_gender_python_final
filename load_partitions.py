@@ -246,21 +246,6 @@ def load_partitions_cmim_mod(dataset_name: str, partition: int,
     return train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l
 
 
-def load_partitions_cmim_mod_v2(dataset_name: str, partition: int,
-                                mask_value: float, scale_dataset: bool,
-                                pair_method: str, n_cmim: int):
-    """Loads the partition, but using the v2 modification of datasets,
-    which has noisy black circles for males and noisy white circles for
-    females.
-    """
-    train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l = \
-        load_partitions_cmim(dataset_name, partition, mask_value,
-                             scale_dataset, pair_method, n_cmim,
-                             root_folder='dataMod')
-
-    return train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l
-
-
 def load_partitions_pairs_excl(dataset_name: str, partition: int,
                                mask_value: float, scale_dataset: bool,
                                pair_method: str, exclude: int, use_max: bool,

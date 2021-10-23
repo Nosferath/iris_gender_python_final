@@ -115,7 +115,6 @@ def main_std_mod(find_params=True, n_jobs=-1):
 
 
 def main_mod_v2(find_params=True, n_jobs=-1):
-    from load_partitions import load_partitions_cmim_mod_v2
     main_base(find_params=find_params,
               out_params_name=MODEL_PARAMS_FOLDER + '/bag_params_mod_v2',
               find_params_fn=find_best_bag_params,
@@ -124,11 +123,10 @@ def main_mod_v2(find_params=True, n_jobs=-1):
               use_std_masks=False,
               n_cmim=0,
               n_jobs=n_jobs,
-              dataset_loading_fn=load_partitions_cmim_mod_v2)
+              use_mod_v2=True)
 
 
 def main_std_mod_v2(find_params=True, n_jobs=-1):
-    from load_partitions import load_partitions_cmim_mod_v2
     main_base(find_params=find_params,
               out_params_name=MODEL_PARAMS_FOLDER + '/bag_params_std_mod_v2',
               find_params_fn=find_best_bag_params,
@@ -137,4 +135,30 @@ def main_std_mod_v2(find_params=True, n_jobs=-1):
               use_std_masks=True,
               n_cmim=0,
               n_jobs=n_jobs,
-              dataset_loading_fn=load_partitions_cmim_mod_v2)
+              use_mod_v2=True)
+
+
+def main_cmim_mod_v2(n_cmim: int, find_params=True, n_jobs=-1):
+    main_base(find_params=find_params,
+              out_params_name=MODEL_PARAMS_FOLDER +
+                              f'/bag_params_cmim_{n_cmim}_mod_v2',
+              find_params_fn=find_best_bag_params,
+              out_results_name=f'bag_results_cmim_{n_cmim}_mod_v2',
+              clasif_fn=BaggingClassifier,
+              use_std_masks=False,
+              n_cmim=n_cmim,
+              n_jobs=n_jobs,
+              use_mod_v2=True)
+
+
+def main_std_cmim_mod_v2(n_cmim: int, find_params=True, n_jobs=-1):
+    main_base(find_params=find_params,
+              out_params_name=MODEL_PARAMS_FOLDER +
+                              f'/bag_params_std_cmim_{n_cmim}_mod_v2',
+              find_params_fn=find_best_bag_params,
+              out_results_name=f'bag_results_std_cmim_{n_cmim}_mod_v2',
+              clasif_fn=BaggingClassifier,
+              use_std_masks=True,
+              n_cmim=n_cmim,
+              n_jobs=n_jobs,
+              use_mod_v2=True)

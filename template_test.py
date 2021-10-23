@@ -8,9 +8,9 @@ from sklearn.model_selection import GridSearchCV, PredefinedSplit
 from constants import datasets, MASK_VALUE, SCALE_DATASET, PAIR_METHOD, \
     N_PARTS, PARAMS_PARTITION
 from generate_subindexes import generate_subindexes
-from load_partitions import load_partitions_cmim, load_partitions_pairs
+from load_partitions import load_partitions_cmim
 from pairs import load_pairs_array
-from utils import Timer, plot_feature_importances
+from utils import Timer
 
 
 def get_param_grid(start_param_a, step_param_a, end_param_a,
@@ -146,7 +146,7 @@ def find_best_params(train_x: np.ndarray, train_y: np.ndarray,
 def main_base(find_params: bool, out_params_name: str, find_params_fn,
               out_results_name: str, clasif_fn, use_std_masks: bool,
               n_cmim: int, n_jobs: int,
-              dataset_loading_fn=load_partitions_cmim):
+              dataset_loading_fn=load_partitions_cmim, use_mod_v2=False):
     """Base function for running classifier tests.
 
     Parameters
@@ -181,12 +181,16 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
         Function for loading the dataset. Default: load_partitions_cmim.
         Must have the same signature as load_partitions_cmim, and return
         the same number and order of values.
+    use_mod_v2 : bool
+        Use modified versions of the dataset (mod v2). Default: False.
     """
     # Find best model params
     pair_method = PAIR_METHOD if use_std_masks else False
     params_list = []
     for data_idx in range(len(datasets)):
         dataset_name = datasets[data_idx]
+        if use_mod_v2:
+            dataset_name += '_mod_v2'
         if find_params:
             train_x, train_y, _, _, _, _, _, _, = dataset_loading_fn(
                 dataset_name, PARAMS_PARTITION, MASK_VALUE, SCALE_DATASET,
@@ -210,6 +214,8 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
     out_folder.mkdir(exist_ok=True, parents=True)
     for data_idx in range(len(datasets)):
         dataset_name = datasets[data_idx]
+        if use_mod_v2:
+            dataset_name += '_mod_v2'
         params: dict = params_list[data_idx]
         results = []
         for part in range(1, N_PARTS + 1):

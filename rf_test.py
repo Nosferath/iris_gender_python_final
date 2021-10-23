@@ -125,7 +125,6 @@ def main_std_mod(find_params=True, n_jobs=-1):
 
 
 def main_mod_v2(find_params=True, n_jobs=-1):
-    from load_partitions import load_partitions_cmim_mod_v2
     main_base(find_params=find_params,
               out_params_name=MODEL_PARAMS_FOLDER + '/rf_params_mod_v2',
               find_params_fn=find_best_rf_params,
@@ -134,11 +133,10 @@ def main_mod_v2(find_params=True, n_jobs=-1):
               use_std_masks=False,
               n_cmim=0,
               n_jobs=n_jobs,
-              dataset_loading_fn=load_partitions_cmim_mod_v2)
+              use_mod_v2=True)
 
 
 def main_std_mod_v2(find_params=True, n_jobs=-1):
-    from load_partitions import load_partitions_cmim_mod_v2
     main_base(find_params=find_params,
               out_params_name=MODEL_PARAMS_FOLDER + '/rf_params_std_mod_v2',
               find_params_fn=find_best_rf_params,
@@ -147,7 +145,43 @@ def main_std_mod_v2(find_params=True, n_jobs=-1):
               use_std_masks=True,
               n_cmim=0,
               n_jobs=n_jobs,
-              dataset_loading_fn=load_partitions_cmim_mod_v2)
+              use_mod_v2=True)
+
+
+def main_cmim_mod_v2(n_cmim: int, find_params=True, n_jobs=-1):
+    """About n_cmim: When using CMIM, one must set the number of fea-
+    tures to use. Currently, I am separating the features into 8 groups,
+    and testing with the first 2 or 4 groups, as these groups have less
+    masked features. That 2 or 4 would be the n_cmim parameter.
+    """
+    main_base(find_params=find_params,
+              out_params_name=MODEL_PARAMS_FOLDER +
+                              f'/rf_params_cmim_{n_cmim}_mod_v2',
+              find_params_fn=find_best_rf_params,
+              out_results_name=f'rf_results_cmim_{n_cmim}_mod_v2',
+              clasif_fn=RandomForestClassifier,
+              use_std_masks=False,
+              n_cmim=n_cmim,
+              n_jobs=n_jobs,
+              use_mod_v2=True)
+
+
+def main_std_cmim_mod_v2(n_cmim: int, find_params=True, n_jobs=-1):
+    """About n_cmim: When using CMIM, one must set the number of fea-
+    tures to use. Currently, I am separating the features into 8 groups,
+    and testing with the first 2 or 4 groups, as these groups have less
+    masked features. That 2 or 4 would be the n_cmim parameter.
+    """
+    main_base(find_params=find_params,
+              out_params_name=MODEL_PARAMS_FOLDER +
+                              f'/rf_params_std_cmim_{n_cmim}_mod_v2',
+              find_params_fn=find_best_rf_params,
+              out_results_name=f'rf_results_std_cmim_{n_cmim}_mod_v2',
+              clasif_fn=RandomForestClassifier,
+              use_std_masks=True,
+              n_cmim=n_cmim,
+              n_jobs=n_jobs,
+              use_mod_v2=True)
 
 
 if __name__ == '__main__':
