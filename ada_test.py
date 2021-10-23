@@ -143,31 +143,3 @@ def main_std_mod_v2(find_params=True, n_jobs=-1):
               n_cmim=0,
               n_jobs=n_jobs,
               dataset_loading_fn=load_partitions_cmim_mod_v2)
-
-
-def check_feature_importance(n_jobs):
-    main_base(find_params=False,
-              out_params_name=MODEL_PARAMS_FOLDER + '/ada_params',
-              find_params_fn=find_best_ada_params,
-              out_results_name='ada_importance_p',
-              clasif_fn=AdaBoostClassifier,
-              use_std_masks=False,
-              n_cmim=0,
-              n_jobs=n_jobs,
-              check_feat_rank=True,
-              do_double_feat_sort=True,
-              permut_import=True)
-
-
-def check_feature_importance_std(n_jobs):
-    main_base(find_params=False,
-              out_params_name=MODEL_PARAMS_FOLDER + '/ada_params_std',
-              find_params_fn=find_best_ada_params,
-              out_results_name='ada_importance_std_p',
-              clasif_fn=AdaBoostClassifier,
-              use_std_masks=True,
-              n_cmim=0,
-              n_jobs=n_jobs,
-              check_feat_rank=True,
-              do_double_feat_sort=True,
-              permut_import=True)

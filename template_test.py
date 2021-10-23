@@ -145,8 +145,7 @@ def find_best_params(train_x: np.ndarray, train_y: np.ndarray,
 
 def main_base(find_params: bool, out_params_name: str, find_params_fn,
               out_results_name: str, clasif_fn, use_std_masks: bool,
-              n_cmim: int, n_jobs: int, check_feat_rank: bool = False,
-              do_double_feat_sort: bool = False, permut_import: bool = False,
+              n_cmim: int, n_jobs: int,
               dataset_loading_fn=load_partitions_cmim):
     """Base function for running classifier tests.
 
@@ -178,34 +177,17 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
         all workers available. Recommended to set as max - 1 so the
         computer does not get stuck it is going to be used while it
         iterates.
-    check_feat_rank : bool
-        Indicates whether a feature importance check is to be performed.
-        If so, params are not calculated, regardless of find_params.
-    do_double_feat_sort : bool
-        If True, features are sorted by mask prevalence before being
-        re-sorted by importance. Has no effect if check_feat_rank is
-        False. Also known as "ada mode".
-    permut_import : bool
-        If check_feat_rank is also True, premutation importances will be
-        used. Ignored otherwise.
     dataset_loading_fn : function
         Function for loading the dataset. Default: load_partitions_cmim.
         Must have the same signature as load_partitions_cmim, and return
         the same number and order of values.
     """
-    if check_feat_rank and not hasattr(clasif_fn, 'feature_importances_'):
-        print('[ERROR] This classifier does not have feature importances.')
-        return
-    if check_feat_rank:
-        from results_processing import plot_mask_prevalence
-        if permut_import:
-            from sklearn.inspection import permutation_importance
     # Find best model params
     pair_method = PAIR_METHOD if use_std_masks else False
     params_list = []
     for data_idx in range(len(datasets)):
         dataset_name = datasets[data_idx]
-        if find_params and not check_feat_rank:
+        if find_params:
             train_x, train_y, _, _, _, _, _, _, = dataset_loading_fn(
                 dataset_name, PARAMS_PARTITION, MASK_VALUE, SCALE_DATASET,
                 pair_method, n_cmim
@@ -240,60 +222,12 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
                 model = clasif_fn(**params, n_jobs=n_jobs, random_state=42)
             except TypeError:
                 model = clasif_fn(**params, random_state=42)
-            # Do not train if in check_feat_rank mode and the results
-            # already exist
-            results_file = out_folder / f'{dataset_name}.pickle'
-            if check_feat_rank and results_file.exists() and not permut_import:
-                with open(results_file, 'rb') as f:
-                    results = pickle.load(f)
-                break
+            # Train model
             model.fit(train_x, train_y)
-            # Normal classifier mode
-            if not check_feat_rank:
-                predicted = model.predict(test_x)
-                cur_results = classification_report(test_y, predicted,
-                                                    output_dict=True)
-                results.append(cur_results)
-                with open(out_folder / (dataset_name + '.pickle'), 'wb') as f:
-                    pickle.dump(results, f)
-            # Check feature importance mode
-            else:
-                if permut_import:
-                    results.append(
-                        permutation_importance(model, test_x, test_y,
-                                               n_repeats=10, n_jobs=n_jobs,
-                                               random_state=42)
-                    )
-                else:
-                    results.append(model.feature_importances_)
-                if part == 1:
-                    out_name = dataset_name + '_model.pickle'
-                    with open(out_folder / out_name, 'wb') as f:
-                        pickle.dump(model, f)
-        if check_feat_rank:
-            results_file = out_folder / f'{dataset_name}.pickle'
-            if not results_file.exists():
-                with open(results_file, 'wb') as f:
-                    pickle.dump(results, f)
-            out_file = out_folder / f'{dataset_name}.png'
-            importances = np.array(results).mean(axis=0)
-            plot_feature_importances(importances, out_file)
-            # Check mask prevalence
-            ranks = np.argsort(importances)[::-1]
-            partition = 1
-            avg_width = 40
-            n_parts_total = 8
-            out_name = f'masks_{dataset_name}'
-            title = f'Mask prevalence per feature, dataset={dataset_name}'
-            _, _, train_m, _, _, _, _, _ = dataset_loading_fn(
-                dataset_name, partition, MASK_VALUE, SCALE_DATASET,
-                pair_method, n_cmim=0
-            )
-            if do_double_feat_sort:
-                plot_mask_prevalence(ranks, train_m, avg_width, n_parts_total,
-                                     out_name, out_folder, title,
-                                     importances)
-            else:
-                plot_mask_prevalence(ranks, train_m, avg_width, n_parts_total,
-                                     out_name, out_folder, title,
-                                     None)
+            # Test model
+            predicted = model.predict(test_x)
+            cur_results = classification_report(test_y, predicted,
+                                                output_dict=True)
+            results.append(cur_results)
+            with open(out_folder / (dataset_name + '.pickle'), 'wb') as f:
+                pickle.dump(results, f)
