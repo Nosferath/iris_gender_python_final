@@ -126,7 +126,10 @@ def review_all_cmim(cmim_folder: str, pairs: str, n_parts_total: int,
     for file in cmim_files:
         dataset_name = file.stem
         cmim_array = load_cmim_array_from_path(file)
-        base_image = generate_mask_visualization(dataset_name, pairs)
+        if dataset_name.endswith('_mod_v2'):
+            base_image = generate_mask_visualization(dataset_name[:-7], pairs)
+        else:
+            base_image = generate_mask_visualization(dataset_name, pairs)
         visualization = generate_cmim_visualization(cmim_array,
                                                     base_image,
                                                     n_parts_total,
