@@ -326,14 +326,14 @@ def generate_color_bg(dataset_name: str, color='black'):
     dataset_name : str
         Name of the dataset. Used for determining size.
     color : str
-        Color to use. Default is 'magenta'. Only magenta implemented.
+        Color to use. Default is 'black'. Only black implemented.
     """
     colors = ['black']
     if color not in colors:
         raise NotImplemented(f'Color {color} not implemented')
     shape = find_dataset_shape(dataset_name)
-    if color == colors[0]:  # magenta
-        ones = np.ones(shape, dtype='uint8')
+    if color == colors[0]:  # black
+        # ones = np.ones(shape, dtype='uint8')
         zeros = np.zeros(shape, dtype='uint8')
         output = np.concatenate([zeros[..., np.newaxis],
                                  zeros[..., np.newaxis],
