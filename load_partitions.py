@@ -315,3 +315,27 @@ def generate_mask_visualization(dataset_name: str, pairs: str, partition=1):
     shape = find_dataset_shape(dataset_name)
     masks = masks.reshape(shape)
     return masks.astype('uint8')
+
+
+def generate_color_bg(dataset_name: str, color='black'):
+    """Generates a visualization of a specific color in the shape of the
+    dataset.
+
+    Parameters
+    ----------
+    dataset_name : str
+        Name of the dataset. Used for determining size.
+    color : str
+        Color to use. Default is 'magenta'. Only magenta implemented.
+    """
+    colors = ['black']
+    if color not in colors:
+        raise NotImplemented(f'Color {color} not implemented')
+    shape = find_dataset_shape(dataset_name)
+    if color == colors[0]:  # magenta
+        ones = np.ones(shape, dtype='uint8')
+        zeros = np.zeros(shape, dtype='uint8')
+        output = np.concatenate([zeros[..., np.newaxis],
+                                 zeros[..., np.newaxis],
+                                 zeros[..., np.newaxis]], axis=2)
+        return (255 * output).astype('uint8')

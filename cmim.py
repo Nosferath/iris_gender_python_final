@@ -58,7 +58,8 @@ def generate_cmim_visualization(cmim_array: np.ndarray,
         return np.unravel_index(idx, (h, w))
 
     # Define conversion from feature importance to color
-    n_color = int(base_image.size / n_parts_total)  # Features per color
+    # Features per color
+    n_color = int(np.product(base_image.shape[:2]) / n_parts_total)
 
     def index_to_color(imp):
         return colors[imp // n_color]
@@ -100,7 +101,8 @@ def review_all_masks(pairs: str, out_folder: str):
 
 
 def review_all_cmim(cmim_folder: str, pairs: str, n_parts_total: int,
-                    n_parts_displ: int, out_folder: str):
+                    n_parts_displ: int, out_folder: str,
+                    background='masks'):
     """Generates visualizations for all CMIM arrays in the folder.
 
     Parameters
@@ -117,8 +119,14 @@ def review_all_cmim(cmim_folder: str, pairs: str, n_parts_total: int,
         displayed.
     out_folder : str
         Path to where the visualizations will be saved.
+    background : str
+        Indicates the background to use. 'masks' is for using a mask vi-
+        sualization. 'black' is for using magenta.
     """
-    from load_partitions import generate_mask_visualization
+    from load_partitions import generate_mask_visualization, generate_color_bg
+    bg_opts = {'masks': generate_mask_visualization,
+               'black': lambda x, _: generate_color_bg(x, 'black')}
+    bg_fn = bg_opts[background]
     cmim_folder = Path(cmim_folder)
     cmim_files = cmim_folder.glob('*.mat')
     out_folder = Path(out_folder)
@@ -127,9 +135,9 @@ def review_all_cmim(cmim_folder: str, pairs: str, n_parts_total: int,
         dataset_name = file.stem
         cmim_array = load_cmim_array_from_path(file)
         if dataset_name.endswith('_mod_v2'):
-            base_image = generate_mask_visualization(dataset_name[:-7], pairs)
+            base_image = bg_fn(dataset_name[:-7], pairs)
         else:
-            base_image = generate_mask_visualization(dataset_name, pairs)
+            base_image = bg_fn(dataset_name, pairs)
         visualization = generate_cmim_visualization(cmim_array,
                                                     base_image,
                                                     n_parts_total,
