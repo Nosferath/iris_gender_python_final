@@ -147,3 +147,56 @@ def generate_mask_hists_by_gender2(
     plt.savefig(out_folder / out_name, bbox_inches='tight')
     plt.close()
     plt.clf()
+
+
+def generate_masked_iris_image(x_arr: np.ndarray, m_arr: np.ndarray):
+    """Reshapes the x_arr to its final shape, and applies the mask in
+    green for visualization."""
+    shapes = {4800: (20, 240), 9600: (40, 240), 38400: (80, 480)}
+    shape = shapes[x_arr.size]
+    if x_arr.max() <= 1:
+        x_arr = x_arr * 255
+    x_arr = x_arr.reshape(shape).astype('uint8')
+    m_arr = m_arr.reshape(shape)
+    # Extend x to 3-D
+    x_arr = np.tile(x_arr[..., np.newaxis], (1, 1, 3))
+    x_arr[m_arr == 1] = np.array((0, 255, 0), dtype='uint8')
+    return x_arr
+
+
+def visualize_pairs(dataset_name: str, pair_idx: int = 0,
+                    out_folder: str = r'S:\Tesis\Figuras\Pares'):
+    """Visualizes iris before and after pairing."""
+    from PIL import Image
+    from pairs import load_pairs_array
+    # Load dataset and pairs
+    train_x, _, train_m, _, _, _, _, _ = load_partitions_cmim(
+        dataset_name=dataset_name,
+        partition=1,  # Not relevant
+        mask_value=0,  # Not relevant
+        scale_dataset=True,  # Not relevant
+        pair_method=False,
+        n_cmim=0
+    )
+    pairs = load_pairs_array(dataset_name, PAIR_METHOD, partition=1)
+    # Select pair and extract
+    cur_pair = pairs[pair_idx, :]
+    x_a = train_x[int(cur_pair[0]), :]
+    m_a = train_m[int(cur_pair[0]), :]
+    x_b = train_x[int(cur_pair[1]), :]
+    m_b = train_m[int(cur_pair[1]), :]
+    # Generate visualizations
+    x_a_unpaired = generate_masked_iris_image(x_a, m_a)
+    x_b_unpaired = generate_masked_iris_image(x_b, m_b)
+    m_pair = np.any(np.vstack([m_a, m_b]), axis=0)
+    x_a_paired = generate_masked_iris_image(x_a, m_pair)
+    x_b_paired = generate_masked_iris_image(x_b, m_pair)
+    # Save visualizations
+    out_folder = Path(out_folder)
+    out_folder.mkdir(exist_ok=True, parents=True)
+    out_names = ['a_unpaired.png', 'b_unpaired.png',
+                 'a_paired.png', 'b_paired.png']
+    out_arrs = [x_a_unpaired, x_b_unpaired, x_a_paired, x_b_paired]
+    for out_name, out_arr in zip(out_names, out_arrs):
+        img = Image.fromarray(out_arr)
+        img.save(out_folder / out_name)
