@@ -19,3 +19,5 @@ _old_tests/
 _old_params/
 _old_results/
 cmim_mod*_checks*/
+cmimArraysModV2Cont/
+cmimArraysStdModV2Cont/
