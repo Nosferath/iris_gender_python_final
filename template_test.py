@@ -2,7 +2,7 @@ import pickle
 from pathlib import Path
 
 import numpy as np
-from sklearn.metrics import classification_report
+from sklearn.metrics import accuracy_score, classification_report
 from sklearn.model_selection import GridSearchCV, PredefinedSplit
 
 from constants import datasets, MASK_VALUE, SCALE_DATASET, PAIR_METHOD, \
@@ -234,6 +234,9 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
             predicted = model.predict(test_x)
             cur_results = classification_report(test_y, predicted,
                                                 output_dict=True)
+            # Add train accuracy score for overfitting detection
+            acc_train = accuracy_score(train_y, model.predict(train_x))
+            cur_results['acc_train'] = acc_train
             results.append(cur_results)
             with open(out_folder / (dataset_name + '.pickle'), 'wb') as f:
                 pickle.dump(results, f)

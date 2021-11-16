@@ -70,11 +70,16 @@ def review_cv_results(params_folder: str, out_folder: str):
             plt.close('all')
 
 
-def review_results(results_folder: str):
+def review_results(results_folder: str, print_train=False):
     results_folder = Path(results_folder)
     for file in results_folder.glob('*.pickle'):
         with open(file, 'rb') as f:
             cur_results = pickle.load(f)
+        if 'acc_train' in cur_results[0] and print_train:
+            train_results = np.array([d['acc_train'] for d in cur_results])
+            mean = train_results.mean() * 100
+            std = train_results.std() * 100
+            print(f'Train {file.stem}:\t{mean:.2f} ± {std:.2f}')
         cur_results = np.array([d['accuracy'] for d in cur_results])
         mean = cur_results.mean() * 100
         std = cur_results.std() * 100
