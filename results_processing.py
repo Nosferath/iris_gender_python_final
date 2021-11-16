@@ -3,7 +3,7 @@ import pickle
 
 import numpy as np
 
-from constants import datasets
+from constants import datasets, MODEL_PARAMS_FOLDER
 from utils import grid_plot
 
 
@@ -84,6 +84,16 @@ def review_results(results_folder: str, print_train=False):
         mean = cur_results.mean() * 100
         std = cur_results.std() * 100
         print(f'{file.stem}:\t{mean:.2f} ± {std:.2f}')
+
+
+def review_params(params_folder: str, print_full: bool):
+    params_folder = Path(MODEL_PARAMS_FOLDER) / params_folder
+    for file in params_folder.glob('*.pickle'):
+        if file.name.startswith('cv') and not print_full:
+            continue
+        with open(file, 'rb') as f:
+            cur_params = pickle.load(f)
+        print(f'{file.stem}:\t{cur_params}')
 
 
 def visualize_all_masks(out_folder: str, use_pairs: bool):
