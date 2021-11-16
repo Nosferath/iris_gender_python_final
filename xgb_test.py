@@ -110,6 +110,19 @@ def main(find_params=True, n_jobs=-1):
               init_params=XGB_INIT_PARAMS)
 
 
+def main_cmim(n_cmim: int, find_params=True, n_jobs=-1):
+    main_base(find_params=find_params,
+              out_params_name=MODEL_PARAMS_FOLDER +
+                              f'/xgb_params_cmim_{n_cmim}',
+              find_params_fn=find_best_xgb_params,
+              out_results_name=f'xgb_results_cmim_{n_cmim}',
+              clasif_fn=xgb.XGBClassifier,
+              use_std_masks=False,
+              n_cmim=n_cmim,
+              n_jobs=n_jobs,
+              init_params=XGB_INIT_PARAMS)
+
+
 def main_cancer(find_params=True, n_jobs=-1):
     """This version uses the cancer dataset for testing performance."""
     main_base(find_params=find_params,

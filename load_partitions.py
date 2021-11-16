@@ -194,7 +194,7 @@ def apply_cmim_to_partition(train_x: np.ndarray, test_x: np.ndarray,
     """Applies feature selection to the x arrays of the partition."""
     from cmim import load_cmim_array
     if n_cmim < 0:
-        raise ValueError('n_cmim must be greater than 0')
+        raise ValueError('n_cmim must be equal or greater than 0')
     if n_cmim:
         cmim_array = load_cmim_array(dataset_name, pair_method)
         feats_per_group = int(train_x.shape[1] / CMIM_GROUPS)
