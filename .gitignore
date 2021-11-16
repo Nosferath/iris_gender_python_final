@@ -10,7 +10,6 @@ cmimArray*Visualizations*/
 cmimMaskPrevalence/
 cmimStdMaskPrevalence/
 .ipynb_checkpoints
-*.ipynb
 *_anova/
 *_importance*/
 test.png
