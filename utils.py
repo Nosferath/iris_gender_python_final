@@ -1,6 +1,6 @@
 from datetime import timedelta
 from itertools import product
-from time import time
+from time import perf_counter
 from pathlib import Path
 from shutil import move
 
@@ -13,12 +13,12 @@ class Timer:
         self.start_time = None
 
     def start(self):
-        self.start_time = time()
+        self.start_time = perf_counter()
 
     def stop(self):
         if self.start_time is None:
             raise Exception('Must set start time.')
-        end = time()
+        end = perf_counter()
         delta = timedelta(seconds=end - self.start_time)
         print(self.msg, str(delta))
 
