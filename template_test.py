@@ -53,7 +53,7 @@ def find_best_params(train_x: np.ndarray, train_y: np.ndarray,
                      param_a_islog2: bool, param_b_islog2: bool,
                      param_a_min1: bool, param_b_min1: bool,
                      param_grid_fn, clasif_name: str, clasif_fn,
-                     n_jobs: int):
+                     n_jobs: int, init_params: dict = None):
     """Base function for finding classifier params.
 
     Parameters
@@ -81,6 +81,8 @@ def find_best_params(train_x: np.ndarray, train_y: np.ndarray,
     clasif_fn : sklearn classifier class function
     n_jobs : int
         Number of parallel workers to use. -1 uses all available.
+    init_params : dict, optional
+        Parameters that need to be set for the classifier before CV.
     """
     # Create out folder
     out_folder = Path(folder_name)
@@ -94,8 +96,10 @@ def find_best_params(train_x: np.ndarray, train_y: np.ndarray,
                              partition=partition)
     subindexes = generate_subindexes(pairs)
     # First CV
+    if init_params is None:
+        init_params = {}
     t = Timer(f'{clasif_name} CV1 {dataset_name} execution time:')
-    model = GridSearchCV(clasif_fn(), param_grid, n_jobs=n_jobs,
+    model = GridSearchCV(clasif_fn(**init_params), param_grid, n_jobs=n_jobs,
                          cv=PredefinedSplit(subindexes), verbose=1)
     t.start()
     model.fit(train_x, train_y)
@@ -127,7 +131,7 @@ def find_best_params(train_x: np.ndarray, train_y: np.ndarray,
                                start_param_b, step_param_b, end_param_b)
     # Second CV
     t = Timer(f'{clasif_name} CV2 {dataset_name} execution time:')
-    model = GridSearchCV(clasif_fn(), param_grid, n_jobs=n_jobs,
+    model = GridSearchCV(clasif_fn(**init_params), param_grid, n_jobs=n_jobs,
                          cv=PredefinedSplit(subindexes), verbose=1)
     t.start()
     model.fit(train_x, train_y)
