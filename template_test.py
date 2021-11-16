@@ -150,7 +150,8 @@ def find_best_params(train_x: np.ndarray, train_y: np.ndarray,
 def main_base(find_params: bool, out_params_name: str, find_params_fn,
               out_results_name: str, clasif_fn, use_std_masks: bool,
               n_cmim: int, n_jobs: int,
-              dataset_loading_fn=load_partitions_cmim, use_mod_v2=False):
+              dataset_loading_fn=load_partitions_cmim, use_mod_v2=False,
+              init_params: dict = None):
     """Base function for running classifier tests.
 
     Parameters
@@ -187,6 +188,9 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
         the same number and order of values.
     use_mod_v2 : bool
         Use modified versions of the dataset (mod v2). Default: False.
+    init_params : dict, optional
+        These are parameters that must be added to the classifier before
+        use, and that are not stored with the calibrated parameters.
     """
     # Find best model params
     pair_method = PAIR_METHOD if use_std_masks else False
@@ -216,11 +220,15 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
     # Perform model test
     out_folder = Path(out_results_name)
     out_folder.mkdir(exist_ok=True, parents=True)
+    if init_params is None:
+        init_params = {}
+
     for data_idx in range(len(datasets)):
         dataset_name = datasets[data_idx]
         if use_mod_v2:
             dataset_name += '_mod_v2'
         params: dict = params_list[data_idx]
+        params = {**params, **init_params}
         results = []
         for part in range(1, N_PARTS + 1):
             train_x, train_y, _, _, test_x, test_y, _, _ = \

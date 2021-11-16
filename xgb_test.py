@@ -5,6 +5,11 @@ from constants import MODEL_PARAMS_FOLDER
 from template_test import get_param_grid, find_best_params, main_base
 
 
+XGB_INIT_PARAMS = {'objective': 'binary:logistic',
+                   'use_label_encoder': False,
+                   'eval_metric': 'logloss'}
+
+
 def xgb_demo():
     from sklearn.datasets import load_breast_cancer
     from sklearn.metrics import confusion_matrix
@@ -42,9 +47,6 @@ def get_xgb_param_grid(start_nestimators, step_nestimators, end_nestimators,
 def find_best_xgb_params(train_x: np.ndarray, train_y: np.ndarray,
                          dataset_name: str, partition: int, folder_name: str,
                          pair_method: str, n_jobs: int):
-    init_params = {'objective': 'binary:logistic',
-                   'use_label_encoder': False,
-                   'eval_metric': 'logloss'}
     params = find_best_params(train_x, train_y, dataset_name, partition,
                               folder_name, pair_method,
                               start_param_a=40, step_param_a=20,
@@ -55,8 +57,8 @@ def find_best_xgb_params(train_x: np.ndarray, train_y: np.ndarray,
                               param_a_min1=True, param_b_min1=False,
                               param_grid_fn=get_xgb_param_grid,
                               clasif_name='XGB', clasif_fn=xgb.XGBClassifier,
-                              n_jobs=n_jobs, init_params=init_params)
-    return {**params, **init_params}
+                              n_jobs=n_jobs, init_params=XGB_INIT_PARAMS)
+    return params
 
 
 def main(find_params=True, n_jobs=-1):
@@ -67,4 +69,5 @@ def main(find_params=True, n_jobs=-1):
               clasif_fn=xgb.XGBClassifier,
               use_std_masks=False,
               n_cmim=0,
-              n_jobs=n_jobs)
+              n_jobs=n_jobs,
+              init_params=XGB_INIT_PARAMS)
