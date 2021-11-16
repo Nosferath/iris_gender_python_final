@@ -22,14 +22,37 @@ def xgb_demo():
     return model
 
 
-def get_xgb_param_grid():
-    return {}
+def get_xgb_param_grid(start_nestimators, step_nestimators, end_nestimators,
+                       start_maxdepth, step_maxdepth, end_maxdepth):
+    param_grid = get_param_grid(start_param_a=start_nestimators,
+                                step_param_a=step_nestimators,
+                                end_param_a=end_nestimators,
+                                start_param_b=start_maxdepth,
+                                step_param_b=step_maxdepth,
+                                end_param_b=end_maxdepth,
+                                param_a_name='n_estimators',
+                                param_b_name='max_depth',
+                                param_a_func='linspace',
+                                param_b_func='linspace',
+                                type_a=int,
+                                type_b=int)
+    return param_grid
 
 
 def find_best_xgb_params(train_x: np.ndarray, train_y: np.ndarray,
                          dataset_name: str, partition: int, folder_name: str,
                          pair_method: str, n_jobs: int):
-    return {}
+    return find_best_params(train_x, train_y, dataset_name, partition,
+                            folder_name, pair_method,
+                            start_param_a=40, step_param_a=20,
+                            end_param_a=100, start_param_b=2,
+                            step_param_b=2,
+                            end_param_b=6,
+                            param_a_islog2=False, param_b_islog2=False,
+                            param_a_min1=True, param_b_min1=False,
+                            param_grid_fn=get_xgb_param_grid,
+                            clasif_name='XGB', clasif_fn=xgb.XGBClassifier,
+                            n_jobs=n_jobs)
 
 
 def main(find_params=True, n_jobs=-1):
