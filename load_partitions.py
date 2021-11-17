@@ -12,7 +12,7 @@ from utils import find_dataset_shape
 
 def scale_x_arr(x_arr: np.ndarray, mask_array: np.ndarray,
                 mask_value: float = 0):
-    """Scales each individual sample of the x_arr, such that all non-
+    """Scales each individual sample of the x_row, such that all non-
     masked values are between 1/255 and 1.0, leaving the value 0 for
     masks.
     """
@@ -265,6 +265,30 @@ def load_partitions_pairs_excl(dataset_name: str, partition: int,
         load_partitions_pairs_base(dataset_name, partition, mask_value,
                                    scale_dataset, pair_method, exclude,
                                    use_max, root_folder)
+    return train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l
+
+
+def load_partitions_lbps(dataset_name: str, partition: int, mask_value: float,
+                         scale_dataset: bool, pair_method: str, n_cmim: int,
+                         root_folder=ROOT_DATA_FOLDER):
+    """Loads the partition, and calculates LBPs on it. Implements the
+    same interface as load_partitions_cmim for compatibility. n_cmim is
+    ignored.
+    """
+    from constants import LBP_METHOD, LBP_RADIUS, LBP_NPOINTS
+    from lbps import calculate_dataset_lbp, convert_dataset_lbp_to_hist
+    exclude_masks = True
+
+    train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l = \
+        load_partitions_pairs(dataset_name, partition, mask_value,
+                              scale_dataset, pair_method, root_folder)
+    train_x = calculate_dataset_lbp(train_x, LBP_NPOINTS, LBP_RADIUS,
+                                    LBP_METHOD)
+    train_x = convert_dataset_lbp_to_hist(train_x, train_m, exclude_masks)
+    test_x = calculate_dataset_lbp(test_x, LBP_NPOINTS, LBP_RADIUS,
+                                   LBP_METHOD)
+    test_x = convert_dataset_lbp_to_hist(test_x, test_m, exclude_masks)
+
     return train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l
 
 

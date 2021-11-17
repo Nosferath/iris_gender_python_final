@@ -18,3 +18,7 @@ CMIM_FOLDER = 'cmimArraysCont'
 CMIM_STD_FOLDER = 'cmimArraysStdCont'
 MODEL_PARAMS_FOLDER = 'model_params'
 ROOT_DATA_FOLDER = 'data'
+
+LBP_METHOD = 'uniform'
+LBP_RADIUS = 3
+LBP_NPOINTS = 8 * LBP_RADIUS

@@ -131,7 +131,7 @@ def generate_mask_hists_by_gender(
 
 def generate_masked_iris_image(x_arr: np.ndarray, m_arr: np.ndarray,
                                color: str = 'G', invert: bool = False):
-    """Reshapes the x_arr to its final shape, and applies the mask in
+    """Reshapes the x_row to its final shape, and applies the mask in
     green for visualization."""
     shapes = {4800: (20, 240), 9600: (40, 240), 38400: (80, 480)}
     shape = shapes[x_arr.size]
