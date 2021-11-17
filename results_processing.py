@@ -88,11 +88,15 @@ def review_results(results_folder: str, print_train=False):
 
 def review_params(params_folder: str, print_full: bool):
     params_folder = Path(MODEL_PARAMS_FOLDER) / params_folder
+    keys = [f'split{i}_test_score' for i in range(5)]
+    keys.extend(['mean_test_score', 'std_test_score', 'rank_test_score'])
     for file in params_folder.glob('*.pickle'):
         if file.name.startswith('cv') and not print_full:
             continue
         with open(file, 'rb') as f:
             cur_params = pickle.load(f)
+        if file.name.startswith('cv'):
+            cur_params = {k: cur_params[k] for k in keys}
         print(f'{file.stem}:\t{cur_params}')
 
 

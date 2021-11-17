@@ -1,3 +1,4 @@
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
@@ -36,6 +37,7 @@ def scale_x_arr(x_arr: np.ndarray, mask_array: np.ndarray,
     return x_arr
 
 
+@lru_cache(maxsize=None)
 def load_raw_dataset(dataset_name: str, root_folder=ROOT_DATA_FOLDER):
     """Loads a full (non-partitioned) dataset from a .mat file."""
     root_folder = Path.cwd() / root_folder
@@ -268,6 +270,7 @@ def load_partitions_pairs_excl(dataset_name: str, partition: int,
     return train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l
 
 
+@lru_cache(maxsize=None)
 def load_partitions_lbps(dataset_name: str, partition: int, mask_value: float,
                          scale_dataset: bool, pair_method: str, n_cmim: int,
                          root_folder=ROOT_DATA_FOLDER):
