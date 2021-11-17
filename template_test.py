@@ -164,6 +164,128 @@ def find_best_params(train_x: np.ndarray, train_y: np.ndarray,
     return cv2_params
 
 
+def find_best_params_xgb(train_x: np.ndarray, train_y: np.ndarray,
+                         val_x: np.ndarray, val_y: np.ndarray,
+                         dataset_name: str, partition: int, folder_name: str,
+                         pair_method: str,
+                         start_param_a, step_param_a, end_param_a,
+                         start_param_b, step_param_b, end_param_b,
+                         param_a_islog2: bool, param_b_islog2: bool,
+                         param_a_min1: bool, param_b_min1: bool,
+                         param_grid_fn, clasif_name: str, clasif_fn,
+                         n_jobs: int, init_params: dict = None,
+                         no_pairs: bool = False):
+    """Base function for finding classifier params.
+
+    Parameters
+    ----------
+    train_x
+    train_y
+    dataset_name
+    partition
+    folder_name
+    pair_method
+    start_param_a
+    step_param_a
+    end_param_a
+    start_param_b
+    step_param_b
+    end_param_b
+    param_a_islog2, param_b_islog2 : bool
+        Indicate whether the param. is indicated as a log. of 2
+    param_a_min1, param_b_min1 : bool
+        Indicate whether the param. has to be at least 1.
+    param_grid_fn
+        Parameter grid function for the classifier
+    clasif_name : str
+        Name of the classifier. Used for printing elapsed time.
+    clasif_fn : sklearn classifier class function
+    n_jobs : int
+        Number of parallel workers to use. -1 uses all available.
+    init_params : dict, optional
+        Parameters that need to be set for the classifier before CV.
+    no_pairs : bool, optional
+        If True, pairs won't be used for CV, only default partitions.
+        Used for testing with non-iris datasets. Default: False.
+    """
+    # Create out folder
+    out_folder = Path(folder_name)
+    out_folder.mkdir(exist_ok=True, parents=True)
+    # Generate CV1 param. grid
+    param_grid = param_grid_fn(start_param_a, step_param_a, end_param_a,
+                               start_param_b, step_param_b, end_param_b)
+    # Get subindexes
+    if no_pairs:
+        subindexes = None
+    else:
+        pairs = load_pairs_array(dataset_name=dataset_name,
+                                 pair_method=pair_method,
+                                 partition=partition)
+        subindexes = generate_subindexes(pairs)
+    # First CV
+    if init_params is None:
+        init_params = {}
+    t = Timer(f'{clasif_name} CV1 {dataset_name} execution time:')
+    if no_pairs:
+        model = GridSearchCV(clasif_fn(**init_params), param_grid,
+                             n_jobs=n_jobs, verbose=1)
+    else:
+        model = GridSearchCV(clasif_fn(**init_params), param_grid,
+                             n_jobs=n_jobs, cv=PredefinedSplit(subindexes),
+                             verbose=1)
+    t.start()
+    model.fit(train_x, train_y, early_stopping_rounds=5,
+              eval_set=[(val_x, val_y)], verbose=0)
+    t.stop()
+    # Store CV1 results
+    cv1_results = model.cv_results_
+    with open(out_folder / ('cv1_' + dataset_name + '.pickle'), 'wb') as f:
+        pickle.dump(cv1_results, f)
+
+    # Generate CV2 param. grid
+    params = list(param_grid.keys())
+    best_a = model.best_params_[params[0]]
+    if param_a_islog2:
+        best_a = np.log2(best_a)
+    best_b = model.best_params_[params[1]]
+    if param_b_islog2:
+        best_b = np.log2(best_b)
+    start_param_a = best_a - step_param_a
+    if param_a_min1:
+        start_param_a = max(start_param_a, 1)
+    end_param_a = best_a + step_param_a
+    step_param_a /= 2
+    start_param_b = best_b - step_param_b
+    if param_b_min1:
+        start_param_b = max(start_param_b, 1)
+    end_param_b = best_b + step_param_b
+    step_param_b /= 2
+    param_grid = param_grid_fn(start_param_a, step_param_a, end_param_a,
+                               start_param_b, step_param_b, end_param_b)
+    # Second CV
+    t = Timer(f'{clasif_name} CV2 {dataset_name} execution time:')
+    if no_pairs:
+        model = GridSearchCV(clasif_fn(**init_params), param_grid,
+                             n_jobs=n_jobs, verbose=1)
+    else:
+        model = GridSearchCV(clasif_fn(**init_params), param_grid,
+                             n_jobs=n_jobs, cv=PredefinedSplit(subindexes),
+                             verbose=1)
+    t.start()
+    model.fit(train_x, train_y, early_stopping_rounds=5,
+              eval_set=[(val_x, val_y)], verbose=0)
+    t.stop()
+    # Store CV2 results
+    cv2_results = model.cv_results_
+    with open(out_folder / ('cv2_' + dataset_name + '.pickle'), 'wb') as f:
+        pickle.dump(cv2_results, f)
+    cv2_params = model.best_params_
+    with open(out_folder / (dataset_name + '.pickle'), 'wb') as f:
+        pickle.dump(cv2_params, f)
+
+    return cv2_params
+
+
 def main_base(find_params: bool, out_params_name: str, find_params_fn,
               out_results_name: str, clasif_fn, use_std_masks: bool,
               n_cmim: int, n_jobs: int,
@@ -259,6 +381,125 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
                 model = clasif_fn(**params, random_state=42)
             # Train model
             model.fit(train_x, train_y)
+            # Test model
+            predicted = model.predict(test_x)
+            cur_results = classification_report(test_y, predicted,
+                                                output_dict=True)
+            # Add train accuracy score for overfitting detection
+            acc_train = accuracy_score(train_y, model.predict(train_x))
+            cur_results['acc_train'] = acc_train
+            results.append(cur_results)
+            with open(out_folder / (dataset_name + '.pickle'), 'wb') as f:
+                pickle.dump(results, f)
+
+
+def main_base_xgb(find_params: bool, out_params_name: str, find_params_fn,
+                  out_results_name: str, clasif_fn, use_std_masks: bool,
+                  n_cmim: int, n_jobs: int,
+                  dataset_loading_fn=load_partitions_cmim, use_mod_v2=False,
+                  init_params: dict = None):
+    """Base function for running classifier tests.
+
+    Parameters
+    ----------
+    find_params : bool
+        If True, parameters for the model will be obtained using the
+        find_params_fn, and any pre-existing parameters will be
+        overwritten. If False, parameters will be loaded from file.
+    out_params_name : str
+        Name of the folder where the parameters will be stored to or
+        loaded from.
+    find_params_fn
+        Function that will be used for finding the parameters.
+    out_results_name : str
+        Name of the folder where the results will be stored.
+    clasif_fn
+        Classifier function. Normally, a function from sklearn.
+    use_std_masks : bool
+        If true, mask pairs will be loaded from pairs/<folder>, where
+        folder is the one set in constants.PAIR_METHOD, and will be
+        applied to the dataset.
+    n_cmim : int
+        Must be 0 or greater. If 0, CMIM will not be used. Otherwise, it
+        indicates how many feature groups will be used. How many groups
+        are there in total is set in constants.CMIM_GROUPS.
+    n_jobs : int
+        Sets the number of jobs for parallel tasks. If -1, it will use
+        all workers available. Recommended to set as max - 1 so the
+        computer does not get stuck it is going to be used while it
+        iterates.
+    dataset_loading_fn : function
+        Function for loading the dataset. Default: load_partitions_cmim.
+        Must have the same signature as load_partitions_cmim, and return
+        the same number and order of values.
+    use_mod_v2 : bool
+        Use modified versions of the dataset (mod v2). Default: False.
+    init_params : dict, optional
+        These are parameters that must be added to the classifier before
+        use, and that are not stored with the calibrated parameters.
+    """
+    from sklearn.model_selection import train_test_split
+    # Find best model params
+    pair_method = PAIR_METHOD if use_std_masks else False
+    params_list = []
+    for data_idx in range(len(datasets)):
+        dataset_name = datasets[data_idx]
+        if use_mod_v2:
+            dataset_name += '_mod_v2'
+        if find_params:
+            train_x, train_y, _, _, test_x, test_y, _, _, = dataset_loading_fn(
+                dataset_name, PARAMS_PARTITION, MASK_VALUE, SCALE_DATASET,
+                pair_method, n_cmim
+            )
+            test_x, val_x, test_y, val_y = train_test_split(test_x, test_y,
+                                                            test_size=0.25,
+                                                            stratify=test_y,
+                                                            random_state=42)
+            params = find_params_fn(train_x=train_x,
+                                    train_y=train_y,
+                                    val_x=val_x,
+                                    val_y=val_y,
+                                    dataset_name=dataset_name,
+                                    partition=PARAMS_PARTITION,
+                                    folder_name=out_params_name,
+                                    pair_method=PAIR_METHOD,
+                                    n_jobs=n_jobs)
+        else:
+            with open(Path.cwd() / out_params_name
+                      / (dataset_name + '.pickle'), 'rb') as f:
+                params = pickle.load(f)
+        params_list.append(params)
+
+    # Perform model test
+    out_folder = Path(out_results_name)
+    out_folder.mkdir(exist_ok=True, parents=True)
+    if init_params is None:
+        init_params = {}
+
+    for data_idx in range(len(datasets)):
+        dataset_name = datasets[data_idx]
+        if use_mod_v2:
+            dataset_name += '_mod_v2'
+        params: dict = params_list[data_idx]
+        params = {**params, **init_params}
+        results = []
+        for part in range(1, N_PARTS + 1):
+            train_x, train_y, _, _, test_x, test_y, _, _ = \
+                dataset_loading_fn(
+                    dataset_name, part, MASK_VALUE, SCALE_DATASET, pair_method,
+                    n_cmim
+                )
+            test_x, val_x, test_y, val_y = train_test_split(test_x, test_y,
+                                                            test_size=0.25,
+                                                            stratify=test_y,
+                                                            random_state=42)
+            try:
+                model = clasif_fn(**params, n_jobs=n_jobs, random_state=42)
+            except TypeError:
+                model = clasif_fn(**params, random_state=42)
+            # Train model
+            model.fit(train_x, train_y, early_stopping_rounds=5,
+                      eval_set=[(val_x, val_y)], verbose=0)
             # Test model
             predicted = model.predict(test_x)
             cur_results = classification_report(test_y, predicted,

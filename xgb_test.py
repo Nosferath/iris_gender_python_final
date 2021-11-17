@@ -2,12 +2,13 @@ import numpy as np
 import xgboost as xgb
 
 from constants import MODEL_PARAMS_FOLDER
-from template_test import get_param_grid, find_best_params, main_base
-
+from template_test import get_param_grid, find_best_params, main_base, \
+    find_best_params_xgb, main_base_xgb
 
 XGB_INIT_PARAMS = {'objective': 'binary:logistic',
                    'use_label_encoder': False,
-                   'eval_metric': 'logloss'}
+                   'eval_metric': 'logloss',
+                   'tree_method': 'gpu_hist'}
 
 
 def xgb_demo():
@@ -79,6 +80,26 @@ def find_best_xgb_params(train_x: np.ndarray, train_y: np.ndarray,
     return params
 
 
+def find_best_xgb_params_early(train_x: np.ndarray, train_y: np.ndarray,
+                               val_x: np.ndarray, val_y: np.ndarray,
+                               dataset_name: str, partition: int,
+                               folder_name: str,
+                               pair_method: str, n_jobs: int):
+    params = find_best_params_xgb(
+        train_x, train_y, val_x, val_y, dataset_name, partition,
+        folder_name, pair_method,
+        start_param_a=40, step_param_a=20,
+        end_param_a=100, start_param_b=2,
+        step_param_b=2,
+        end_param_b=6,
+        param_a_islog2=False, param_b_islog2=False,
+        param_a_min1=True, param_b_min1=False,
+        param_grid_fn=get_xgb_param_grid,
+        clasif_name='XGB', clasif_fn=xgb.XGBClassifier,
+        n_jobs=n_jobs, init_params=XGB_INIT_PARAMS)
+    return params
+
+
 def find_best_xgb_params_cancer(train_x: np.ndarray, train_y: np.ndarray,
                                 dataset_name: str, partition: int,
                                 folder_name: str, pair_method: str,
@@ -110,17 +131,17 @@ def main(find_params=True, n_jobs=-1):
               init_params=XGB_INIT_PARAMS)
 
 
-def main_cmim(n_cmim: int, find_params=True, n_jobs=-1):
-    main_base(find_params=find_params,
-              out_params_name=MODEL_PARAMS_FOLDER +
-                              f'/xgb_params_cmim_{n_cmim}',
-              find_params_fn=find_best_xgb_params,
-              out_results_name=f'xgb_results_cmim_{n_cmim}',
-              clasif_fn=xgb.XGBClassifier,
-              use_std_masks=False,
-              n_cmim=n_cmim,
-              n_jobs=n_jobs,
-              init_params=XGB_INIT_PARAMS)
+def main_cmim_early(n_cmim: int, find_params=True, n_jobs=-1):
+    main_base_xgb(find_params=find_params,
+                  out_params_name=MODEL_PARAMS_FOLDER +
+                                  f'/xgb_params_cmim_{n_cmim}_early',
+                  find_params_fn=find_best_xgb_params_early,
+                  out_results_name=f'xgb_results_cmim_{n_cmim}_early',
+                  clasif_fn=xgb.XGBClassifier,
+                  use_std_masks=False,
+                  n_cmim=n_cmim,
+                  n_jobs=n_jobs,
+                  init_params=XGB_INIT_PARAMS)
 
 
 def main_cancer(find_params=True, n_jobs=-1):
