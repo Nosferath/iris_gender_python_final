@@ -72,6 +72,8 @@ def review_cv_results(params_folder: str, out_folder: str):
 
 def review_results(results_folder: str, print_train=False):
     results_folder = Path(results_folder)
+    if not results_folder.exists():
+        raise ValueError(f'{results_folder} not found')
     for file in results_folder.glob('*.pickle'):
         with open(file, 'rb') as f:
             cur_results = pickle.load(f)
@@ -86,17 +88,19 @@ def review_results(results_folder: str, print_train=False):
         print(f'{file.stem}:\t{mean:.2f} ± {std:.2f}')
 
 
-def review_params(params_folder: str, print_full: bool):
+def review_params(params_folder: str, verbose: int):
+    """Verbosity 1: Print CV results. Verbosity 2+: Print all CV info"""
     params_folder = Path(MODEL_PARAMS_FOLDER) / params_folder
     keys = [f'split{i}_test_score' for i in range(5)]
     keys.extend(['mean_test_score', 'std_test_score', 'rank_test_score'])
     for file in params_folder.glob('*.pickle'):
-        if file.name.startswith('cv') and not print_full:
+        if file.name.startswith('cv') and not verbose:
             continue
         with open(file, 'rb') as f:
             cur_params = pickle.load(f)
         if file.name.startswith('cv'):
-            cur_params = {k: cur_params[k] for k in keys}
+            if verbose == 1:
+                cur_params = {k: cur_params[k] for k in keys}
         print(f'{file.stem}:\t{cur_params}')
 
 
@@ -465,7 +469,10 @@ def visualize_mask_prevalence(cmim_folder: str, pairs: str, out_folder: str,
         dataset_name = file.stem
         cmim_array = load_cmim_array_from_path(file)
         _, _, train_m, _, _, _, _, _ = load_partitions_pairs(
-            dataset_name, partition, mask_value=0, scale_dataset=True,
+            dataset_name=dataset_name,
+            partition=partition,
+            mask_value=0,
+            scale_dataset=True,
             pair_method=pairs
         )
         masks = train_m  # TODO quizás es mejor volver a train+test

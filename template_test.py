@@ -181,6 +181,8 @@ def find_best_params_xgb(train_x: np.ndarray, train_y: np.ndarray,
     ----------
     train_x
     train_y
+    val_x
+    val_y
     dataset_name
     partition
     folder_name
@@ -340,8 +342,12 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
             dataset_name += '_mod_v2'
         if find_params:
             train_x, train_y, _, _, _, _, _, _, = dataset_loading_fn(
-                dataset_name, PARAMS_PARTITION, MASK_VALUE, SCALE_DATASET,
-                pair_method, n_cmim
+                dataset_name=dataset_name,
+                partition=PARAMS_PARTITION,
+                mask_value=MASK_VALUE,
+                scale_dataset=SCALE_DATASET,
+                pair_method=pair_method,
+                n_cmim=n_cmim
             )
             params = find_params_fn(train_x=train_x,
                                     train_y=train_y,
@@ -372,8 +378,12 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
         for part in range(1, N_PARTS + 1):
             train_x, train_y, _, _, test_x, test_y, _, _ = \
                 dataset_loading_fn(
-                    dataset_name, part, MASK_VALUE, SCALE_DATASET, pair_method,
-                    n_cmim
+                    dataset_name=dataset_name,
+                    partition=part,
+                    mask_value=MASK_VALUE,
+                    scale_dataset=SCALE_DATASET,
+                    pair_method=pair_method,
+                    n_cmim=n_cmim
                 )
             try:
                 model = clasif_fn(**params, n_jobs=n_jobs, random_state=42)
@@ -448,8 +458,12 @@ def main_base_xgb(find_params: bool, out_params_name: str, find_params_fn,
             dataset_name += '_mod_v2'
         if find_params:
             train_x, train_y, _, _, test_x, test_y, _, _, = dataset_loading_fn(
-                dataset_name, PARAMS_PARTITION, MASK_VALUE, SCALE_DATASET,
-                pair_method, n_cmim
+                dataset_name=dataset_name,
+                partition=PARAMS_PARTITION,
+                mask_value=MASK_VALUE,
+                scale_dataset=SCALE_DATASET,
+                pair_method=pair_method,
+                n_cmim=n_cmim
             )
             test_x, val_x, test_y, val_y = train_test_split(test_x, test_y,
                                                             test_size=0.25,
@@ -486,13 +500,19 @@ def main_base_xgb(find_params: bool, out_params_name: str, find_params_fn,
         for part in range(1, N_PARTS + 1):
             train_x, train_y, _, _, test_x, test_y, _, _ = \
                 dataset_loading_fn(
-                    dataset_name, part, MASK_VALUE, SCALE_DATASET, pair_method,
-                    n_cmim
+                    dataset_name=dataset_name,
+                    partition=part,
+                    mask_value=MASK_VALUE,
+                    scale_dataset=SCALE_DATASET,
+                    pair_method=pair_method,
+                    n_cmim=n_cmim
                 )
-            test_x, val_x, test_y, val_y = train_test_split(test_x, test_y,
-                                                            test_size=0.25,
-                                                            stratify=test_y,
-                                                            random_state=42)
+            test_x, val_x, test_y, val_y = train_test_split(
+                test_x, test_y,
+                test_size=0.25,
+                stratify=test_y,
+                random_state=42
+            )
             try:
                 model = clasif_fn(**params, n_jobs=n_jobs, random_state=42)
             except TypeError:

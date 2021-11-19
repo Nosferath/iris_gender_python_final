@@ -159,14 +159,28 @@ def main_cancer(find_params=True, n_jobs=-1):
 
 
 def main_lbps(find_params=True, n_jobs=-1):
-    from load_partitions import load_partitions_lbps
+    from load_partitions import load_partitions_hlbps
     main_base(find_params=find_params,
-              out_params_name=MODEL_PARAMS_FOLDER + '/xgb_lbps_noparams',
+              out_params_name=MODEL_PARAMS_FOLDER + '/xgb_lbps_r3_noparams',
               find_params_fn=lambda *x, **y: {},  # find_best_xgb_params,
-              out_results_name='xgb_lbps_results_noparams',
+              out_results_name='xgb_lbps_r3_results_noparams',
               clasif_fn=xgb.XGBClassifier,
               use_std_masks=False,
               n_cmim=0,
               n_jobs=n_jobs,
-              dataset_loading_fn=load_partitions_lbps,
+              dataset_loading_fn=load_partitions_hlbps,
+              init_params=XGB_INIT_PARAMS)
+
+
+def main_hlbps(find_params=True, n_jobs=-1):
+    from load_partitions import load_partitions_hlbps
+    main_base(find_params=find_params,
+              out_params_name=MODEL_PARAMS_FOLDER + '/xgb_hlbps_r1_noparams_mask',
+              find_params_fn=lambda *x, **y: {},  # find_best_xgb_params,
+              out_results_name='xgb_hlbps_r1_results_noparams_mask',
+              clasif_fn=xgb.XGBClassifier,
+              use_std_masks=False,
+              n_cmim=0,
+              n_jobs=n_jobs,
+              dataset_loading_fn=load_partitions_hlbps,
               init_params=XGB_INIT_PARAMS)

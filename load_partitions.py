@@ -279,8 +279,33 @@ def load_partitions_lbps(dataset_name: str, partition: int, mask_value: float,
     ignored.
     """
     from constants import LBP_METHOD, LBP_RADIUS, LBP_NPOINTS
+    from lbps import calculate_dataset_lbp
+
+    train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l = \
+        load_partitions_pairs(dataset_name, partition, mask_value,
+                              scale_dataset, pair_method, root_folder)
+    train_x = calculate_dataset_lbp(train_x, LBP_NPOINTS, LBP_RADIUS,
+                                    LBP_METHOD)
+    mask_bin = int(train_x.max() + 1)
+    train_x[train_m == 1] = mask_bin
+    test_x = calculate_dataset_lbp(test_x, LBP_NPOINTS, LBP_RADIUS,
+                                   LBP_METHOD)
+    test_x[test_m == 1] = mask_bin
+
+    return train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l
+
+
+@lru_cache(maxsize=None)
+def load_partitions_hlbps(dataset_name: str, partition: int, mask_value: float,
+                          scale_dataset: bool, pair_method: str, n_cmim: int,
+                          root_folder=ROOT_DATA_FOLDER):
+    """Loads the partition, and calculates HLBPs on it. Implements the
+    same interface as load_partitions_cmim for compatibility. n_cmim is
+    ignored.
+    """
+    from constants import LBP_METHOD, LBP_RADIUS, LBP_NPOINTS
     from lbps import calculate_dataset_lbp, convert_dataset_lbp_to_hist
-    exclude_masks = True
+    exclude_masks = False
 
     train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l = \
         load_partitions_pairs(dataset_name, partition, mask_value,
