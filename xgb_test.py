@@ -159,7 +159,7 @@ def main_cancer(find_params=True, n_jobs=-1):
 
 
 def main_lbps(find_params=True, n_jobs=-1):
-    from load_partitions import load_partitions_hlbps
+    from load_partitions import load_partitions_lbps
     main_base(find_params=find_params,
               out_params_name=MODEL_PARAMS_FOLDER + '/xgb_lbps_r3_noparams',
               find_params_fn=lambda *x, **y: {},  # find_best_xgb_params,
@@ -168,7 +168,7 @@ def main_lbps(find_params=True, n_jobs=-1):
               use_std_masks=False,
               n_cmim=0,
               n_jobs=n_jobs,
-              dataset_loading_fn=load_partitions_hlbps,
+              dataset_loading_fn=load_partitions_lbps,
               init_params=XGB_INIT_PARAMS)
 
 
