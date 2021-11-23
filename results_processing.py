@@ -1,7 +1,7 @@
 from pathlib import Path
 import pickle
 from textwrap import fill
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -36,7 +36,7 @@ def generate_cv_grid_plot(dataset_name: str, cv: int, params_folder: str):
     std_grid = np.zeros((n_a, n_b), dtype='float64')
     for a in range(n_a):
         for b in range(n_b):
-            i = b + n_b*a
+            i = b + n_b * a
             results_grid[a, b] = results[i]
             std_grid[a, b] = results_std[i]
     # Generate results plot
@@ -73,37 +73,85 @@ def review_cv_results(params_folder: str, out_folder: str):
             plt.close('all')
 
 
-def review_results(results_folder: str, print_train=False):
+def load_accuracies_from_results(results_folder: Union[str, Path],
+                                 include_train_acc: bool):
+    """Loads accuracies from .pickle files, returns them in a dictionary
+    where the keys are the stems of the files.
+    """
     results_folder = Path(results_folder)
     if not results_folder.exists():
         raise ValueError(f'{results_folder} not found')
+    accuracies = {}
+    train_acc = {}
     for file in results_folder.glob('*.pickle'):
         with open(file, 'rb') as f:
             cur_results = pickle.load(f)
-        if 'acc_train' in cur_results[0] and print_train:
+        if 'acc_train' in cur_results[0] and include_train_acc:
             train_results = np.array([d['acc_train'] for d in cur_results])
-            mean = train_results.mean() * 100
-            std = train_results.std() * 100
-            print(f'Train {file.stem}:\t{mean:.2f} ± {std:.2f}')
+            train_acc[file.stem] = train_results
         cur_results = np.array([d['accuracy'] for d in cur_results])
-        mean = cur_results.mean() * 100
-        std = cur_results.std() * 100
-        print(f'{file.stem}:\t{mean:.2f} ± {std:.2f}')
+        accuracies[file.stem] = cur_results
+    if include_train_acc:
+        return accuracies, train_acc
+    return accuracies
+
+
+def format_results_as_str(results_arr: np.ndarray):
+    """Formats results as mean ± std"""
+    mean_value = results_arr.mean()
+    std_value = results_arr.std()
+    if results_arr.max() <= 1:
+        mean_value *= 100
+        std_value *= 100
+    formatted = f'{mean_value:.2f} ± {std_value:.2f}'
+    return formatted
+
+
+def review_results(results_folder: Union[str, Path], print_train=False):
+    """Prints results in a readable way."""
+    accuracies, train_acc = load_accuracies_from_results(results_folder, True)
+    for key, cur_results in accuracies.items():
+        if print_train and key in train_acc:
+            train_results = train_acc[key]
+            formatted = format_results_as_str(train_results)
+            print(f'Train {key}:\t{formatted}')
+        formatted = format_results_as_str(cur_results)
+        print(f'{key}:\t{formatted}')
+
+
+def generate_table_from_df(input_df: pd.DataFrame, annot_df: pd.DataFrame,
+                           out_folder: str, out_name: str,
+                           figsize: Tuple[float] = (18, 6),
+                           display: bool = False):
+    """Generates and saves a table, generated from two dataframes. The
+    first one contains the numeric results (for coloring the cells) and
+    the second one contains the annotations (for cell texts).
+    """
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    sns.set(rc={'figure.figsize': figsize})
+    sns.set(font_scale=1.5)
+    # Generate image
+    ax = sns.heatmap(input_df, annot=annot_df, fmt='', cbar=False,
+                     linewidths=1, linecolor='black')
+    ax.xaxis.tick_top()
+    plt.tight_layout()
+    # Save image
+    out_folder = Path(out_folder)
+    out_folder.mkdir(exist_ok=True, parents=True)
+    if display:
+        plt.show()
+    plt.savefig(out_folder / out_name)
+    plt.clf()
 
 
 def generate_results_table(folders: List[str], keys: List[str],
                            out_folder: str, out_name: str,
-                           figsize: Tuple[float] = (18, 6)):
+                           figsize: Tuple[float] = (18, 6),
+                           display: bool = False):
     """Using the selected results folders, generates a formatted table
     as an image with all the results, ready for adding to the ppt.
     """
-    def values_to_str(mean_value: float, std_value: float):
-        if mean_value <= 1:
-            mean_value *= 100
-            std_value *= 100
-        formatted = f'{mean_value:.2f} ± {std_value:.2f}'
-        return formatted
-
     # Prepare folders
     if len(folders) != len(keys):
         raise Exception('Length of folders and keys must match')
@@ -112,48 +160,36 @@ def generate_results_table(folders: List[str], keys: List[str],
         bad = [f for f in folders if not f.exists()]
         bad = ", ".join([f.name for f in bad])
         raise Exception(f'Folder not found: {bad}')
-
-    import matplotlib.pyplot as plt
-    import seaborn as sns
     # Process folders results
     results_str = {}
     results = {}
     for i, folder in enumerate(folders):
-        key = fill(keys[i], 12) # Classifier
+        key = fill(keys[i], 12)  # Classifier
         folder_results_str = {}
         folder_results = {}
-        for file in folder.glob('*.pickle'):
-            cur_key = file.stem  # Current dataset
-            with open(file, 'rb') as f:
-                cur_results = pickle.load(f)
-            cur_results = np.array([d['accuracy'] for d in cur_results])
-            mean = cur_results.mean() * 100
-            std = cur_results.std() * 100
-            folder_results_str[cur_key] = values_to_str(mean, std)
-            folder_results[cur_key] = mean
+        accuracies = load_accuracies_from_results(
+            results_folder=folder,
+            include_train_acc=False
+        )
+        for cur_key, acc in accuracies.items():
+            folder_results_str[cur_key] = format_results_as_str(acc)
+            folder_results[cur_key] = acc.mean()
         results[key] = folder_results
         results_str[key] = folder_results_str
     # Generate DF with results
-    # index = [k for d in results.values() for k in d.keys()]
-    # index = sorted(list(set(index)))
-    sns.set(rc={'figure.figsize': figsize})
-    sns.set(font_scale=1.5)
     df = pd.DataFrame(results)
-    df_annot = pd.DataFrame(results_str)
+    annot_df = pd.DataFrame(results_str)
     # Generate image
-    ax = sns.heatmap(df, annot=df_annot, fmt='', cbar=False, linewidths=1,
-                     linecolor='black')
-    ax.xaxis.tick_top()
-    # plt.xticks(rotation=45)
-    plt.tight_layout()
-    # Save image
-    # out_folder = Path(out_folder)  # DEBUG UNCOMMENT
-    # out_folder.mkdir(exist_ok=True, parents=True)  # DEBUG UNCOMMENT
-    plt.show()  # DEBUG
-    plt.close()  # DEBUG
-    # plt.savefig(out_folder / out_name)  # DEBUG UNCOMMENT
+    generate_table_from_df(
+        input_df=df,
+        annot_df=annot_df,
+        out_folder=out_folder,
+        out_name=out_name,
+        figsize=figsize,
+        display=display
+    )
 
-    return df, results, results_str  # DEBUG
+    # return df, results, results_str
 
 
 def review_params(params_folder: str, verbose: int):
