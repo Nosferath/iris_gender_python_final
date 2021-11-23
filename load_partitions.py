@@ -13,7 +13,7 @@ from utils import find_dataset_shape
 
 def scale_x_arr(x_arr: np.ndarray, mask_array: np.ndarray,
                 mask_value: float = 0):
-    """Scales each individual sample of the x_row, such that all non-
+    """Scales each individual sample of the x_arr, such that all non-
     masked values are between 1/255 and 1.0, leaving the value 0 for
     masks.
     """

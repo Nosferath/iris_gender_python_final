@@ -1,7 +1,10 @@
 from pathlib import Path
 import pickle
+from textwrap import fill
+from typing import List, Tuple
 
 import numpy as np
+import pandas as pd
 
 from constants import datasets, MODEL_PARAMS_FOLDER
 from utils import grid_plot
@@ -86,6 +89,71 @@ def review_results(results_folder: str, print_train=False):
         mean = cur_results.mean() * 100
         std = cur_results.std() * 100
         print(f'{file.stem}:\t{mean:.2f} ± {std:.2f}')
+
+
+def generate_results_table(folders: List[str], keys: List[str],
+                           out_folder: str, out_name: str,
+                           figsize: Tuple[float] = (18, 6)):
+    """Using the selected results folders, generates a formatted table
+    as an image with all the results, ready for adding to the ppt.
+    """
+    def values_to_str(mean_value: float, std_value: float):
+        if mean_value <= 1:
+            mean_value *= 100
+            std_value *= 100
+        formatted = f'{mean_value:.2f} ± {std_value:.2f}'
+        return formatted
+
+    # Prepare folders
+    if len(folders) != len(keys):
+        raise Exception('Length of folders and keys must match')
+    folders = [Path(f) for f in folders]
+    if any(not f.exists() for f in folders):
+        bad = [f for f in folders if not f.exists()]
+        bad = ", ".join([f.name for f in bad])
+        raise Exception(f'Folder not found: {bad}')
+
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    # Process folders results
+    results_str = {}
+    results = {}
+    for i, folder in enumerate(folders):
+        key = fill(keys[i], 12) # Classifier
+        folder_results_str = {}
+        folder_results = {}
+        for file in folder.glob('*.pickle'):
+            cur_key = file.stem  # Current dataset
+            with open(file, 'rb') as f:
+                cur_results = pickle.load(f)
+            cur_results = np.array([d['accuracy'] for d in cur_results])
+            mean = cur_results.mean() * 100
+            std = cur_results.std() * 100
+            folder_results_str[cur_key] = values_to_str(mean, std)
+            folder_results[cur_key] = mean
+        results[key] = folder_results
+        results_str[key] = folder_results_str
+    # Generate DF with results
+    # index = [k for d in results.values() for k in d.keys()]
+    # index = sorted(list(set(index)))
+    sns.set(rc={'figure.figsize': figsize})
+    sns.set(font_scale=1.5)
+    df = pd.DataFrame(results)
+    df_annot = pd.DataFrame(results_str)
+    # Generate image
+    ax = sns.heatmap(df, annot=df_annot, fmt='', cbar=False, linewidths=1,
+                     linecolor='black')
+    ax.xaxis.tick_top()
+    # plt.xticks(rotation=45)
+    plt.tight_layout()
+    # Save image
+    # out_folder = Path(out_folder)  # DEBUG UNCOMMENT
+    # out_folder.mkdir(exist_ok=True, parents=True)  # DEBUG UNCOMMENT
+    plt.show()  # DEBUG
+    plt.close()  # DEBUG
+    # plt.savefig(out_folder / out_name)  # DEBUG UNCOMMENT
+
+    return df, results, results_str  # DEBUG
 
 
 def review_params(params_folder: str, verbose: int):
