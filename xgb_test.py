@@ -5,6 +5,7 @@ from constants import MODEL_PARAMS_FOLDER
 from template_test import get_param_grid, find_best_params, main_base, \
     find_best_params_xgb, main_base_xgb
 
+
 XGB_INIT_PARAMS = {'objective': 'binary:logistic',
                    'use_label_encoder': False,
                    'eval_metric': 'logloss',
@@ -26,24 +27,6 @@ def xgb_demo():
     y_pred = model.predict(x_test)
     print(confusion_matrix(y_test, y_pred))
     return model
-
-
-def load_partitions_cancer(dataset_name: str, partition: int,
-                           mask_value: float, scale_dataset: bool,
-                           pair_method: str, n_cmim: int):
-    """Wrapper function (implementing the same interface as
-    load_partitions_cmim) for loading the breast_cancer dataset.
-    Used for testing that XGBoost is working as intended, through the
-    same pipeline used by Iris dataset.
-    """
-    from sklearn.datasets import load_breast_cancer
-    from sklearn.model_selection import train_test_split
-    cancer = load_breast_cancer()
-    x = cancer.data
-    y = cancer.target
-    x_train, x_test, y_train, y_test = train_test_split(x, y,
-                                                        random_state=partition)
-    return x_train, y_train, None, None, x_test, y_test, None, None
 
 
 def get_xgb_param_grid(start_nestimators, step_nestimators, end_nestimators,
@@ -146,6 +129,7 @@ def main_cmim_early(n_cmim: int, find_params=True, n_jobs=-1):
 
 def main_cancer(find_params=True, n_jobs=-1):
     """This version uses the cancer dataset for testing performance."""
+    from load_benchmark_datasets import load_partitions_cancer
     main_base(find_params=find_params,
               out_params_name='cancer_params/xgb_params',
               find_params_fn=find_best_xgb_params_cancer,
@@ -156,6 +140,21 @@ def main_cancer(find_params=True, n_jobs=-1):
               n_jobs=n_jobs,
               dataset_loading_fn=load_partitions_cancer,
               init_params=XGB_INIT_PARAMS)
+
+
+def main_higgs(find_params=True, n_jobs=-1):
+    """This version uses the Higgs dataset for testing performance."""
+    from load_benchmark_datasets import load_partitions_higgs
+    main_base(find_params=find_params,
+              out_params_name='noparams',
+              find_params_fn=lambda *x, **y: {},
+              out_results_name='_additional_xgb_tests/xgb_higgs_results',
+              clasif_fn=xgb.XGBClassifier,
+              use_std_masks=False,
+              n_cmim=0,
+              n_jobs=n_jobs,
+              dataset_loading_fn=load_partitions_higgs,
+              init_params={**XGB_INIT_PARAMS, 'n_estimators': 500})
 
 
 def main_lbps(find_params=True, n_jobs=-1):
