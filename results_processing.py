@@ -74,7 +74,7 @@ def review_cv_results(params_folder: str, out_folder: str):
 
 
 def load_accuracies_from_results(results_folder: Union[str, Path],
-                                 include_train_acc: bool):
+                                 include_train_acc: bool = False):
     """Loads accuracies from .pickle files, returns them in a dictionary
     where the keys are the stems of the files.
     """
@@ -139,9 +139,9 @@ def generate_table_from_df(input_df: pd.DataFrame, annot_df: pd.DataFrame,
     # Save image
     out_folder = Path(out_folder)
     out_folder.mkdir(exist_ok=True, parents=True)
+    plt.savefig(out_folder / out_name)
     if display:
         plt.show()
-    plt.savefig(out_folder / out_name)
     plt.clf()
 
 
@@ -190,6 +190,27 @@ def generate_results_table(folders: List[str], keys: List[str],
     )
 
     # return df, results, results_str
+
+
+def generate_roc_curve(model, test_x: np.ndarray, test_y: np.ndarray,
+                       title='Curva ROC, XGBoost en Dataset Higgs-1M'):
+    import matplotlib.pyplot as plt
+    from sklearn.metrics import roc_curve, auc
+    pred = model.predict_proba(test_x)[:, 1]
+    fpr, tpr, _ = roc_curve(test_y, pred)
+    auc_score = auc(fpr, tpr)
+    plt.figure(figsize=(4, 4))
+    plt.plot(fpr, tpr, 'b',
+             label=f'Curva ROC, (AUC={auc_score:0.4f})')
+    plt.legend(loc='lower right')
+    plt.plot([0, 1], [0, 1], 'r--')
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
+    plt.ylabel('True Positive Rate')
+    plt.xlabel('False Positive Rate')
+    plt.title(title)
+    plt.tight_layout()
+    plt.show()
 
 
 def review_params(params_folder: str, verbose: int):
