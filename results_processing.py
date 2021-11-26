@@ -1,4 +1,4 @@
-from pathlib import Path
+from pathlib import Path, PurePath
 import pickle
 from textwrap import fill
 from typing import List, Tuple, Union
@@ -561,3 +561,48 @@ def plot_mask_prevalence(order_array: np.ndarray, masks: np.ndarray,
     fig.clf()
     plt.close(fig)
     del sum_masks, sum_feats, preval
+
+
+def generate_training_curves(model, out_file: Union[str, PurePath],
+                             model_name: str = 'XGBoost'):
+    """Generates plots for evaluating early stop and overfitting:
+    Classification error and logloss plots, in train vs eval.
+
+    Parameters
+    ==========
+    model : trained model such as XGBoost
+        Model that implements the evals_result method and that has been
+        evaluated with a validation partition during training.
+    out_file : str or PurePath
+        Path and name (prefix) of the files where the plots will be
+        saved to. Non-existant paths will be created. If out_file has a
+        file extension it will be ignored, as the file name is only used
+        as a prefix.
+    model_name : str (optional)
+        Name of the model. Used as a title prefix. Default: XGBoost.
+    """
+    assert hasattr(model, 'evals_result'), 'Model does not implement' \
+                                           ' evals_result.'
+    import matplotlib.pyplot as plt
+    # Parse out filenames from out_file
+    out_file = Path(out_file)
+    root_path = out_file.parent
+    root_path.mkdir(exist_ok=True, parents=True)
+    logloss_path = root_path / f'{out_file.stem}_logloss.png'
+    error_path = root_path / f'{out_file.stem}_error.png'
+    # Get values from model
+    evals = model.evals_result()
+    epochs = len(evals['validation_0']['error'])
+    x_axis = range(0, epochs)
+    # Generate plots
+    for_values = (('logloss', logloss_path, 'Log Loss'),
+                  ('error', error_path, 'Classification Error'))
+    for key, filename, y_label in for_values:
+        fig, ax = plt.subplots()
+        ax.plot(x_axis, evals['validation_0'][key], label='Train')
+        ax.plot(x_axis, evals['validation_1'][key], label='Valid.')
+        ax.legend()
+        plt.ylabel(y_label)
+        plt.title(f'{model_name} {y_label}')
+        plt.savefig(filename)
+        plt.clf()
