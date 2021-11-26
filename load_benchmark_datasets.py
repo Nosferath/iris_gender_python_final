@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
@@ -79,21 +81,57 @@ def lpsdf(in_seq: str):
     return np.array(feat_vector)
 
 
-def load_dataset_s51():
+def load_dataset_nucleotids(filename: str, has_labels: bool):
     from Bio import SeqIO
-
-    with open(r"_additional_xgb_tests\M6AMRFS-master\Dataset-S51.fasta") as f:
+    with open(Path(filename)) as f:
         sequences = list(SeqIO.parse(f, 'fasta'))
     n_seq = len(sequences)
-    seqs: list = [None] * n_seq
-    labels: list = [None] * n_seq
+    seqs = []
+    labels = []
     for i in range(n_seq):
         cur_seq = sequences[i]
-        seqs[i] = np.hstack([
-            encode_dinucleotids(str(cur_seq.seq)),
-            lpsdf(str(cur_seq.seq))
-        ])
-        labels[i] = int(cur_seq.description.split('|')[-1])
+        # seqs[i] = np.hstack([
+        #     encode_dinucleotids(str(cur_seq.seq)),
+        #     lpsdf(str(cur_seq.seq))
+        # ])
+        try:
+            seqs.append(encode_dinucleotids(str(cur_seq.seq)))
+        except KeyError:
+            continue
+        if has_labels:
+            labels.append(int(cur_seq.description.split('|')[-1]))
+        else:
+            labels.append(-1 if i >= n_seq / 2 else 1)
+
     data_x = np.array(seqs)
     data_y = np.array(labels)
+    return data_x, data_y
+
+
+def load_dataset_s51():
+    filename = "_additional_xgb_tests/M6AMRFS-master/Dataset-S51.fasta"
+    return load_dataset_nucleotids(filename, has_labels=True)
+
+
+def load_dataset_h41():
+    filename = "_additional_xgb_tests/M6AMRFS-master/Dataset-H41.fasta"
+    return load_dataset_nucleotids(filename, has_labels=False)
+
+
+def load_dataset_m41():
+    filename = "_additional_xgb_tests/M6AMRFS-master/Dataset-M41.fasta"
+    return load_dataset_nucleotids(filename, has_labels=False)
+
+
+def load_dataset_a101():
+    filename = "_additional_xgb_tests/M6AMRFS-master/Dataset-A101.fasta"
+    data_x, data_y = load_dataset_nucleotids(filename, has_labels=False)
+    unbalance = np.sum(data_y)
+    if unbalance > 0:
+        data_x = data_x[unbalance:, :]
+        data_y = data_y[unbalance:]
+    elif unbalance < 0:
+        data_x = data_x[:unbalance, :]
+        data_y = data_y[:unbalance]
+    assert np.sum(data_y) == 0, 'Unbalance not solved'
     return data_x, data_y

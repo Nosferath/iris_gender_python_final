@@ -23,7 +23,7 @@ def fscore(data_x: np.ndarray, data_y: np.ndarray, exclude_nan: bool):
 
 def get_nucleotids_results(model):
     rank = model.cv_results_['rank_test_accuracy']
-    best_idx = np.where(rank == 1)[0]
+    best_idx = np.where(rank == 1)[0][0]
     best_acc = model.cv_results_['mean_test_accuracy'][best_idx]
     best_sn = model.cv_results_['mean_test_sensitivity'][best_idx]
     best_sp = model.cv_results_['mean_test_specificity'][best_idx]
