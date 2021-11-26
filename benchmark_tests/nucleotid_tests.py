@@ -4,8 +4,6 @@ from typing import Union, Callable
 
 import numpy as np
 
-from benchmark_tests.feature_selection import fscore
-
 
 def get_nucleotids_results(model):
     rank = model.cv_results_['rank_test_accuracy']
@@ -77,6 +75,7 @@ def evaluate_nucleotids_model_fs(data_x: np.ndarray, data_y: np.ndarray,
                                  out_file: Union[str, Path] = None,
                                  verbose: int = 2):
     """Performs the same evaluations done by the nucleotids paper."""
+    from benchmark_tests.feature_selection import fscore
     data_y[data_y == -1] = 0
     rank = fscore(data_x, data_y, exclude_nan=True)
     model = ready_nucleotids_model(n_jobs=n_jobs, verbose=verbose)
@@ -112,7 +111,40 @@ def main_nucleotids(load_fn: Callable, out_file: Union[str, Path], n_jobs: int,
 
 def main_nucleotids_fs(load_fn: Callable, out_file: Union[str, Path],
                        n_jobs: int, verbose: int = 2):
+    """Performs nucleotids test using feature selection."""
     data_x, data_y = load_fn()
     return evaluate_nucleotids_model_fs(data_x=data_x, data_y=data_y,
                                         n_jobs=n_jobs, out_file=out_file,
                                         verbose=verbose)
+
+
+def training_curve_test(load_fn: Callable, n_jobs: int, verbose: int = 1):
+    """Performs a 'training curve test' in which a validation partition
+    is used to monitor training. Uses the XGBoost model.
+
+    Partitions are separated into train:val:test with a 70:10:20 ratio.
+    """
+    from sklearn.model_selection import train_test_split
+    from xgboost import XGBClassifier
+    # Load and split data
+    data_x, data_y = load_fn()
+    data_y[data_y == -1] = 0
+    train_x, test_x, train_y, test_y = train_test_split(
+        data_x, data_y, test_size=0.3, stratify=data_y
+    )
+    test_x, val_x, test_y, val_y = train_test_split(
+        test_x, test_y, test_size=1/3, stratify=test_y
+    )
+    # Prepare and train model
+    model = XGBClassifier(
+        n_estimators=5,
+        eta=0.5,
+        max_depth=4,
+        objective='binary_logistic',
+        use_label_encoder=False,
+        n_jobs=n_jobs
+    )
+    model.fit(train_x, train_y, eval_set=[(train_x, train_y), (val_x, val_y)],
+              eval_metric=['error', 'logloss'], verbose=verbose)
+    # Evaluate model and generate plots
+    # TODO implementar
