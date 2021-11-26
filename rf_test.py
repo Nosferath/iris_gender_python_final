@@ -67,9 +67,9 @@ def main_std(find_params=True, n_jobs=-1):
 def main_cmim(n_cmim: int, find_params=True, n_jobs=-1):
     main_base(find_params=find_params,
               out_params_name=MODEL_PARAMS_FOLDER +
-                              f'/rf_params_cmim_{n_cmim}',
+                              f'/rf_params_cmimFULL_{n_cmim}',  # TODO REVERT
               find_params_fn=find_best_rf_params,
-              out_results_name=f'rf_results_cmim_{n_cmim}',
+              out_results_name=f'rf_results_cmimFULL_{n_cmim}',  # TODO REVERT
               clasif_fn=RandomForestClassifier,
               use_std_masks=False,
               n_cmim=n_cmim,

@@ -1,4 +1,7 @@
-datasets = ('higgs',)  # TODO REVERT
+# datasets = ('higgs',)  # TODO REVERT
+datasets = ('left_240x20_fixed', 'right_240x20_fixed',
+            'left_240x40_fixed',
+            'left_240x20', 'right_240x20', 'left_240x40')
 # datasets = ('left_240x20_fixed', 'right_240x20_fixed',
 #             'left_240x40_fixed', 'right_240x40_fixed',
 #             'left_240x20', 'right_240x20',
@@ -15,8 +18,8 @@ N_PARTS = 10  # Number of partitions that are being used in total
 PAIR_METHOD = 'agrowth_hung_10'
 PARAMS_PARTITION = 1
 CMIM_GROUPS = 100
-CMIM_FOLDER = 'cmimArraysCont'
-CMIM_STD_FOLDER = 'cmimArraysStdCont'
+CMIM_FOLDER = 'cmimArraysContFULL'  # TODO REVERT
+CMIM_STD_FOLDER = 'cmimArraysStdContFULL'  # TODO REVERT
 MODEL_PARAMS_FOLDER = 'model_params'
 ROOT_DATA_FOLDER = 'data'
 
