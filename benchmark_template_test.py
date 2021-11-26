@@ -4,21 +4,7 @@ from typing import Callable, Union
 
 import numpy as np
 
-
-def fscore(data_x: np.ndarray, data_y: np.ndarray, exclude_nan: bool):
-    """Returns a vector with the ranks of features based on F-score."""
-    from sklearn.feature_selection import SelectKBest, f_classif
-    fs = SelectKBest(f_classif, k='all')
-    fs.fit(data_x, data_y)
-    scores = fs.scores_
-    rank = np.argsort(scores)[::-1]
-    # Put nan at the end
-    scores = scores[rank]
-    nan_idx = np.where(np.isnan(scores))[0].max()
-    if exclude_nan:
-        return rank[nan_idx + 1:]
-    rank = np.hstack([rank[nan_idx + 1:], rank[:nan_idx + 1]])
-    return rank
+from benchmark_feature_selection import fscore
 
 
 def get_nucleotids_results(model):
@@ -37,15 +23,10 @@ def get_nucleotids_results(model):
     return results
 
 
-def evaluate_nucleotids_model(data_x: np.ndarray, data_y: np.ndarray,
-                              n_jobs: int, out_file: Union[str, Path] = None,
-                              verbose: int = 2):
-    """Performs the same evaluations done by the nucleotids paper."""
+def ready_nucleotids_model(n_jobs: int, verbose: int = 1):
     from sklearn.model_selection import GridSearchCV
     from sklearn.metrics import make_scorer, matthews_corrcoef
     import xgboost as xgb
-
-    data_y[data_y == -1] = 0
     params = {
         'n_estimators': np.linspace(1, 10, 10, dtype=int),
         'eta': np.linspace(0.1, 0.8, 8),
@@ -69,6 +50,16 @@ def evaluate_nucleotids_model(data_x: np.ndarray, data_y: np.ndarray,
                          n_jobs=n_jobs,
                          verbose=verbose,
                          error_score='raise')
+
+    return model
+
+
+def evaluate_nucleotids_model(data_x: np.ndarray, data_y: np.ndarray,
+                              n_jobs: int, out_file: Union[str, Path] = None,
+                              verbose: int = 2):
+    """Performs the same evaluations done by the nucleotids paper."""
+    data_y[data_y == -1] = 0
+    model = ready_nucleotids_model(n_jobs=n_jobs, verbose=verbose)
 
     model.fit(data_x, data_y)
     if out_file is not None:
@@ -86,35 +77,9 @@ def evaluate_nucleotids_model_fs(data_x: np.ndarray, data_y: np.ndarray,
                                  out_file: Union[str, Path] = None,
                                  verbose: int = 2):
     """Performs the same evaluations done by the nucleotids paper."""
-    from sklearn.model_selection import GridSearchCV
-    from sklearn.metrics import make_scorer, matthews_corrcoef
-    import xgboost as xgb
-
     data_y[data_y == -1] = 0
     rank = fscore(data_x, data_y, exclude_nan=True)
-    params = {
-        'n_estimators': np.linspace(1, 10, 10, dtype=int),
-        'eta': np.linspace(0.1, 0.8, 8),
-        'max_depth': np.linspace(2, 10, 9, dtype=int),
-        'objective': ['binary:logistic'],
-        'use_label_encoder': [False],
-        'eval_metric': ['logloss'],
-        'tree_method': ['gpu_hist']
-    }
-    scoring = {
-        'accuracy': 'accuracy',
-        'sensitivity': 'recall',
-        'specificity': 'precision',
-        'mcc': make_scorer(matthews_corrcoef)
-    }
-    model = GridSearchCV(xgb.XGBClassifier(),
-                         param_grid=params,
-                         scoring=scoring,
-                         cv=10,
-                         refit=False,
-                         n_jobs=n_jobs,
-                         verbose=verbose,
-                         error_score='raise')
+    model = ready_nucleotids_model(n_jobs=n_jobs, verbose=verbose)
     if out_file is not None:
         out_file = Path(out_file)
         out_file.parent.mkdir(exist_ok=True, parents=True)
