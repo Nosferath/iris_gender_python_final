@@ -1,7 +1,7 @@
 # datasets = ('higgs',)  # TODO REVERT
 datasets = ('left_240x20_fixed', 'right_240x20_fixed',
             'left_240x40_fixed',
-            'left_240x20', 'right_240x20', 'left_240x40')
+            'left_240x20', 'right_240x20')
 # datasets = ('left_240x20_fixed', 'right_240x20_fixed',
 #             'left_240x40_fixed', 'right_240x40_fixed',
 #             'left_240x20', 'right_240x20',
