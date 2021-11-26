@@ -4,9 +4,7 @@ import numpy as np
 import pandas as pd
 
 
-def load_partitions_cancer(dataset_name: str, partition: int,
-                           mask_value: float, scale_dataset: bool,
-                           pair_method: str, n_cmim: int):
+def load_partitions_cancer(partition: int):
     """Wrapper function (implementing the same interface as
     load_partitions_cmim) for loading the breast_cancer dataset.
     Used for testing that XGBoost is working as intended, through the
@@ -19,25 +17,23 @@ def load_partitions_cancer(dataset_name: str, partition: int,
     y = cancer.target
     x_train, x_test, y_train, y_test = train_test_split(x, y,
                                                         random_state=partition)
-    return x_train, y_train, None, None, x_test, y_test, None, None
+    return x_train, y_train, x_test, y_test
 
 
-def load_partitions_higgs(dataset_name: str = None, partition: int = None,
-                          mask_value: float = None, scale_dataset: bool = None,
-                          pair_method: str = None, n_cmim: int = None):
+def load_partitions_higgs():
     """Wrapper function (implementing the same interface as
     load_partitions_cmim) for loading the breast_cancer dataset.
     Used for testing that XGBoost is working as intended, through the
     same pipeline used by Iris dataset.
     """
     from sklearn.model_selection import train_test_split
-    df = pd.read_csv("_additional_xgb_tests/HIGGS.csv", header=None)
+    df = pd.read_csv("../_additional_xgb_tests/HIGGS.csv", header=None)
     data_arr = df.to_numpy()
     data_x = data_arr[:, 1:]
     data_y = data_arr[:, 0]
     train_x, test_x, train_y, test_y = train_test_split(
         data_x, data_y, test_size=1000000, random_state=42)
-    return train_x, train_y, None, None, test_x, test_y, None, None
+    return train_x, train_y, test_x, test_y
 
 
 def encode_dinucleotids(in_seq: str):
@@ -109,22 +105,22 @@ def load_dataset_nucleotids(filename: str, has_labels: bool):
 
 
 def load_dataset_s51():
-    filename = "_additional_xgb_tests/M6AMRFS-master/Dataset-S51.fasta"
+    filename = "../_additional_xgb_tests/M6AMRFS-master/Dataset-S51.fasta"
     return load_dataset_nucleotids(filename, has_labels=True)
 
 
 def load_dataset_h41():
-    filename = "_additional_xgb_tests/M6AMRFS-master/Dataset-H41.fasta"
+    filename = "../_additional_xgb_tests/M6AMRFS-master/Dataset-H41.fasta"
     return load_dataset_nucleotids(filename, has_labels=False)
 
 
 def load_dataset_m41():
-    filename = "_additional_xgb_tests/M6AMRFS-master/Dataset-M41.fasta"
+    filename = "../_additional_xgb_tests/M6AMRFS-master/Dataset-M41.fasta"
     return load_dataset_nucleotids(filename, has_labels=False)
 
 
 def load_dataset_a101():
-    filename = "_additional_xgb_tests/M6AMRFS-master/Dataset-A101.fasta"
+    filename = "../_additional_xgb_tests/M6AMRFS-master/Dataset-A101.fasta"
     data_x, data_y = load_dataset_nucleotids(filename, has_labels=False)
     unbalance = np.sum(data_y)
     if unbalance > 0:

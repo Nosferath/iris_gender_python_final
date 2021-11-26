@@ -1,10 +1,10 @@
-from pathlib import Path
 import pickle
-from typing import Callable, Union
+from pathlib import Path
+from typing import Union, Callable
 
 import numpy as np
 
-from benchmark_feature_selection import fscore
+from benchmark_tests.feature_selection import fscore
 
 
 def get_nucleotids_results(model):
