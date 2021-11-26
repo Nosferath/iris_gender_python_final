@@ -148,7 +148,8 @@ def generate_table_from_df(input_df: pd.DataFrame, annot_df: pd.DataFrame,
 def generate_results_table(folders: List[str], keys: List[str],
                            out_folder: str, out_name: str,
                            figsize: Tuple[float] = (18, 6),
-                           display: bool = False):
+                           display: bool = False, include_train: bool = False,
+                           transpose: bool = False):
     """Using the selected results folders, generates a formatted table
     as an image with all the results, ready for adding to the ppt.
     """
@@ -167,11 +168,16 @@ def generate_results_table(folders: List[str], keys: List[str],
         key = fill(keys[i], 12)  # Classifier
         folder_results_str = {}
         folder_results = {}
-        accuracies = load_accuracies_from_results(
+        accuracies, train_acc = load_accuracies_from_results(
             results_folder=folder,
-            include_train_acc=False
+            include_train_acc=True
         )
         for cur_key, acc in accuracies.items():
+            if include_train and len(train_acc):
+                cur_train_acc = train_acc[cur_key]
+                folder_results_str[cur_key + '_Train'] = \
+                    format_results_as_str(cur_train_acc)
+                folder_results[cur_key + '_Train'] = cur_train_acc.mean()
             folder_results_str[cur_key] = format_results_as_str(acc)
             folder_results[cur_key] = acc.mean()
         results[key] = folder_results
@@ -179,6 +185,9 @@ def generate_results_table(folders: List[str], keys: List[str],
     # Generate DF with results
     df = pd.DataFrame(results)
     annot_df = pd.DataFrame(results_str)
+    if transpose:
+        df = df.transpose()
+        annot_df = annot_df.transpose()
     # Generate image
     generate_table_from_df(
         input_df=df,
