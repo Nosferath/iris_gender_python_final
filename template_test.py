@@ -375,7 +375,7 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
         params: dict = params_list[data_idx]
         params = {**params, **init_params}
         results = []
-        for part in [1]:  # TODO CHANGE TO range(1, N_PARTS + 1)
+        for part in range(1, N_PARTS + 1):
             train_x, train_y, _, _, test_x, test_y, _, _ = \
                 dataset_loading_fn(
                     dataset_name=dataset_name,
@@ -391,16 +391,15 @@ def main_base(find_params: bool, out_params_name: str, find_params_fn,
                 model = clasif_fn(**params, random_state=42)
             # Train model
             model.fit(train_x, train_y)
-            model.save_model('_additional_xgb_tests/xgb_model_higgs_500')  # TODO DELETE
             # Test model
             predicted = model.predict(test_x)
-            pred_prob = model.predict_proba(test_x)  # TODO DELETE
+            pred_prob = model.predict_proba(test_x)
             cur_results = classification_report(test_y, predicted,
                                                 output_dict=True)
             # Add train accuracy score for overfitting detection
             acc_train = accuracy_score(train_y, model.predict(train_x))
             cur_results['acc_train'] = acc_train
-            cur_results['pred_prob'] = pred_prob  # TODO DELETE
+            cur_results['pred_prob'] = pred_prob
             results.append(cur_results)
             with open(out_folder / (dataset_name + '.pickle'), 'wb') as f:
                 pickle.dump(results, f)
