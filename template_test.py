@@ -521,8 +521,31 @@ def main_base_xgb(find_params: bool, out_params_name: str, find_params_fn,
             except TypeError:
                 model = clasif_fn(**params, random_state=42)
             # Train model
-            model.fit(train_x, train_y, early_stopping_rounds=5,
-                      eval_set=[(val_x, val_y)], verbose=0)
+            # model.fit(train_x, train_y, early_stopping_rounds=5,
+            #           eval_set=[(val_x, val_y)], verbose=0)
+            model.fit(train_x, train_y, eval_metric=['error', 'logloss'],
+                      eval_set=[(train_x, train_y), (val_x, val_y)],
+                      verbose=True)
+            # Generate eval metrics
+            evals = model.evals_result()
+            epochs = len(evals['validation_0']['error'])
+            x_axis = range(0, epochs)
+            import matplotlib.pyplot as plt
+            fig, ax = plt.subplots()
+            ax.plot(x_axis, evals['validation_0']['logloss'], label='Train')
+            ax.plot(x_axis, evals['validation_1']['logloss'], label='Valid.')
+            ax.legend()
+            plt.ylabel('Log Loss')
+            plt.title('XGBoost Log Loss')
+            plt.savefig(f'{dataset_name}_{part}_logloss.png')
+            plt.clf()
+            fig, ax = plt.subplots()
+            ax.plot(x_axis, evals['validation_0']['error'], label='Train')
+            ax.plot(x_axis, evals['validation_1']['error'], label='Valid.')
+            ax.legend()
+            plt.ylabel('Classification Error')
+            plt.title('XGBoost Classification Error')
+            plt.savefig(f'{dataset_name}_{part}_error.png')
             # Test model
             predicted = model.predict(test_x)
             cur_results = classification_report(test_y, predicted,
@@ -530,6 +553,7 @@ def main_base_xgb(find_params: bool, out_params_name: str, find_params_fn,
             # Add train accuracy score for overfitting detection
             acc_train = accuracy_score(train_y, model.predict(train_x))
             cur_results['acc_train'] = acc_train
+            cur_results['evals'] = evals
             results.append(cur_results)
             with open(out_folder / (dataset_name + '.pickle'), 'wb') as f:
                 pickle.dump(results, f)

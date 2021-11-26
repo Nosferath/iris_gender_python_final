@@ -118,8 +118,8 @@ def main_cmim_early(n_cmim: int, find_params=True, n_jobs=-1):
     main_base_xgb(find_params=find_params,
                   out_params_name=MODEL_PARAMS_FOLDER +
                                   f'/xgb_params_cmim_{n_cmim}_early',
-                  find_params_fn=find_best_xgb_params_early,
-                  out_results_name=f'xgb_results_cmim_{n_cmim}_early',
+                  find_params_fn=lambda *x, **y: {},  # find_best_xgb_params_early,
+                  out_results_name=f'xgb_results_cmim_{n_cmim}_early_nopars',
                   clasif_fn=xgb.XGBClassifier,
                   use_std_masks=False,
                   n_cmim=n_cmim,
