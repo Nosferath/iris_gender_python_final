@@ -9,7 +9,7 @@ from template_test import get_param_grid, find_best_params, main_base, \
 XGB_INIT_PARAMS = {'objective': 'binary:logistic',
                    'use_label_encoder': False,
                    'eval_metric': 'logloss',
-                   'tree_method': 'gpu_hist'}
+                   }# 'tree_method': 'gpu_hist'}
 
 
 def xgb_demo():
