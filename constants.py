@@ -13,9 +13,6 @@ SCALE_DATASET = True
 N_PARTS = 10  # Number of partitions that are being used in total
 PAIR_METHOD = 'agrowth_hung_10'
 PARAMS_PARTITION = 1
-CMIM_GROUPS = 100
-CMIM_FOLDER = 'cmimArraysCont'
-CMIM_STD_FOLDER = 'cmimArraysStdCont'
 MODEL_PARAMS_FOLDER = 'model_params'
 ROOT_DATA_FOLDER = 'data'
 

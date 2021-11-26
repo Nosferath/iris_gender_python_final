@@ -1,11 +1,12 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Union
 
 import numpy as np
 from scipy.io import loadmat
 from sklearn.model_selection import train_test_split
 
-from constants import CMIM_GROUPS, ROOT_DATA_FOLDER
+from constants import ROOT_DATA_FOLDER
 from pairs import prepare_pairs_indexes, load_pairs_array
 from standard_masks import generate_standard_masks, apply_std_mask
 from utils import find_dataset_shape
@@ -177,7 +178,7 @@ def load_partitions_pairs_base(dataset_name: str, partition: int,
 
 
 def load_partitions_pairs(dataset_name: str, partition: int, mask_value: float,
-                          scale_dataset: bool, pair_method: str,
+                          scale_dataset: bool, pair_method: Union[str, bool],
                           root_folder=ROOT_DATA_FOLDER):
     """Loads the partition. If pair_method is False, it is identical to
     regular load_partitions. Otherwise, pair_method should be a string
@@ -188,85 +189,6 @@ def load_partitions_pairs(dataset_name: str, partition: int, mask_value: float,
         load_partitions_pairs_base(dataset_name, partition, mask_value,
                                    scale_dataset, pair_method, 0, False,
                                    root_folder)
-    return train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l
-
-
-def apply_cmim_to_partition(train_x: np.ndarray, test_x: np.ndarray,
-                            dataset_name: str, pair_method: str, n_cmim: int):
-    """Applies feature selection to the x arrays of the partition."""
-    from cmim import load_cmim_array
-    if n_cmim < 0:
-        raise ValueError('n_cmim must be equal or greater than 0')
-    if n_cmim:
-        cmim_array = load_cmim_array(dataset_name, pair_method)
-        feats_per_group = int(train_x.shape[1] / CMIM_GROUPS)
-        feats_total = n_cmim * feats_per_group
-        selected = cmim_array[:feats_total]
-        train_x = train_x[:, selected]
-        test_x = test_x[:, selected]
-    return train_x, test_x
-
-
-def load_partitions_cmim(dataset_name: str, partition: int, mask_value: float,
-                         scale_dataset: bool, pair_method: str, n_cmim: int,
-                         root_folder=ROOT_DATA_FOLDER):
-    """Loads the partition. It keeps only the n_cmim groups of most
-    important features according to CMIM, on the train_x and test_x
-    arrays.
-    """
-    if n_cmim < 0:
-        raise ValueError('n_cmim must be greater than 0')
-
-    train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l = \
-        load_partitions_pairs(dataset_name, partition, mask_value,
-                              scale_dataset, pair_method, root_folder)
-
-    train_x, test_x = apply_cmim_to_partition(train_x, test_x, dataset_name,
-                                              pair_method, n_cmim)
-
-    return train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l
-
-
-def load_partitions_cmim_mod(dataset_name: str, partition: int,
-                             mask_value: float, scale_dataset: bool,
-                             pair_method: str, n_cmim: int):
-    """Loads the partition, but applies an artificial modification to
-    the dataset, turning a certain area white for female samples, and
-    black for male samples.
-    """
-    from cmim import artificial_mod_dataset
-    if n_cmim < 0:
-        raise ValueError('n_cmim must be greater than 0')
-
-    train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l = \
-        load_partitions_pairs(dataset_name, partition, mask_value,
-                              scale_dataset, pair_method)
-    train_x, test_x = artificial_mod_dataset(train_x, train_y, test_x, test_y)
-    train_x, test_x = apply_cmim_to_partition(train_x, test_x, dataset_name,
-                                              pair_method, n_cmim)
-
-    return train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l
-
-
-def load_partitions_pairs_excl(dataset_name: str, partition: int,
-                               mask_value: float, scale_dataset: bool,
-                               pair_method: str, exclude: int, use_max: bool,
-                               root_folder=ROOT_DATA_FOLDER):
-    """Loads the partition, performs pairing and excludes a number of
-    pairs (worst pairs for the pair_method); exclude is the number of
-    pairs to exclude. pair_method should be a string for a pair type (a
-    folder in the pairs folder). The pairs from that method will have
-    their masks standardized. (Step 2, 6 and 7)
-
-    If pair_method or exclude are not to be used, they must be set to
-    False/0. If exclude is to be used, use_max must be set accordingly.
-    If exclude is defined, pair_method must also be defined.
-    """
-    # FIXME this should probably also return the modified pairs array
-    train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l = \
-        load_partitions_pairs_base(dataset_name, partition, mask_value,
-                                   scale_dataset, pair_method, exclude,
-                                   use_max, root_folder)
     return train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l
 
 

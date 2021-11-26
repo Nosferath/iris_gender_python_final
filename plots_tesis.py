@@ -6,7 +6,7 @@ import numpy as np
 import seaborn as sns
 
 from constants import PAIR_METHOD
-from load_partitions import load_partitions_cmim
+from load_partitions import load_partitions_pairs
 
 
 def calculate_mask_percentage(dataset_name: str, use_pairs: bool,
@@ -15,13 +15,12 @@ def calculate_mask_percentage(dataset_name: str, use_pairs: bool,
     If genders is True, these values are separated by gender."""
     # Load dataset and merge mask arrays
     pair_method = PAIR_METHOD if use_pairs else False
-    _, train_y, train_m, _, _, test_y, test_m, _ = load_partitions_cmim(
+    _, train_y, train_m, _, _, test_y, test_m, _ = load_partitions_pairs(
         dataset_name=dataset_name,
         partition=1,  # Not relevant
         mask_value=0,  # Not relevant
         scale_dataset=True,  # Not relevant
         pair_method=pair_method,
-        n_cmim=0
     )
     if not genders:
         y_arr = np.hstack([train_y, test_y])
@@ -156,13 +155,12 @@ def visualize_pairs(dataset_name: str, pair: Tuple[int],
     from PIL import Image
     # from pairs import load_pairs_array
     # Load dataset and pairs
-    train_x, _, train_m, _, _, _, _, _ = load_partitions_cmim(
+    train_x, _, train_m, _, _, _, _, _ = load_partitions_pairs(
         dataset_name=dataset_name,
         partition=1,  # Not relevant
         mask_value=0,  # Not relevant
         scale_dataset=True,  # Not relevant
-        pair_method=False,
-        n_cmim=0
+        pair_method=False
     )
     # pairs = load_pairs_array(dataset_name, PAIR_METHOD, partition=1)
     # Select pair and extract
@@ -214,13 +212,12 @@ def visualize_inv_masks(dataset_name: str, pair: Tuple[int],
     from PIL import Image
     # from pairs import load_pairs_array
     # Load dataset and pairs
-    train_x, _, train_m, _, _, _, _, _ = load_partitions_cmim(
+    train_x, _, train_m, _, _, _, _, _ = load_partitions_pairs(
         dataset_name=dataset_name,
         partition=1,  # Not relevant
         mask_value=0,  # Not relevant
         scale_dataset=True,  # Not relevant
-        pair_method=False,
-        n_cmim=0
+        pair_method=False
     )
     # pairs = load_pairs_array(dataset_name, PAIR_METHOD, partition=1)
     # Select pair and extract
