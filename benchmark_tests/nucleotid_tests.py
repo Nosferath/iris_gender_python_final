@@ -129,6 +129,9 @@ def training_curve_test(load_fn: Callable, n_jobs: int,
     from sklearn.model_selection import train_test_split
     from xgboost import XGBClassifier
     from results_processing import generate_training_curves
+    # Create out folder
+    out_folder = Path(out_folder)
+    out_folder.mkdir(exist_ok=True, parents=True)
     # Load and split data
     seed = np.random.MT19937().random_raw()
     data_x, data_y = load_fn()

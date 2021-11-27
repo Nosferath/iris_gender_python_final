@@ -27,7 +27,7 @@ def load_partitions_higgs():
     same pipeline used by Iris dataset.
     """
     from sklearn.model_selection import train_test_split
-    df = pd.read_csv("../_additional_xgb_tests/HIGGS.csv", header=None)
+    df = pd.read_csv(Path.cwd() / "_additional_xgb_tests/HIGGS.csv", header=None)
     data_arr = df.to_numpy()
     data_x = data_arr[:, 1:]
     data_y = data_arr[:, 0]
@@ -105,22 +105,22 @@ def load_dataset_nucleotids(filename: str, has_labels: bool):
 
 
 def load_dataset_s51():
-    filename = "../_additional_xgb_tests/M6AMRFS-master/Dataset-S51.fasta"
+    filename = Path.cwd() / "_additional_xgb_tests/M6AMRFS-master/Dataset-S51.fasta"
     return load_dataset_nucleotids(filename, has_labels=True)
 
 
 def load_dataset_h41():
-    filename = "../_additional_xgb_tests/M6AMRFS-master/Dataset-H41.fasta"
+    filename = Path.cwd() / "_additional_xgb_tests/M6AMRFS-master/Dataset-H41.fasta"
     return load_dataset_nucleotids(filename, has_labels=False)
 
 
 def load_dataset_m41():
-    filename = "../_additional_xgb_tests/M6AMRFS-master/Dataset-M41.fasta"
+    filename = Path.cwd() / "_additional_xgb_tests/M6AMRFS-master/Dataset-M41.fasta"
     return load_dataset_nucleotids(filename, has_labels=False)
 
 
 def load_dataset_a101():
-    filename = "../_additional_xgb_tests/M6AMRFS-master/Dataset-A101.fasta"
+    filename = Path.cwd() / "_additional_xgb_tests/M6AMRFS-master/Dataset-A101.fasta"
     data_x, data_y = load_dataset_nucleotids(filename, has_labels=False)
     unbalance = np.sum(data_y)
     if unbalance > 0:
