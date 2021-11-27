@@ -154,7 +154,7 @@ def training_curve_test(load_fn: Callable, n_jobs: int,
             n_estimators=5,
             eta=0.5,
             max_depth=4,
-            objective='binary_logistic',
+            objective='binary:logistic',
             use_label_encoder=False,
             n_jobs=n_jobs,
             random_state=seed
