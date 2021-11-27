@@ -1,5 +1,5 @@
 import pickle
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Union, Callable
 
 import numpy as np
@@ -84,7 +84,7 @@ def evaluate_nucleotids_model_fs(data_x: np.ndarray, data_y: np.ndarray,
         out_file.parent.mkdir(exist_ok=True, parents=True)
     all_results = {}
     for i in range(len(rank)):
-        cur_idx = rank[:i+1]
+        cur_idx = rank[:i + 1]
         cur_data_x = data_x[:, cur_idx]
         model.fit(cur_data_x, data_y)
         results = get_nucleotids_results(model)
@@ -118,33 +118,53 @@ def main_nucleotids_fs(load_fn: Callable, out_file: Union[str, Path],
                                         verbose=verbose)
 
 
-def training_curve_test(load_fn: Callable, n_jobs: int, verbose: int = 1):
+def training_curve_test(load_fn: Callable, n_jobs: int,
+                        out_folder: Union[str, PurePath], verbose: int = 1):
     """Performs a 'training curve test' in which a validation partition
     is used to monitor training. Uses the XGBoost model.
 
     Partitions are separated into train:val:test with a 70:10:20 ratio.
     """
+    from sklearn.metrics import classification_report
     from sklearn.model_selection import train_test_split
     from xgboost import XGBClassifier
+    from results_processing import generate_training_curves
     # Load and split data
+    seed = np.random.MT19937().random_raw()
     data_x, data_y = load_fn()
     data_y[data_y == -1] = 0
     train_x, test_x, train_y, test_y = train_test_split(
         data_x, data_y, test_size=0.3, stratify=data_y
     )
     test_x, val_x, test_y, val_y = train_test_split(
-        test_x, test_y, test_size=1/3, stratify=test_y
+        test_x, test_y, test_size=1 / 3, stratify=test_y
     )
     # Prepare and train model
-    model = XGBClassifier(
-        n_estimators=5,
-        eta=0.5,
-        max_depth=4,
-        objective='binary_logistic',
-        use_label_encoder=False,
-        n_jobs=n_jobs
+    for_values = (
+        ('curves', 'full_training', {}),
+        ('curves_early', 'early_stop', {'early_stopping_rounds': 10})
     )
-    model.fit(train_x, train_y, eval_set=[(train_x, train_y), (val_x, val_y)],
-              eval_metric=['error', 'logloss'], verbose=verbose)
-    # Evaluate model and generate plots
-    # TODO implementar
+    for curves_name, results_name, early_arg in for_values:
+        # First loop trains fully and generates full curves
+        # Second loop does early stopping
+        model = XGBClassifier(
+            n_estimators=5,
+            eta=0.5,
+            max_depth=4,
+            objective='binary_logistic',
+            use_label_encoder=False,
+            n_jobs=n_jobs,
+            random_state=seed
+        )
+        model.fit(train_x, train_y, **early_arg,
+                  eval_set=[(train_x, train_y), (val_x, val_y)],
+                  eval_metric=['error', 'logloss'],
+                  verbose=verbose)
+        # Evaluate model and generate plots
+        curves_file = out_folder / curves_name
+        generate_training_curves(model, curves_file, 'XGBoost')
+        results_file = out_folder / f'results_{results_name}.pickle'
+        preds = model.predict(test_x)
+        results = classification_report(test_y, preds, output_dict=True)
+        with open(results_file, 'wb') as f:
+            pickle.dump(results, f)
