@@ -147,15 +147,16 @@ def training_curve_test(load_fn: Callable, n_jobs: int,
         ('curves', 'full_training', {}),
         ('curves_early', 'early_stop', {'early_stopping_rounds': 10})
     )
-    for curves_name, results_name, early_arg in for_values:
+    for curves_name, results_name, early_arg in for_values[0:1]:
         # First loop trains fully and generates full curves
         # Second loop does early stopping
         model = XGBClassifier(
-            n_estimators=5,
-            eta=0.5,
-            max_depth=4,
+            n_estimators=500,  # TODO borrar o poner opcional
+            # eta=0.5,
+            # max_depth=4,
             objective='binary:logistic',
             use_label_encoder=False,
+            eval_metric='logloss',
             n_jobs=n_jobs,
             random_state=seed
         )

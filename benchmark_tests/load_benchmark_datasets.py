@@ -1,4 +1,5 @@
-from pathlib import Path
+from pathlib import Path, PurePath
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -26,14 +27,16 @@ def load_partitions_higgs():
     Used for testing that XGBoost is working as intended, through the
     same pipeline used by Iris dataset.
     """
-    from sklearn.model_selection import train_test_split
-    df = pd.read_csv(Path.cwd() / "_additional_xgb_tests/HIGGS.csv", header=None)
+    # from sklearn.model_selection import train_test_split
+    df = pd.read_csv(Path.cwd() / "_additional_xgb_tests/HIGGS.csv",
+                     header=None)
     data_arr = df.to_numpy()
     data_x = data_arr[:, 1:]
     data_y = data_arr[:, 0]
-    train_x, test_x, train_y, test_y = train_test_split(
-        data_x, data_y, test_size=1000000, random_state=42)
-    return train_x, train_y, test_x, test_y
+    # train_x, test_x, train_y, test_y = train_test_split(
+    #     data_x, data_y, test_size=1000000, random_state=42)
+    # return train_x, train_y, test_x, test_y
+    return data_x, data_y
 
 
 def encode_dinucleotids(in_seq: str):
@@ -77,7 +80,7 @@ def lpsdf(in_seq: str):
     return np.array(feat_vector)
 
 
-def load_dataset_nucleotids(filename: str, has_labels: bool):
+def load_dataset_nucleotids(filename: Union[str, PurePath], has_labels: bool):
     from Bio import SeqIO
     with open(Path(filename)) as f:
         sequences = list(SeqIO.parse(f, 'fasta'))
@@ -105,22 +108,26 @@ def load_dataset_nucleotids(filename: str, has_labels: bool):
 
 
 def load_dataset_s51():
-    filename = Path.cwd() / "_additional_xgb_tests/M6AMRFS-master/Dataset-S51.fasta"
+    filename = "_additional_xgb_tests/M6AMRFS-master/Dataset-S51.fasta"
+    filename = Path.cwd() / filename
     return load_dataset_nucleotids(filename, has_labels=True)
 
 
 def load_dataset_h41():
-    filename = Path.cwd() / "_additional_xgb_tests/M6AMRFS-master/Dataset-H41.fasta"
+    filename = "_additional_xgb_tests/M6AMRFS-master/Dataset-H41.fasta"
+    filename = Path.cwd() / filename
     return load_dataset_nucleotids(filename, has_labels=False)
 
 
 def load_dataset_m41():
-    filename = Path.cwd() / "_additional_xgb_tests/M6AMRFS-master/Dataset-M41.fasta"
+    filename = "_additional_xgb_tests/M6AMRFS-master/Dataset-M41.fasta"
+    filename = Path.cwd() / filename
     return load_dataset_nucleotids(filename, has_labels=False)
 
 
 def load_dataset_a101():
-    filename = Path.cwd() / "_additional_xgb_tests/M6AMRFS-master/Dataset-A101.fasta"
+    filename = "_additional_xgb_tests/M6AMRFS-master/Dataset-A101.fasta"
+    filename = Path.cwd() / filename
     data_x, data_y = load_dataset_nucleotids(filename, has_labels=False)
     unbalance = np.sum(data_y)
     if unbalance > 0:
