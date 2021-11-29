@@ -138,3 +138,9 @@ def load_dataset_a101():
         data_y = data_y[:unbalance]
     assert np.sum(data_y) == 0, 'Unbalance not solved'
     return data_x, data_y
+
+
+def generate_random_dataset(n_examples: int, n_features: int):
+    data_x = np.random.random((n_examples, n_features))
+    data_y = np.random.randint(0, 1, n_examples)
+    return data_x, data_y

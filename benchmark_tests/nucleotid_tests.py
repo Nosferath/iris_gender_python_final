@@ -118,7 +118,7 @@ def main_nucleotids_fs(load_fn: Callable, out_file: Union[str, Path],
                                         verbose=verbose)
 
 
-def training_curve_test(load_fn: Callable, n_jobs: int,
+def training_curve_test(load_fn: Callable, n_jobs: int, n_estimators: int,
                         out_folder: Union[str, PurePath], verbose: int = 1):
     """Performs a 'training curve test' in which a validation partition
     is used to monitor training. Uses the XGBoost model.
@@ -151,7 +151,7 @@ def training_curve_test(load_fn: Callable, n_jobs: int,
         # First loop trains fully and generates full curves
         # Second loop does early stopping
         model = XGBClassifier(
-            n_estimators=1000,  # TODO borrar o poner opcional
+            n_estimators=n_estimators,
             # eta=0.5,
             # max_depth=4,
             objective='binary:logistic',
