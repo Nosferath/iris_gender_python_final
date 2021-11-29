@@ -151,7 +151,7 @@ def training_curve_test(load_fn: Callable, n_jobs: int,
         # First loop trains fully and generates full curves
         # Second loop does early stopping
         model = XGBClassifier(
-            n_estimators=500,  # TODO borrar o poner opcional
+            n_estimators=1000,  # TODO borrar o poner opcional
             # eta=0.5,
             # max_depth=4,
             objective='binary:logistic',
