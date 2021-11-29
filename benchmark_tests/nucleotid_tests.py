@@ -116,5 +116,3 @@ def main_nucleotids_fs(load_fn: Callable, out_file: Union[str, Path],
     return evaluate_nucleotids_model_fs(data_x=data_x, data_y=data_y,
                                         n_jobs=n_jobs, out_file=out_file,
                                         verbose=verbose)
-
-
