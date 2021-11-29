@@ -142,5 +142,7 @@ def load_dataset_a101():
 
 def generate_random_dataset(n_examples: int, n_features: int):
     data_x = np.random.random((n_examples, n_features))
-    data_y = np.random.randint(0, 1, n_examples)
+    data_y = np.zeros(n_examples, dtype=int)
+    ones = np.random.choice(n_examples, n_examples//2, replace=False)
+    data_y[ones] = 1
     return data_x, data_y
