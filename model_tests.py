@@ -96,8 +96,6 @@ def select_features_xgboost(load_fn: Callable, n_jobs: int,
         train_x, train_y, val_x, val_y, test_x, test_y = partition_dataset(
             load_fn
         )
-    # test_x = np.vstack([val_x, test_x])
-    # test_y = np.hstack([val_y, test_y])
     # Generate selector model
     if model_params is None:
         model_params = {}

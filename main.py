@@ -31,8 +31,19 @@ def perform_curve_test_on_iris(dataset_name: str, partition: int, n_jobs: int,
     )
 
 
-def main_iris(n_estimators: int, n_jobs: int):
+def main_iris():
     from constants import datasets
+    # Parse arguments
+    ap = argparse.ArgumentParser()
+    ap.add_argument('-n', '--ntrees', type=int, required=True,
+                    help="Number of estimators")
+    ap.add_argument('-j', '--njobs', type=int, required=True,
+                    help="Number of jobs/threads")
+    args = ap.parse_args()
+    n_estimators = args.ntrees
+    n_jobs = args.njobs
+
+    # Perform tests
     for dataset in datasets:
         out_folder = f'results_early_iris_{n_estimators}_trees/{dataset}'
         perform_curve_test_on_iris(
@@ -45,17 +56,32 @@ def main_iris(n_estimators: int, n_jobs: int):
         )
 
 
-def main():
+def main_feature_selection_bench():
+    from benchmark_tests.load_benchmark_datasets import \
+        load_partitions_cancer, load_dataset_h41, load_dataset_m41, \
+        load_dataset_s51, load_partitions_higgs
+    from model_tests import select_features_xgboost
+    # Parse arguments
     ap = argparse.ArgumentParser()
-    ap.add_argument('-n', '--ntrees', type=int, required=True,
-                    help="Number of estimators")
-    ap.add_argument('-j', '--njobs', type=int, required=True,
-                    help="Number of jobs/threads")
+    ap.add_argument('n_jobs', type=int, help='Number of jobs/processes')
     args = ap.parse_args()
-    ntrees = args.ntrees
-    njobs = args.njobs
-    main_iris(n_estimators=ntrees, n_jobs=njobs)
+    n_jobs = args.n_jobs
+    # Perform tests
+    load_fns = [load_partitions_cancer, load_dataset_h41, load_dataset_m41,
+                load_dataset_s51, load_partitions_higgs]
+    names = ['cancer', 'h41', 'm41', 's51', 'higgs']
+    params = [{'n_estimators': 50}, None, None, None, {'n_estimators': 500}]
+    root_folder = 'results_selection/'
+    for load_fn, name, param in zip(load_fns, names, params):
+        select_features_xgboost(
+            load_fn=load_fn,
+            n_jobs=n_jobs,
+            out_folder=root_folder + name,
+            prepartitioned=False,
+            model_params=param,
+            skip_last=True
+        )
 
 
 if __name__ == '__main__':
-    main()
+    main_feature_selection_bench()
