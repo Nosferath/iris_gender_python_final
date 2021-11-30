@@ -10,7 +10,7 @@ def partition_dataset(load_fn: Callable):
     data_x, data_y = load_fn()
     data_y[data_y == -1] = 0
     test_prop = 0.3  # Proporion of data_x to be used as test+val
-    val_prop = 1/3  # Proportion of test to be used as val
+    val_prop = 1 / 3  # Proportion of test to be used as val
     train_x, test_x, train_y, test_y = train_test_split(
         data_x, data_y, test_size=test_prop, stratify=data_y
     )
@@ -22,7 +22,7 @@ def partition_dataset(load_fn: Callable):
 
 def training_curve_test(load_fn: Callable, n_jobs: int,
                         out_folder: Union[str, PurePath],
-                        prepartitioned: bool = False,
+                        prepartitioned: bool,
                         model_params: Union[None, dict] = None,
                         verbose: int = 1):
     """Performs a 'training curve test' in which a validation partition
@@ -75,3 +75,121 @@ def training_curve_test(load_fn: Callable, n_jobs: int,
         results = classification_report(test_y, preds, output_dict=True)
         with open(results_file, 'wb') as f:
             pickle.dump(results, f)
+
+
+def select_features_xgboost(load_fn: Callable, n_jobs: int,
+                            out_folder: Union[str, PurePath],
+                            prepartitioned: bool,
+                            model_params: Union[None, dict],
+                            skip_last: bool = False):
+    """Trains and evaluates XGBoost as a feature selector and as a
+    classifier. Does not use validation, so val and test are merged.
+    """
+    from sklearn.feature_selection import SelectFromModel
+    from sklearn.metrics import classification_report
+    import xgboost as xgb
+    # Load data
+    if prepartitioned:
+        train_x, train_y, val_x, val_y, test_x, test_y = load_fn()
+    else:
+        # Load and split data
+        train_x, train_y, val_x, val_y, test_x, test_y = partition_dataset(
+            load_fn
+        )
+    # test_x = np.vstack([val_x, test_x])
+    # test_y = np.hstack([val_y, test_y])
+    # Generate selector model
+    if model_params is None:
+        model_params = {}
+    sel_model = xgb.XGBClassifier(
+        **model_params,
+        objective='binary:logistic',
+        use_label_encoder=False,
+        eval_metric='logloss',
+        n_jobs=n_jobs
+    )
+    sel_model.fit(
+        train_x, train_y,
+    )
+    pred = sel_model.predict(test_x)
+    report = classification_report(test_y, pred, output_dict=True)
+    report['n_feats'] = train_x.shape[1]
+    results = {}
+    results_early = {}
+    # Iterate over the model thresholds
+    thresholds = np.sort(sel_model.feature_importances_)
+    for thresh in thresholds:
+        # Select features
+        selector = SelectFromModel(sel_model, threshold=thresh, prefit=True)
+        sel_train_x = selector.transform(train_x)
+        sel_val_x = selector.transform(val_x)
+        sel_test_x = selector.transform(test_x)
+        # Train model
+        model = xgb.XGBClassifier(
+            **model_params,
+            objective='binary:logistic',
+            use_label_encoder=False,
+            eval_metric='logloss',
+            n_jobs=n_jobs,
+        )
+        model.fit(
+            sel_train_x, train_y,
+            eval_set=[(sel_train_x, train_y), (sel_val_x, val_y)],
+            eval_metric=['error', 'logloss'], verbose=0
+        )
+        # Evaluate model
+        pred = model.predict(sel_test_x)
+        report = classification_report(test_y, pred, output_dict=True)
+        report['n_feats'] = sel_train_x.shape[1]
+        results[thresh] = report
+
+        model.fit(
+            sel_train_x, train_y,
+            eval_set=[(sel_train_x, train_y), (sel_val_x, val_y)],
+            eval_metric=['error', 'logloss'], early_stopping_rounds=10,
+            verbose=0
+        )
+        pred = model.predict(sel_test_x)
+        report = classification_report(test_y, pred, output_dict=True)
+        report['n_feats'] = sel_train_x.shape[1]
+        results_early[thresh] = report
+    # Save results
+    out_folder = Path(out_folder)
+    out_folder.mkdir(exist_ok=True, parents=True)
+    results_name = out_folder.name + '_results.pickle'
+    with open(out_folder / results_name, 'wb') as f:
+        pickle.dump(results, f)
+    results_name = out_folder.name + '_results_early.pickle'
+    with open(out_folder / results_name, 'wb') as f:
+        pickle.dump(results_early, f)
+    return results, results_early
+    # Generate plots
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    import seaborn as sns
+    sns.set_style('whitegrid')
+    sns.set_context('talk')
+    res = {v['n_feats']: v['accuracy'] for v in results.values()}
+    res2 = {v['n_feats']: v['accuracy'] for v in results_early.values()}
+    n_feats = np.array([k for k in res][::-1])
+    accs = np.array([v for v in res.values()][::-1])
+    accs2 = np.array([v for v in res2.values()][::-1])
+    if skip_last:
+        n_feats = n_feats[:-1]
+        accs = accs[:-1]
+        accs2 = accs2[:-1]
+    df = pd.DataFrame({'Acc.': accs*100, 'Acc. (early)': accs2*100},
+                      index=n_feats)
+    # ax = sns.lineplot(x=n_feats, y=accs * 100, color='tab:blue',
+    #                   label='Accuracy')
+    ax = sns.lineplot(data=df, hue=['Acc.', 'Acc. (early)'])
+    plt.legend()
+    ax.set_xlabel('N. Features')
+    ax.set_ylabel('Accuracy [%]')
+    ax.set_title(f'Feature selection, XGBoost, dataset '
+                 f'{out_folder.name.upper()}')
+    plot_name = f'{out_folder.name}_plot.png'
+    plt.tight_layout()
+    plt.savefig(out_folder / plot_name)
+    plt.clf()
+    return results, results_early

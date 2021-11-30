@@ -2,7 +2,6 @@ from pathlib import Path, PurePath
 from typing import Union
 
 import numpy as np
-import pandas as pd
 
 
 def load_partitions_cancer(partition: int):
@@ -27,6 +26,7 @@ def load_partitions_higgs():
     Used for testing that XGBoost is working as intended, through the
     same pipeline used by Iris dataset.
     """
+    import pandas as pd
     # from sklearn.model_selection import train_test_split
     df = pd.read_csv(Path.cwd() / "_additional_xgb_tests/HIGGS.csv",
                      header=None)
