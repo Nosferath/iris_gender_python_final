@@ -162,27 +162,36 @@ def select_features_xgboost(load_fn: Callable, n_jobs: int,
     results_name = out_folder.name + '_results_early.pickle'
     with open(out_folder / results_name, 'wb') as f:
         pickle.dump(results_early, f)
-    return results, results_early
+    # return results, results_early
     # Generate plots
     import matplotlib.pyplot as plt
     import pandas as pd
     import seaborn as sns
+    # Generate DataFrames and remove unnecesary data
+    if skip_last:
+        del results[0], results_early[0]
+    df = pd.DataFrame(results)
+    df = df.drop(['0', '1', 'macro avg', 'weighted avg'], axis=0)
+    df = df.transpose()
+    df_early = pd.DataFrame(results_early)
+    df_early = df_early.drop(['0', '1', 'macro avg', 'weighted avg'], axis=0)
+    df_early = df_early.transpose()
+    # Rename columns and merge
+    df.columns = ['normal', 'n_feats']
+    df.index.name = 'fscore threshold'
+    df_early.columns = ['early', 'n_feats']
+    df_early.index.name = 'fscore threshold'
+    df = pd.merge(df, df_early, on=['fscore threshold', 'n_feats'])
+    df = df.reset_index()
+    # Melt df for plotting
+    df = df.melt(
+        id_vars=['n_feats', 'fscore threshold'],
+        value_vars=['normal', 'early'],
+        var_name='test type', value_name='accuracy'
+    )
     sns.set_style('whitegrid')
     sns.set_context('talk')
-    res = {v['n_feats']: v['accuracy'] for v in results.values()}
-    res2 = {v['n_feats']: v['accuracy'] for v in results_early.values()}
-    n_feats = np.array([k for k in res][::-1])
-    accs = np.array([v for v in res.values()][::-1])
-    accs2 = np.array([v for v in res2.values()][::-1])
-    if skip_last:
-        n_feats = n_feats[:-1]
-        accs = accs[:-1]
-        accs2 = accs2[:-1]
-    df = pd.DataFrame({'Acc.': accs*100, 'Acc. (early)': accs2*100},
-                      index=n_feats)
-    # ax = sns.lineplot(x=n_feats, y=accs * 100, color='tab:blue',
-    #                   label='Accuracy')
-    ax = sns.lineplot(data=df, hue=['Acc.', 'Acc. (early)'])
+    ax = sns.lineplot(data=df, x='n_feats', y='accuracy', hue='test type')
     plt.legend()
     ax.set_xlabel('N. Features')
     ax.set_ylabel('Accuracy [%]')

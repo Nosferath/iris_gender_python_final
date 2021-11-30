@@ -2,7 +2,7 @@ import argparse
 from pathlib import PurePath
 from typing import Union
 
-from benchmark_tests.model_tests import training_curve_test
+from model_tests import training_curve_test
 from load_partitions import load_partitions
 
 
