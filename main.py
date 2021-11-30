@@ -83,5 +83,38 @@ def main_feature_selection_bench():
         )
 
 
+def main_feature_selection_iris():
+    from sklearn.model_selection import train_test_split
+    from load_partitions import load_partitions
+    from model_tests import select_features_xgboost
+    from constants import datasets
+
+    # Parse arguments
+    ap = argparse.ArgumentParser()
+    ap.add_argument('n_jobs', type=int, help='Number of jobs/processes')
+    args = ap.parse_args()
+    n_jobs = args.n_jobs
+    # Perform tests
+    root_folder = 'results_selection_iris/'
+    for dataset in datasets:
+        def load_iris_tvt():
+            train_x, train_y, _, _, test_x, test_y, _, _ = load_partitions(
+                dataset, 1, 0, True
+            )
+            test_x, val_x, test_y, val_y = train_test_split(
+                test_x, test_y, test_size=0.25, stratify=test_y)
+            return train_x, train_y, val_x, val_y, test_x, test_y
+
+        select_features_xgboost(
+            load_fn=load_iris_tvt,
+            n_jobs=n_jobs,
+            out_folder=root_folder + dataset,
+            prepartitioned=True,
+            model_params={'n_estimators': 500},
+            skip_last=True,
+            limit_features=200
+        )
+
+
 if __name__ == '__main__':
-    main_feature_selection_bench()
+    main_feature_selection_iris()

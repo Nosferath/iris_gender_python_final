@@ -81,7 +81,8 @@ def select_features_xgboost(load_fn: Callable, n_jobs: int,
                             out_folder: Union[str, PurePath],
                             prepartitioned: bool,
                             model_params: Union[None, dict],
-                            skip_last: bool = False):
+                            skip_last: bool = False,
+                            limit_features: int = 0):
     """Trains and evaluates XGBoost as a feature selector and as a
     classifier. Does not use validation, so val and test are merged.
     """
@@ -116,6 +117,8 @@ def select_features_xgboost(load_fn: Callable, n_jobs: int,
     results_early = {}
     # Iterate over the model thresholds
     thresholds = np.sort(sel_model.feature_importances_)
+    if limit_features:
+        thresholds = thresholds[:min(len(thresholds), limit_features)]
     for thresh in thresholds:
         # Select features
         selector = SelectFromModel(sel_model, threshold=thresh, prefit=True)
