@@ -81,7 +81,6 @@ def select_features_xgboost(load_fn: Callable, n_jobs: int,
                             out_folder: Union[str, PurePath],
                             prepartitioned: bool,
                             model_params: Union[None, dict],
-                            skip_last: bool = False,
                             limit_features: int = 0):
     """Trains and evaluates XGBoost as a feature selector and as a
     classifier. Does not use validation, so val and test are merged.
@@ -163,5 +162,5 @@ def select_features_xgboost(load_fn: Callable, n_jobs: int,
     results_name = out_folder.name + '_results_early.pickle'
     with open(out_folder / results_name, 'wb') as f:
         pickle.dump(results_early, f)
-    # return results, results_early
+
     return results, results_early
