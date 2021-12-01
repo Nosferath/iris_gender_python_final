@@ -77,13 +77,13 @@ def training_curve_test(load_fn: Callable, n_jobs: int,
             pickle.dump(results, f)
 
 
-def select_features_xgboost(load_fn: Callable, n_jobs: int,
-                            out_folder: Union[str, PurePath],
-                            prepartitioned: bool,
-                            model_params: Union[None, dict],
-                            limit_features: int = 0):
-    """Trains and evaluates XGBoost as a feature selector and as a
-    classifier. Does not use validation, so val and test are merged.
+def select_features_base(sel_model, load_fn: Callable, n_jobs: int,
+                         out_folder: Union[str, PurePath],
+                         prepartitioned: bool,
+                         model_params: dict,
+                         limit_features: int = 0):
+    """Trains and evaluates sel_model as a feature selector, and XGBoost
+    as a classifier. Does not use validation, so val and test are merged
     """
     from sklearn.feature_selection import SelectFromModel
     from sklearn.metrics import classification_report
@@ -97,15 +97,6 @@ def select_features_xgboost(load_fn: Callable, n_jobs: int,
             load_fn
         )
     # Generate selector model
-    if model_params is None:
-        model_params = {}
-    sel_model = xgb.XGBClassifier(
-        **model_params,
-        objective='binary:logistic',
-        use_label_encoder=False,
-        eval_metric='logloss',
-        n_jobs=n_jobs
-    )
     sel_model.fit(
         train_x, train_y,
     )
@@ -164,3 +155,48 @@ def select_features_xgboost(load_fn: Callable, n_jobs: int,
         pickle.dump(results_early, f)
 
     return results, results_early
+
+
+def select_features_xgboost(load_fn: Callable, n_jobs: int,
+                            out_folder: Union[str, PurePath],
+                            prepartitioned: bool,
+                            model_params: Union[None, dict],
+                            limit_features: int = 0):
+    import xgboost as xgb
+    if model_params is None:
+        model_params = {}
+    sel_model = xgb.XGBClassifier(
+        **model_params,
+        objective='binary:logistic',
+        use_label_encoder=False,
+        eval_metric='logloss',
+        n_jobs=n_jobs
+    )
+    return select_features_base(sel_model=sel_model,
+                                load_fn=load_fn,
+                                n_jobs=n_jobs,
+                                out_folder=out_folder,
+                                prepartitioned=prepartitioned,
+                                model_params=model_params,
+                                limit_features=limit_features)
+
+
+def select_features_rf(load_fn: Callable, n_jobs: int,
+                       out_folder: Union[str, PurePath],
+                       prepartitioned: bool,
+                       model_params: Union[None, dict],
+                       limit_features: int = 0):
+    from sklearn.ensemble import RandomForestClassifier
+    if model_params is None:
+        model_params = {}
+    sel_model = RandomForestClassifier(
+        **model_params,
+        n_jobs=n_jobs
+    )
+    return select_features_base(sel_model=sel_model,
+                                load_fn=load_fn,
+                                n_jobs=n_jobs,
+                                out_folder=out_folder,
+                                prepartitioned=prepartitioned,
+                                model_params=model_params,
+                                limit_features=limit_features)
