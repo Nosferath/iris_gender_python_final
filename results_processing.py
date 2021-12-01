@@ -145,11 +145,13 @@ def generate_table_from_df(input_df: pd.DataFrame, annot_df: pd.DataFrame,
     plt.clf()
 
 
-def generate_results_table(folders: List[str], keys: List[str],
-                           out_folder: str, out_name: str,
-                           figsize: Tuple[float] = (18, 6),
-                           display: bool = False, include_train: bool = False,
-                           transpose: bool = False):
+def generate_results_table_from_folders(
+        folders: List[str], keys: List[str],
+        out_folder: str, out_name: str,
+        figsize: Tuple[float] = (18, 6),
+        display: bool = False, include_train: bool = False,
+        transpose: bool = False
+):
     """Using the selected results folders, generates a formatted table
     as an image with all the results, ready for adding to the ppt.
     """
@@ -609,7 +611,8 @@ def generate_training_curves(model, out_file: Union[str, PurePath],
 
 
 def generate_feature_selection_plot(results: dict, results_early: dict,
-                                    out_folder: Union[str, PurePath]):
+                                    out_folder: Union[str, PurePath],
+                                    sel_name: str = 'XGBoost'):
     import matplotlib.pyplot as plt
     import seaborn as sns
 
@@ -639,7 +642,7 @@ def generate_feature_selection_plot(results: dict, results_early: dict,
     plt.legend()
     ax.set_xlabel('N. Features')
     ax.set_ylabel('Accuracy [%]')
-    ax.set_title(f'Feature selection, XGBoost, dataset '
+    ax.set_title(f'Feature selection, {sel_name}, dataset '
                  f'{out_folder.name.upper()}')
     plot_name = f'{out_folder.name}_plot.png'
     plt.tight_layout()

@@ -4,20 +4,13 @@ from typing import Union
 import numpy as np
 
 
-def load_partitions_cancer(partition: int):
-    """Wrapper function (implementing the same interface as
-    load_partitions_cmim) for loading the breast_cancer dataset.
-    Used for testing that XGBoost is working as intended, through the
-    same pipeline used by Iris dataset.
-    """
+def load_partitions_cancer():
+    """Wrapper function for loading the breast_cancer dataset. """
     from sklearn.datasets import load_breast_cancer
-    from sklearn.model_selection import train_test_split
     cancer = load_breast_cancer()
-    x = cancer.data
-    y = cancer.target
-    x_train, x_test, y_train, y_test = train_test_split(x, y,
-                                                        random_state=partition)
-    return x_train, y_train, x_test, y_test
+    data_x = cancer.data
+    data_y = cancer.target
+    return data_x, data_y
 
 
 def load_partitions_higgs():

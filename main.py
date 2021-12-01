@@ -70,7 +70,8 @@ def main_feature_selection_bench():
     load_fns = [load_partitions_cancer, load_dataset_h41, load_dataset_m41,
                 load_dataset_s51]
     names = ['cancer', 'h41', 'm41', 's51']
-    params = [{'n_estimators': 50}, None, None, None]
+    params = [{'n_estimators': 100}, {'n_estimators': 100},
+              {'n_estimators': 100}, {'n_estimators': 100}]
     # load_fns = [load_partitions_cancer, load_dataset_h41, load_dataset_m41,
     #             load_dataset_s51, load_partitions_higgs]
     # names = ['cancer', 'h41', 'm41', 's51', 'higgs']
@@ -119,4 +120,4 @@ def main_feature_selection_iris():
 
 
 if __name__ == '__main__':
-    main_feature_selection_iris()
+    main_feature_selection_bench()
