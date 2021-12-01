@@ -116,9 +116,9 @@ def select_features_xgboost(load_fn: Callable, n_jobs: int,
     results = {}
     results_early = {}
     # Iterate over the model thresholds
-    thresholds = np.sort(sel_model.feature_importances_)
+    thresholds = np.sort(np.unique(sel_model.feature_importances_))
     if limit_features:
-        thresholds = thresholds[:min(len(thresholds), limit_features)]
+        thresholds = thresholds[-min(len(thresholds), limit_features):]
     for thresh in thresholds:
         # Select features
         selector = SelectFromModel(sel_model, threshold=thresh, prefit=True)
@@ -164,42 +164,4 @@ def select_features_xgboost(load_fn: Callable, n_jobs: int,
     with open(out_folder / results_name, 'wb') as f:
         pickle.dump(results_early, f)
     # return results, results_early
-    # Generate plots
-    import matplotlib.pyplot as plt
-    import pandas as pd
-    import seaborn as sns
-    # Generate DataFrames and remove unnecesary data
-    if skip_last:
-        del results[0], results_early[0]
-    df = pd.DataFrame(results)
-    df = df.drop(['0', '1', 'macro avg', 'weighted avg'], axis=0)
-    df = df.transpose()
-    df_early = pd.DataFrame(results_early)
-    df_early = df_early.drop(['0', '1', 'macro avg', 'weighted avg'], axis=0)
-    df_early = df_early.transpose()
-    # Rename columns and merge
-    df.columns = ['normal', 'n_feats']
-    df.index.name = 'fscore threshold'
-    df_early.columns = ['early', 'n_feats']
-    df_early.index.name = 'fscore threshold'
-    df = pd.merge(df, df_early, on=['fscore threshold', 'n_feats'])
-    df = df.reset_index()
-    # Melt df for plotting
-    df = df.melt(
-        id_vars=['n_feats', 'fscore threshold'],
-        value_vars=['normal', 'early'],
-        var_name='test type', value_name='accuracy'
-    )
-    sns.set_style('whitegrid')
-    sns.set_context('talk')
-    ax = sns.lineplot(data=df, x='n_feats', y='accuracy', hue='test type')
-    plt.legend()
-    ax.set_xlabel('N. Features')
-    ax.set_ylabel('Accuracy [%]')
-    ax.set_title(f'Feature selection, XGBoost, dataset '
-                 f'{out_folder.name.upper()}')
-    plot_name = f'{out_folder.name}_plot.png'
-    plt.tight_layout()
-    plt.savefig(out_folder / plot_name)
-    plt.clf()
     return results, results_early
