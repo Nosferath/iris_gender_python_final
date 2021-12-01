@@ -60,7 +60,7 @@ def main_feature_selection_bench():
     from benchmark_tests.load_benchmark_datasets import \
         load_partitions_cancer, load_dataset_h41, load_dataset_m41, \
         load_dataset_s51, load_partitions_higgs
-    from model_tests import select_features_xgboost
+    from model_tests import select_features_rf
     # Parse arguments
     ap = argparse.ArgumentParser()
     ap.add_argument('n_jobs', type=int, help='Number of jobs/processes')
@@ -68,25 +68,28 @@ def main_feature_selection_bench():
     n_jobs = args.n_jobs
     # Perform tests
     load_fns = [load_partitions_cancer, load_dataset_h41, load_dataset_m41,
-                load_dataset_s51, load_partitions_higgs]
-    names = ['cancer', 'h41', 'm41', 's51', 'higgs']
-    params = [{'n_estimators': 50}, None, None, None, {'n_estimators': 500}]
-    root_folder = 'results_selection/'
+                load_dataset_s51]
+    names = ['cancer', 'h41', 'm41', 's51']
+    params = [{'n_estimators': 50}, None, None, None]
+    # load_fns = [load_partitions_cancer, load_dataset_h41, load_dataset_m41,
+    #             load_dataset_s51, load_partitions_higgs]
+    # names = ['cancer', 'h41', 'm41', 's51', 'higgs']
+    # params = [{'n_estimators': 50}, None, None, None, {'n_estimators': 500}]
+    root_folder = 'results_selection_rf/'
     for load_fn, name, param in zip(load_fns, names, params):
-        select_features_xgboost(
+        select_features_rf(
             load_fn=load_fn,
             n_jobs=n_jobs,
             out_folder=root_folder + name,
             prepartitioned=False,
             model_params=param,
-            skip_last=True
         )
 
 
 def main_feature_selection_iris():
     from sklearn.model_selection import train_test_split
     from load_partitions import load_partitions
-    from model_tests import select_features_xgboost
+    from model_tests import select_features_rf
     from constants import datasets
 
     # Parse arguments
@@ -95,7 +98,7 @@ def main_feature_selection_iris():
     args = ap.parse_args()
     n_jobs = args.n_jobs
     # Perform tests
-    root_folder = 'results_selection_iris/'
+    root_folder = 'results_selection_rf_iris/'
     for dataset in datasets:
         def load_iris_tvt():
             train_x, train_y, _, _, test_x, test_y, _, _ = load_partitions(
@@ -105,13 +108,12 @@ def main_feature_selection_iris():
                 test_x, test_y, test_size=0.25, stratify=test_y)
             return train_x, train_y, val_x, val_y, test_x, test_y
 
-        select_features_xgboost(
+        select_features_rf(
             load_fn=load_iris_tvt,
             n_jobs=n_jobs,
             out_folder=root_folder + dataset,
             prepartitioned=True,
             model_params={'n_estimators': 500},
-            skip_last=True,
             limit_features=200
         )
 
