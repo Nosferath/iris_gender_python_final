@@ -145,6 +145,12 @@ def plot_feature_importances(importances: np.ndarray, out_path):
     plt.close()
 
 
+def generate_dmatrix(x_arr: np.ndarray, y_arr: np.ndarray):
+    """Generates a DMatrix for using with XGBoost."""
+    from xgboost import DMatrix
+    return DMatrix(data=x_arr, label=y_arr)
+
+
 def move_mod_v2():
     """This function moves all files from dataMod and the modV2 conti-
     nuous CMIM arrays to the same folders used by the regular data,
