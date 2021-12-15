@@ -119,7 +119,7 @@ def main_feature_selection_iris():
         )
 
 
-def main_xgb_tuning(n_jobs):
+def main_xgb_tuning():
     import argparse
     ap = argparse.ArgumentParser()
     ap.add_argument('n_jobs', type=int, help='Number of threads')
@@ -146,4 +146,4 @@ def main_xgb_tuning(n_jobs):
 
 
 if __name__ == '__main__':
-    main_feature_selection_bench()
+    main_xgb_tuning()
