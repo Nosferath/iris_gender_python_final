@@ -37,7 +37,7 @@ def main_iris():
     ap = argparse.ArgumentParser()
     ap.add_argument('-n', '--ntrees', type=int, required=True,
                     help="Number of estimators")
-    ap.add_argument('-j', '--njobs', type=int, required=True,
+    ap.add_argument('-j', '--n_jobs', type=int, required=True,
                     help="Number of jobs/threads")
     args = ap.parse_args()
     n_estimators = args.ntrees
@@ -117,6 +117,32 @@ def main_feature_selection_iris():
             model_params={'n_estimators': 500},
             limit_features=200
         )
+
+
+def main_xgb_tuning(n_jobs):
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument('n_jobs', type=int, help='Number of threads')
+    args = ap.parse_args()
+    n_jobs = args.n_jobs
+
+    import numpy as np
+    from xgboost_tuning import phase_1, generate_phase_1_gridplot
+    from constants import datasets
+    lr_list = np.hstack([np.arange(0.002, 0.011, 0.002),
+                         np.arange(0.01, 0.11, 0.01)])
+    for d in datasets:
+        train_x, train_y, _, _, test_x, test_y, _, _ = load_partitions(
+            d, partition=1, mask_value=0, scale_dataset=True)
+        data = {'train_x': train_x,
+                'train_y': train_y,
+                'test_x': test_x,
+                'test_y': test_y}
+        out_folder = f'results_xgb_params/{d}/'
+        results, model = phase_1(data, lr_list, out_folder, n_jobs, d)
+        generate_phase_1_gridplot(results['cv_results'],
+                                  out_folder + 'phase1_params.png')
+
 
 
 if __name__ == '__main__':

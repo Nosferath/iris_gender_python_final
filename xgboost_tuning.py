@@ -8,7 +8,7 @@ import xgboost as xgb
 from xgboost.sklearn import XGBClassifier
 
 from results_processing import generate_training_curves
-from utils import generate_dmatrix
+from utils import generate_dmatrix, Timer
 
 
 DEFAULT_PARAMS = {
@@ -19,7 +19,7 @@ DEFAULT_PARAMS = {
 SEED = 42
 
 
-def phase_1(data: dict, lr_list, out_folder, njobs: int, data_name: str):
+def phase_1(data: dict, lr_list, out_folder, n_jobs: int, data_name: str):
     """Adjust learning rate and number of trees."""
     out_folder = Path(out_folder)
     out_folder.mkdir(exist_ok=True, parents=True)
@@ -44,13 +44,15 @@ def phase_1(data: dict, lr_list, out_folder, njobs: int, data_name: str):
             gamma=0,
             subsample=0.8,
             colsample_bytree=0.8,
-            nthread=njobs,
+            nthread=n_jobs,
             scale_pos_weight=1,
             seed=SEED
         )
         dmatrix = generate_dmatrix(train_x, train_y)
         params = model.get_params()
         nbr = params['n_estimators']
+        timer = Timer(f'{data_name} initial results')
+        timer.start()
         cv_results = xgb.cv(
             params,
             dmatrix,
@@ -58,22 +60,26 @@ def phase_1(data: dict, lr_list, out_folder, njobs: int, data_name: str):
             metrics='logloss',
             early_stopping_rounds=50,
             nfold=5,
-            verbose_eval=True
+            verbose_eval=False
         )
-        cur_results['cv_results'] = cv_results
+        timer.stop()
+        cur_results['initial_results'] = cv_results
         n_est = cv_results.shape[0]
         # Evaluate using these parameters
         model.set_params(
             n_estimators=n_est,
         )
+        timer = Timer(f'{data_name} initial report')
+        timer.start()
         model.fit(
             train_x, train_y,
             eval_set=[(train_x, train_y), (val_x, val_y)],
             eval_metric=['error', 'logloss']
         )
         pred = model.predict(test_x)
+        timer.stop()
         report = classification_report(test_y, pred, output_dict=True)
-        cur_results['report'] = report
+        cur_results['initial_report'] = report
         results[lr] = cur_results
         generate_training_curves(
             model, out_folder / f'phase1_{lr:.02f}/curves',
@@ -86,7 +92,18 @@ def phase_1(data: dict, lr_list, out_folder, njobs: int, data_name: str):
     for lr in lr_list:
         base_n_est = results[lr]['cv_results'].shape[0]
         base_n_est -= base_n_est % 10  # Round down
-        n_est_list = np.arange(base_n_est - 20, base_n_est + 21, 10)
+        base_n_est = max(base_n_est, 10)
+        low = base_n_est - 20
+        top = base_n_est + 21
+        n_vals = (top - low - 1) / 10 + 1
+        while n_vals < 11:
+            low -= 10
+            top += 20
+            n_vals = (top - low - 1) / 10 + 1
+        if low <= 0:
+            top -= low + 10
+            low = 10
+        n_est_list = np.arange(low, top, 10)
         param_grid.append({'learning_rate': [lr],
                            'n_estimators': n_est_list})
     model = XGBClassifier(
@@ -99,14 +116,23 @@ def phase_1(data: dict, lr_list, out_folder, njobs: int, data_name: str):
         scale_pos_weight=1,
         seed=SEED
     )
-    model = GridSearchCV(model, param_grid, n_jobs=njobs, cv=5,
+    model = GridSearchCV(model, param_grid, n_jobs=n_jobs, cv=5,
                          return_train_score=True)
-    full_x = np.vstack([train_x, test_x])
-    full_y = np.hstack([train_y, test_y])
-    model.fit(full_x, full_y)
+    # full_x = np.vstack([train_x, test_x])
+    # full_y = np.hstack([train_y, test_y])
+    # model.fit(full_x, full_y)
+    timer = Timer(f'{data_name} CV phase 1')
+    timer.start()
+    model.fit(train_x, train_y)
+    pred = model.predict(test_x)
+    timer.stop()
+    results['cv_results'] = model.cv_results_
+    results['cv_test'] = classification_report(test_y, pred)
 
     with open(out_folder / 'phase1_cvmodel.pickle', 'wb') as f:
         pickle.dump(model, f)
+    with open(out_folder / 'phase1_results.pickle', 'wb') as f:
+        pickle.dump(results, f)
 
     return results, model
 
