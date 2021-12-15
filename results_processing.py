@@ -586,6 +586,7 @@ def generate_training_curves(model, out_file: Union[str, PurePath],
     assert hasattr(model, 'evals_result'), 'Model does not implement' \
                                            ' evals_result.'
     import matplotlib.pyplot as plt
+    import seaborn as sns
     # Parse out filenames from out_file
     out_file = Path(out_file)
     root_path = out_file.parent
@@ -600,14 +601,22 @@ def generate_training_curves(model, out_file: Union[str, PurePath],
     for_values = (('logloss', logloss_path, 'Log Loss'),
                   ('error', error_path, 'Classification Error'))
     for key, filename, y_label in for_values:
-        fig, ax = plt.subplots()
-        ax.plot(x_axis, evals['validation_0'][key], label='Train')
-        ax.plot(x_axis, evals['validation_1'][key], label='Valid.')
-        ax.legend()
-        plt.ylabel(y_label)
-        plt.title(f'{model_name} {y_label}')
-        plt.savefig(filename)
-        plt.clf()
+        with sns.axes_style('whitegrid'), sns.plotting_context('talk'):
+            df = pd.DataFrame({
+                'epochs': x_axis,
+                'Train': evals['validation_0'][key],
+                'Valid.': evals['validation_1'][key],
+            })
+            df = df.melt(id_vars='epochs', value_vars=['Train', 'Valid.'],
+                         var_name='set', value_name=y_label)
+            fig, ax = plt.subplots()
+            sns.lineplot(x='epochs', y=y_label, hue='set', data=df, ax=ax)
+            ax.legend()
+            plt.ylabel(y_label)
+            plt.title(f'{model_name} {y_label}')
+            plt.tight_layout()
+            plt.savefig(filename)
+            plt.clf()
 
 
 def generate_feature_selection_plot(results: dict, results_early: dict,
