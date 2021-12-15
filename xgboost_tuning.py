@@ -90,7 +90,7 @@ def phase_1(data: dict, lr_list, out_folder, n_jobs: int, data_name: str):
     # Explore other values for n_estimators
     param_grid = []
     for lr in lr_list:
-        base_n_est = results[lr]['cv_results'].shape[0]
+        base_n_est = results[lr]['initial_results'].shape[0]
         base_n_est -= base_n_est % 10  # Round down
         base_n_est = max(base_n_est, 10)
         low = base_n_est - 20
@@ -137,30 +137,70 @@ def phase_1(data: dict, lr_list, out_folder, n_jobs: int, data_name: str):
     return results, model
 
 
-def generate_phase_1_gridplot(cv_results, out_file):
+def generate_phase_1_gridplot(cv_results, out_file, param_a='n_estimators',
+                              param_b='learning_rate'):
     import matplotlib.pyplot as plt
     import pandas as pd
     import seaborn as sns
 
     df = pd.DataFrame(cv_results)
-    df = df[['param_n_estimators', 'param_learning_rate', 'mean_test_score']]
+    param_a = f'param_{param_a}'
+    param_b = f'param_{param_b}'
+    title = 'Phase 1 parameter grid'
+    df = df[[param_a, param_b, 'mean_test_score']]
     df.param_learning_rate = df.param_learning_rate.astype(float).round(2)
     df.param_n_estimators = df.param_n_estimators.astype(int)
     df.mean_test_score = df.mean_test_score.astype(float)*100
-    df = df.pivot(index='param_learning_rate', columns='param_n_estimators',
+    df = df.pivot(index=param_a, columns=param_b,
                   values='mean_test_score')
     out_file = Path(out_file)
     out_file.parent.mkdir(exist_ok=True, parents=True)
     with sns.axes_style('whitegrid'), sns.plotting_context('talk'):
         fig, ax = plt.subplots(figsize=(16, 8))
         sns.heatmap(df, cmap='jet', ax=ax, annot=True, fmt='.1f')
-        ax.set_title(f'Phase 1 parameter grid, {out_file.parent.name}')
+        ax.set_title(f'{title}, {out_file.parent.name}')
         plt.tight_layout()
         plt.savefig(out_file)
         plt.clf()
 
 
-def phase_2(cv_results):
+def phase_2(data, cv_results, out_folder, n_jobs: int, data_name: str):
+    """Adjust max_depth and min_child_weight"""
+    out_folder = Path(out_folder)
+    out_folder.mkdir(exist_ok=True, parents=True)
     idx = np.where(cv_results['rank_test_score'] == 1)[0][0]
     params = cv_results['params'][idx]
 
+    train_x = data['train_x']
+    train_y = data['train_y']
+    test_x = data['test_x']
+    test_y = data['test_y']
+
+    model = XGBClassifier(
+        **DEFAULT_PARAMS,
+        **params,
+        gamma=0,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        scale_pos_weight=1,
+        seed=SEED
+    )
+    param_grid = {
+        'max_depth': range(3, 10, 2),
+        'min_child_weight': range(1, 6, 2)
+    }
+
+    model = GridSearchCV(model, param_grid, n_jobs=n_jobs, cv=5,
+                         return_train_score=True)
+    timer = Timer(f'{data_name} CV2')
+    timer.start()
+    model.fit(train_x, train_y)
+    pred = model.predict(test_x)
+    timer.stop()
+    results = {'cv_results': model.cv_results_,
+               'cv_test': classification_report(test_y, pred)}
+
+    with open(out_folder / 'phase2_results.pickle', 'wb') as f:
+        pickle.dump(results, f)
+
+    return results, model
