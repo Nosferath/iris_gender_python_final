@@ -127,26 +127,34 @@ def main_xgb_tuning():
     n_jobs = args.n_jobs
 
     import numpy as np
-    from xgboost_tuning import phase_1, generate_phase_1_gridplot
+    from benchmark_tests.load_benchmark_datasets import load_dataset_h41, \
+        load_dataset_m41
+    from xgboost_tuning import phase_1, generate_gridplot
     from constants import datasets
-    lr_list = np.hstack([np.arange(0.002, 0.009, 0.002),
-                         np.arange(0.01, 0.11, 0.01)])
-    for d in datasets:
-        train_x, train_y, _, _, test_x, test_y, _, _ = load_partitions(
-            d, partition=1, mask_value=0, scale_dataset=True)
-        data_x = np.vstack([train_x, test_x])
-        data_y = np.hstack([train_y, test_y])
+    lr_list = np.arange(0.01, 0.11, 0.01)
+    for d in datasets + ['H41', 'M41']:
+        if d in datasets:
+            train_x, train_y, _, _, test_x, test_y, _, _ = load_partitions(
+                d, partition=1, mask_value=0, scale_dataset=True)
+            data_x = np.vstack([train_x, test_x])
+            data_y = np.hstack([train_y, test_y])
+        elif d == 'H41':
+            data_x, data_y = load_dataset_h41()
+        elif d == 'M41':
+            data_x, data_y = load_dataset_m41()
+        else:
+            raise NotImplemented('ERROR, unidentified dataset')
         data = {'data_x': data_x,
                 'data_y': data_y}
         out_folder = f'results_xgb_params/{d}/'
         results, model = phase_1(data, lr_list, out_folder, n_jobs, d)
-        generate_phase_1_gridplot(results['cv_results'],
-                                  out_folder + 'phase1_params.png',
-                                  param_a='n_estimators',
-                                  param_b='learning_rate',
-                                  param_a_round=False,
-                                  param_b_round=True,
-                                  figsize=(16, 14))
+        generate_gridplot(results['cv_results'],
+                          out_folder + 'phase1_params.png',
+                          param_a='learning_rate',
+                          param_b='n_estimators',
+                          param_a_round=True,
+                          param_b_round=False,
+                          figsize=(16, 8))
 
 
 if __name__ == '__main__':

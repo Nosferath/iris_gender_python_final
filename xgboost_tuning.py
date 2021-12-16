@@ -142,10 +142,9 @@ def phase_1(data: dict, lr_list, out_folder, n_jobs: int, data_name: str):
     return results, model
 
 
-def generate_phase_1_gridplot(cv_results, out_file, param_a='learning_rate',
-                              param_b='n_estimators', param_a_round=True,
-                              param_b_round=False, phase_n=1,
-                              figsize=(16, 8)):
+def generate_gridplot(cv_results, out_file, param_a='learning_rate',
+                      param_b='n_estimators', param_a_round=True,
+                      param_b_round=False, phase_n=1, figsize=(16, 8)):
     import matplotlib.pyplot as plt
     import pandas as pd
     import seaborn as sns
