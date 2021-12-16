@@ -24,12 +24,17 @@ def phase_1(data: dict, lr_list, out_folder, n_jobs: int, data_name: str):
     out_folder = Path(out_folder)
     out_folder.mkdir(exist_ok=True, parents=True)
     # Determine initial value for number of trees
-    train_x = data['train_x']
-    train_y = data['train_y']
-    test_x = data['test_x']
-    test_y = data['test_y']
-    test_x, val_x, test_y, val_y = train_test_split(
-        test_x, test_y, test_size=1 / 3, stratify=test_y, random_state=SEED
+    # train_x = data['train_x']
+    # train_y = data['train_y']
+    # test_x = data['test_x']
+    # test_y = data['test_y']
+    # test_x, val_x, test_y, val_y = train_test_split(
+    #     test_x, test_y, test_size=1 / 3, stratify=test_y, random_state=SEED
+    # )
+    data_x = data['data_x']
+    data_y = data['data_y']
+    train_x, test_x, train_y, test_y = train_test_split(
+        data_x, data_y, test_size=0.3, stratify=data_y, random_state=SEED
     )
     results = {}
     # Get base number of trees from xgb native CV
@@ -73,17 +78,17 @@ def phase_1(data: dict, lr_list, out_folder, n_jobs: int, data_name: str):
         timer.start()
         model.fit(
             train_x, train_y,
-            eval_set=[(train_x, train_y), (val_x, val_y)],
-            eval_metric=['error', 'logloss']
+            # eval_set=[(train_x, train_y), (val_x, val_y)],
+            # eval_metric=['error', 'logloss']
         )
         pred = model.predict(test_x)
         timer.stop()
         report = classification_report(test_y, pred, output_dict=True)
         cur_results['initial_report'] = report
         results[lr] = cur_results
-        generate_training_curves(
-            model, out_folder / f'phase1_{lr:.03f}/curves',
-            f'XGBoost ({data_name})')
+        # generate_training_curves(
+        #     model, out_folder / f'phase1_{lr:.03f}/curves',
+        #     f'XGBoost ({data_name})')
 
     with open(out_folder / 'phase1_results.pickle', 'wb') as f:
         pickle.dump(results, f)
@@ -127,7 +132,7 @@ def phase_1(data: dict, lr_list, out_folder, n_jobs: int, data_name: str):
     pred = model.predict(test_x)
     timer.stop()
     results['cv_results'] = model.cv_results_
-    results['cv_test'] = classification_report(test_y, pred)
+    results['cv_test'] = classification_report(test_y, pred, return_dict=True)
 
     with open(out_folder / 'phase1_cvmodel.pickle', 'wb') as f:
         pickle.dump(model, f)
@@ -195,8 +200,9 @@ def phase_2(data, cv_results, out_folder, n_jobs: int, data_name: str):
         seed=SEED
     )
     param_grid = {
-        'max_depth': range(3, 10, 2),
-        'min_child_weight': range(1, 6, 2)
+        'max_depth': range(3, 10, 1),
+        'min_child_weight': list(np.arange(0, 1, 0.2)).append(
+            list(range(1, 6, 1)))
     }
 
     model = GridSearchCV(model, param_grid, n_jobs=n_jobs, cv=5,

@@ -134,10 +134,10 @@ def main_xgb_tuning():
     for d in datasets:
         train_x, train_y, _, _, test_x, test_y, _, _ = load_partitions(
             d, partition=1, mask_value=0, scale_dataset=True)
-        data = {'train_x': train_x,
-                'train_y': train_y,
-                'test_x': test_x,
-                'test_y': test_y}
+        data_x = np.vstack([train_x, test_x])
+        data_y = np.hstack([train_y, test_y])
+        data = {'data_x': data_x,
+                'data_y': data_y}
         out_folder = f'results_xgb_params/{d}/'
         results, model = phase_1(data, lr_list, out_folder, n_jobs, d)
         generate_phase_1_gridplot(results['cv_results'],

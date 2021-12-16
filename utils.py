@@ -13,6 +13,7 @@ class Timer:
         self.start_time = None
 
     def start(self):
+        print('Starting timer,', self.msg)
         self.start_time = perf_counter()
 
     def stop(self):
