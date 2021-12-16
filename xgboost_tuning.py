@@ -213,3 +213,36 @@ def phase_2(data, cv_results, out_folder, n_jobs: int, data_name: str):
         pickle.dump(results, f)
 
     return results, model
+
+
+## THESE ARE FOR CURRENT USE AND SHOULD BE DELETED SOON
+# from constants import datasets
+# from xgboost_tuning import generate_phase_1_gridplot
+#
+# root_path = 'results_xgb_params/'
+# import pickle
+#
+# for d in ('M41', 'H41'):
+#     with open(f'{root_path}{d}/phase2_results.pickle', 'rb') as f:
+#         model = pickle.load(f)
+#     out_file = f'{root_path}{d}/phase2_params.png'
+#     generate_phase_1_gridplot(model['cv_results'], out_file,
+#                               param_a='max_depth', param_b='min_child_weight',
+#                               param_a_round=False, param_b_round=False,
+#                               figsize=(8, 8))
+#
+
+# from constants import datasets
+# from xgboost_tuning import generate_phase_1_gridplot
+#
+# root_path = 'results_xgb_params/'
+# import pickle
+#
+# for d in ('M41',):
+#     with open(f'{root_path}{d}/phase1_cvmodel.pickle', 'rb') as f:
+#         model = pickle.load(f)
+#     out_file = f'{root_path}{d}/phase1_params.png'
+#     generate_phase_1_gridplot(model.cv_results_, out_file,
+#                               param_a='n_estimators', param_b='learning_rate',
+#                               param_a_round=False, param_b_round=True,
+#                               figsize=(16, 14))
