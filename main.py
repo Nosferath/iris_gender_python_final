@@ -129,7 +129,7 @@ def main_xgb_tuning():
     import numpy as np
     from xgboost_tuning import phase_1, generate_phase_1_gridplot
     from constants import datasets
-    lr_list = np.hstack([np.arange(0.002, 0.011, 0.002),
+    lr_list = np.hstack([np.arange(0.002, 0.009, 0.002),
                          np.arange(0.01, 0.11, 0.01)])
     for d in datasets:
         train_x, train_y, _, _, test_x, test_y, _, _ = load_partitions(
@@ -141,8 +141,12 @@ def main_xgb_tuning():
         out_folder = f'results_xgb_params/{d}/'
         results, model = phase_1(data, lr_list, out_folder, n_jobs, d)
         generate_phase_1_gridplot(results['cv_results'],
-                                  out_folder + 'phase1_params.png')
-
+                                  out_folder + 'phase1_params.png',
+                                  param_a='n_estimators',
+                                  param_b='learning_rate',
+                                  param_a_round=False,
+                                  param_b_round=True,
+                                  figsize=(16, 14))
 
 
 if __name__ == '__main__':

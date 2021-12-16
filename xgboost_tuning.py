@@ -82,7 +82,7 @@ def phase_1(data: dict, lr_list, out_folder, n_jobs: int, data_name: str):
         cur_results['initial_report'] = report
         results[lr] = cur_results
         generate_training_curves(
-            model, out_folder / f'phase1_{lr:.02f}/curves',
+            model, out_folder / f'phase1_{lr:.03f}/curves',
             f'XGBoost ({data_name})')
 
     with open(out_folder / 'phase1_results.pickle', 'wb') as f:
@@ -137,8 +137,10 @@ def phase_1(data: dict, lr_list, out_folder, n_jobs: int, data_name: str):
     return results, model
 
 
-def generate_phase_1_gridplot(cv_results, out_file, param_a='n_estimators',
-                              param_b='learning_rate'):
+def generate_phase_1_gridplot(cv_results, out_file, param_a='learning_rate',
+                              param_b='n_estimators', param_a_round=True,
+                              param_b_round=False, phase_n=1,
+                              figsize=(16, 8)):
     import matplotlib.pyplot as plt
     import pandas as pd
     import seaborn as sns
@@ -146,17 +148,24 @@ def generate_phase_1_gridplot(cv_results, out_file, param_a='n_estimators',
     df = pd.DataFrame(cv_results)
     param_a = f'param_{param_a}'
     param_b = f'param_{param_b}'
-    title = 'Phase 1 parameter grid'
+    title = f'Phase {phase_n} parameter grid'
     df = df[[param_a, param_b, 'mean_test_score']]
-    df.param_learning_rate = df.param_learning_rate.astype(float).round(2)
-    df.param_n_estimators = df.param_n_estimators.astype(int)
+    if param_a_round:
+        df.loc[:, param_a] = df.loc[:, param_a].astype(float).round(3)
+    else:
+        df.loc[:, param_a] = df.loc[:, param_a].astype(int)
+    if param_b_round:
+        df.loc[:, param_b] = df.loc[:, param_b].astype(float).round(3)
+    else:
+        df.loc[:, param_b] = df.loc[:, param_b].astype(int)
     df.mean_test_score = df.mean_test_score.astype(float)*100
+    df = df.drop_duplicates(subset=[param_a, param_b])
     df = df.pivot(index=param_a, columns=param_b,
                   values='mean_test_score')
     out_file = Path(out_file)
     out_file.parent.mkdir(exist_ok=True, parents=True)
     with sns.axes_style('whitegrid'), sns.plotting_context('talk'):
-        fig, ax = plt.subplots(figsize=(16, 8))
+        fig, ax = plt.subplots(figsize=figsize)
         sns.heatmap(df, cmap='jet', ax=ax, annot=True, fmt='.1f')
         ax.set_title(f'{title}, {out_file.parent.name}')
         plt.tight_layout()
