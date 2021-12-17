@@ -132,7 +132,7 @@ def phase_1(data: dict, lr_list, out_folder, n_jobs: int, data_name: str):
     pred = model.predict(test_x)
     timer.stop()
     results['cv_results'] = model.cv_results_
-    results['cv_test'] = classification_report(test_y, pred, return_dict=True)
+    results['cv_test'] = classification_report(test_y, pred, output_dict=True)
 
     with open(out_folder / 'phase1_cvmodel.pickle', 'wb') as f:
         pickle.dump(model, f)
@@ -212,7 +212,8 @@ def phase_2(data, cv_results, out_folder, n_jobs: int, data_name: str):
     pred = model.predict(test_x)
     timer.stop()
     results = {'cv_results': model.cv_results_,
-               'cv_test': classification_report(test_y, pred)}
+               'cv_test': classification_report(test_y, pred,
+                                                output_dict=True)}
 
     with open(out_folder / 'phase2_results.pickle', 'wb') as f:
         pickle.dump(results, f)
