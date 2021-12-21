@@ -153,7 +153,7 @@ def generate_gridplot(cv_results, out_file, param_a='learning_rate',
     param_a = f'param_{param_a}'
     param_b = f'param_{param_b}'
     title = f'Phase {phase_n} parameter grid'
-    df = df[[param_a, param_b, 'mean_test_score']]
+    df = df[[param_a, param_b, 'mean_test_score', 'std_test_score']]
     if param_a_round:
         df.loc[:, param_a] = df.loc[:, param_a].astype(float).round(3)
     else:
@@ -163,18 +163,33 @@ def generate_gridplot(cv_results, out_file, param_a='learning_rate',
     else:
         df.loc[:, param_b] = df.loc[:, param_b].astype(int)
     df.mean_test_score = df.mean_test_score.astype(float)*100
+    df.std_test_score = df.std_test_score.astype(float)*100
     df = df.drop_duplicates(subset=[param_a, param_b])
-    df = df.pivot(index=param_a, columns=param_b,
-                  values='mean_test_score')
+    df_mean = df.pivot(index=param_a, columns=param_b,
+                       values='mean_test_score')
+    df_std = df.pivot(index=param_a, columns=param_b,
+                      values='std_test_score')
     out_file = Path(out_file)
     out_file.parent.mkdir(exist_ok=True, parents=True)
     with sns.axes_style('whitegrid'), sns.plotting_context('talk'):
+        # Generate std plot
         fig, ax = plt.subplots(figsize=figsize)
-        sns.heatmap(df, cmap='jet', ax=ax, annot=True, fmt='.1f')
+        sns.heatmap(df_mean, cmap='jet', ax=ax, annot=True, fmt='.1f')
         ax.set_title(f'{title}, {out_file.parent.name}')
         plt.tight_layout()
         plt.savefig(out_file)
         plt.clf()
+        plt.close()
+        # Generate std plot
+        fig, ax = plt.subplots(figsize=figsize)
+        sns.heatmap(df_std, cmap='jet', ax=ax, annot=True, fmt='.1f')
+        ax.set_title(f'{title} std, {out_file.parent.name}')
+        plt.tight_layout()
+        out_name = out_file.stem + '_std' + out_file.suffix
+        out_file_std = out_file.parent / out_name
+        plt.savefig(out_file_std)
+        plt.clf()
+        plt.close()
 
 
 def phase_2(data, cv_results, out_folder, n_jobs: int, data_name: str):
