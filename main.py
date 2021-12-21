@@ -1,4 +1,5 @@
 import argparse
+import pickle
 from pathlib import PurePath
 from typing import Union
 
@@ -119,6 +120,29 @@ def main_feature_selection_iris():
         )
 
 
+def get_dataset_for_main(dataset: str):
+    import numpy as np
+    from constants import datasets
+    from benchmark_tests.load_benchmark_datasets import load_dataset_m41, \
+        load_dataset_h41
+
+    if dataset in datasets:
+        train_x, train_y, _, _, test_x, test_y, _, _ = load_partitions(
+            dataset, partition=1, mask_value=0, scale_dataset=True)
+        data_x = np.vstack([train_x, test_x])
+        data_y = np.hstack([train_y, test_y])
+    elif dataset == 'H41':
+        data_x, data_y = load_dataset_h41()
+    elif dataset == 'M41':
+        data_x, data_y = load_dataset_m41()
+    else:
+        raise NotImplemented('ERROR, unidentified dataset')
+    data_y[data_y == -1] = 0
+    data = {'data_x': data_x,
+            'data_y': data_y}
+    return data
+
+
 def main_xgb_tuning():
     import argparse
     ap = argparse.ArgumentParser()
@@ -127,27 +151,11 @@ def main_xgb_tuning():
     n_jobs = args.n_jobs
 
     import numpy as np
-    from benchmark_tests.load_benchmark_datasets import load_dataset_h41, \
-        load_dataset_m41
     from xgboost_tuning import phase_1, generate_gridplot
-    from constants import datasets
     lr_list = np.arange(0.01, 0.11, 0.01)
     # for d in datasets + ('H41', 'M41'):
     for d in ('H41', 'M41'):
-        if d in datasets:
-            train_x, train_y, _, _, test_x, test_y, _, _ = load_partitions(
-                d, partition=1, mask_value=0, scale_dataset=True)
-            data_x = np.vstack([train_x, test_x])
-            data_y = np.hstack([train_y, test_y])
-        elif d == 'H41':
-            data_x, data_y = load_dataset_h41()
-        elif d == 'M41':
-            data_x, data_y = load_dataset_m41()
-        else:
-            raise NotImplemented('ERROR, unidentified dataset')
-        data_y[data_y == -1] = 0
-        data = {'data_x': data_x,
-                'data_y': data_y}
+        data = get_dataset_for_main(d)
         out_folder = f'results_xgb_params/{d}/'
         results, model = phase_1(data, lr_list, out_folder, n_jobs, d)
         generate_gridplot(results['cv_results'],
@@ -159,5 +167,29 @@ def main_xgb_tuning():
                           figsize=(16, 8))
 
 
+def main_xgb_tuning_phase2():
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument('n_jobs', type=int, help='Number of threads')
+    args = ap.parse_args()
+    n_jobs = args.n_jobs
+
+    from xgboost_tuning import phase_2, generate_gridplot
+    from constants import datasets
+    for d in datasets + ('H41', 'M41'):
+        data = get_dataset_for_main(d)
+        out_folder = f'results_xgb_params/{d}/'
+        with open(out_folder + 'phase1_results.pickle', 'rb') as f:
+            cv_results = pickle.load(f)['cv_results']
+        results, model = phase_2(data, cv_results, out_folder, n_jobs, d)
+        generate_gridplot(results['cv_results'],
+                          out_folder + 'phase2_params.png',
+                          param_a='max_depth',
+                          param_b='min_child_weight',
+                          param_a_round=False,
+                          param_b_round=False,
+                          figsize=(8, 8))
+
+
 if __name__ == '__main__':
-    main_xgb_tuning()
+    main_xgb_tuning_phase2()
