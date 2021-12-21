@@ -132,7 +132,8 @@ def main_xgb_tuning():
     from xgboost_tuning import phase_1, generate_gridplot
     from constants import datasets
     lr_list = np.arange(0.01, 0.11, 0.01)
-    for d in datasets + ('H41', 'M41'):
+    # for d in datasets + ('H41', 'M41'):
+    for d in ('H41', 'M41'):
         if d in datasets:
             train_x, train_y, _, _, test_x, test_y, _, _ = load_partitions(
                 d, partition=1, mask_value=0, scale_dataset=True)
@@ -144,6 +145,7 @@ def main_xgb_tuning():
             data_x, data_y = load_dataset_m41()
         else:
             raise NotImplemented('ERROR, unidentified dataset')
+        data_y[data_y == -1] = 0
         data = {'data_x': data_x,
                 'data_y': data_y}
         out_folder = f'results_xgb_params/{d}/'
