@@ -184,10 +184,11 @@ def phase_2(data, cv_results, out_folder, n_jobs: int, data_name: str):
     idx = np.where(cv_results['rank_test_score'] == 1)[0][0]
     params = cv_results['params'][idx]
 
-    train_x = data['train_x']
-    train_y = data['train_y']
-    test_x = data['test_x']
-    test_y = data['test_y']
+    data_x = data['data_x']
+    data_y = data['data_y']
+    train_x, test_x, train_y, test_y = train_test_split(
+        data_x, data_y, test_size=0.3, stratify=data_y, random_state=SEED
+    )
 
     model = XGBClassifier(
         **DEFAULT_PARAMS,
