@@ -216,7 +216,7 @@ def phase_2(data, cv_results, out_folder, n_jobs: int, data_name: str):
     )
     param_grid = {
         'max_depth': range(3, 10, 1),
-        'min_child_weight': list(np.arange(0, 1, 0.2)).append(
+        'min_child_weight': list(np.arange(0, 1, 0.2)).extend(
             list(range(1, 6, 1)))
     }
 
