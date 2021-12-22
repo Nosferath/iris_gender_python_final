@@ -657,3 +657,35 @@ def generate_feature_selection_plot(results: dict, results_early: dict,
     plt.tight_layout()
     plt.savefig(out_folder / plot_name)
     plt.clf()
+
+
+def generate_df_from_xgb_param_cv_results(folder, results_file_name):
+    dfs = []
+    folder = Path(folder)
+    for dataset_folder in [d for d in folder.glob('*/') if d.is_dir()]:
+        # Load cv results
+        with open(dataset_folder / results_file_name, 'rb') as f:
+            loaded = pickle.load(f)
+            if isinstance(loaded, dict):
+                cv_results = loaded['cv_results']
+            else:
+                cv_results = loaded.cv_results_
+        # Determine params and splits
+        params = [k for k in cv_results.keys()
+                  if k.startswith('param_')]
+        splits = [k for k in cv_results.keys()
+                  if k.startswith('split') and k.endswith('_test_score')]
+        # Generate df
+        df = pd.DataFrame(cv_results)
+        df = df.melt(id_vars=params, value_vars=splits, var_name='split',
+                     value_name='accuracy')
+        df.loc[:, 'split'] = df.loc[:, 'split'].apply(lambda x: int(x[5]))
+        df = df.sort_values(params, axis=0)
+        df['dataset'] = dataset_folder.name
+        # Fix learning rate
+        if 'param_learning_rate' in params:
+            df.param_learning_rate = \
+                df.param_learning_rate.astype(float).round(3)
+        dfs.append(df)
+
+    return dfs
