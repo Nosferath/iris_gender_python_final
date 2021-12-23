@@ -664,12 +664,17 @@ def generate_df_from_xgb_param_cv_results(folder, results_file_name):
     folder = Path(folder)
     for dataset_folder in [d for d in folder.glob('*/') if d.is_dir()]:
         # Load cv results
-        with open(dataset_folder / results_file_name, 'rb') as f:
-            loaded = pickle.load(f)
-            if isinstance(loaded, dict):
-                cv_results = loaded['cv_results']
-            else:
-                cv_results = loaded.cv_results_
+        try:
+            with open(dataset_folder / results_file_name, 'rb') as f:
+                loaded = pickle.load(f)
+                if isinstance(loaded, dict):
+                    cv_results = loaded['cv_results']
+                else:
+                    cv_results = loaded.cv_results_
+        except FileNotFoundError:
+            print(f'File {results_file_name} not found in folder'
+                  f' {dataset_folder.name}. Skipping.')
+            continue
         # Determine params and splits
         params = [k for k in cv_results.keys()
                   if k.startswith('param_')]
