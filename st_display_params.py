@@ -55,10 +55,6 @@ def main():
     swap_params = st.checkbox(
         'Alternar parámetros'
     )
-    enable_legend = st.checkbox(
-        'Activar leyenda',
-        True
-    )
     color_legend = st.checkbox(
         'Colorear por std',
         False
@@ -86,6 +82,10 @@ def main():
                                         values='annot')
         sizex1 = st.number_input('Tamaño horizontal de gráfico', value=12)
         sizey1 = st.number_input('Tamaño vertical de gráfico', value=12)
+        enable_legend = st.checkbox(
+            'Activar leyenda',
+            True
+        )
         with sns.axes_style('whitegrid'), sns.plotting_context('talk'):
             fig = plt.figure(figsize=(sizex1, sizey1))
             sns.heatmap(pivoted, cmap='jet', annot=pivoted_annot, fmt='')
@@ -109,7 +109,6 @@ def main():
         grouped = data.groupby(params)
         acc_desc = grouped.accuracy.describe()
         st.dataframe(acc_desc.reset_index())
-
 
 
 if __name__ == '__main__':
