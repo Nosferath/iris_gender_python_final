@@ -172,6 +172,3 @@ def move_mod_v2():
             out_name = file.stem + suf
             move(file, cur_out / out_name)
         cur_folder.unlink()
-
-
-# def plot_mask_distribution
