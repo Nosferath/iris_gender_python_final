@@ -1,27 +1,6 @@
-from pathlib import Path
-from typing import List
-
 import numpy as np
 
-DEFAULT_ROOT_PATH = Path('S:/NUND_fixed_masks/')
-
-
-def get_labels_df(eye: str, root_path=DEFAULT_ROOT_PATH):
-    import pandas as pd
-
-    filename = f'List_{eye.lower()}_GFI.txt'
-    df = pd.read_csv(root_path / filename, sep='\t', header=None)
-    df.columns = ['filename', 'gender']
-    df.loc[:, 'filename'] = df.filename.apply(lambda x: x.split('.')[0])
-    return df
-
-
-def fix_labels_df(images: List[str], classes: List[int], eye: str,
-                  root_path=DEFAULT_ROOT_PATH):
-    with open(root_path / f'List_{eye.lower()}_GFI.txt', 'a') as f:
-        for img, c in zip(images, classes):
-            print(f'Adding file {img} with label {c} to labels')
-            f.write(f'\n{img}.tiff\t{c}')
+from load_data_utils import get_labels_df, fix_labels_df, DEFAULT_ROOT_PATH
 
 
 def load_dataset_from_images(dataset_name: str, root_path=DEFAULT_ROOT_PATH):
@@ -37,6 +16,7 @@ def load_dataset_from_images(dataset_name: str, root_path=DEFAULT_ROOT_PATH):
     labels_df = get_labels_df(eye, root_path)
     dataset_folder = root_path / _dataset
     iris_images_paths = list((dataset_folder / 'iris').glob('*.bmp'))
+    iris_images_paths = sorted(iris_images_paths)
     masks_folder = dataset_folder / msk_folder
 
     # Check that all images have a label
