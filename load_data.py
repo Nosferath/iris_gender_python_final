@@ -28,13 +28,14 @@ def load_dataset_from_images(dataset_name: str, root_path=DEFAULT_ROOT_PATH):
         label_arr = data_mat['labelArray'][:, 0]
         img_names = data_mat['imagesList']
         img_names = [
-            img_names[i, 0][0][0].split('_')[0]
+            img_names[i, 0][0][0].split('_')[0].split('.')[0]
             for i in range(img_names.shape[0])
         ]
         # Check an already labeled image to check for inverse labels
         lbl_idx = 0
         labeled = iris_images_paths[lbl_idx].stem
-        while labeled in unlabeled:  # Ensure labeled is labeled
+        while labeled in unlabeled or labeled not in img_names:
+            # Ensure labeled is labeled
             lbl_idx += 1
             labeled = iris_images_paths[lbl_idx].stem
         df_label = labels_df[labels_df.filename == labeled].gender.values[0]
