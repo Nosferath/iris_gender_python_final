@@ -33,6 +33,11 @@ def find_dataset_shape(dataset_name: str):
     return shape
 
 
+def find_n_features(datase_name: str):
+    """Finds the number of features from datatset name."""
+    shape = find_dataset_shape(datase_name)
+    return shape[0]*shape[1]
+
 def process_ndiris(root_folder, csv_path, dest_folder):
     """Separates ND-Iris dataset folders into subfolders according
     to sensor and eye, and gathers the labels of every image."""
@@ -59,7 +64,7 @@ def process_ndiris(root_folder, csv_path, dest_folder):
     df = pd.read_csv(csv_path)
     df = df[df['sensor'] != 'resize']
     # df['eye'] = df['eye'].apply(lambda x: str(x).lower())
-    # Move files
+    # Move images
     root_folder = Path(root_folder)
     assert root_folder.exists()
     for f in folders:
@@ -153,9 +158,9 @@ def generate_dmatrix(x_arr: np.ndarray, y_arr: np.ndarray):
 
 
 def move_mod_v2():
-    """This function moves all files from dataMod and the modV2 conti-
+    """This function moves all images from dataMod and the modV2 conti-
     nuous CMIM arrays to the same folders used by the regular data,
-    while adding a _mod_v2 suffix to the files. This allows these files
+    while adding a _mod_v2 suffix to the images. This allows these images
     to be used with the same functions as the regular data.
 
     Used only once.
@@ -166,7 +171,7 @@ def move_mod_v2():
     out_folders = (Path('data'), Path('cmimArraysCont'),
                    Path('cmimArraysStdCont'))
     suf = '_mod_v2.mat'
-    # Move data and CMIM files
+    # Move data and CMIM images
     for cur_folder, cur_out in zip(mod_folders, out_folders):
         for file in cur_folder.glob('*.mat'):
             out_name = file.stem + suf
