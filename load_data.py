@@ -1,9 +1,15 @@
 import numpy as np
 
-from load_data_utils import get_labels_df, fix_labels_df, DEFAULT_ROOT_PATH
+from constants import ROOT_DATA_FOLDER
+from load_data_utils import get_labels_df, fix_labels_df, DEFAULT_ROOT_PATH, \
+    scale_data_by_row
 
 
 def load_dataset_from_images(dataset_name: str, root_path=DEFAULT_ROOT_PATH):
+    """Loads the dataset directly from the images, obtaining the labels
+    directly from the original GFI.txt files if available. Otherwise,
+    the labels are obtained from the old datasets.
+    """
     from PIL import Image
     from utils import find_n_features
     eye = dataset_name.split('_')[0]
@@ -76,3 +82,67 @@ def load_dataset_from_images(dataset_name: str, root_path=DEFAULT_ROOT_PATH):
 
     return data, labels, masks, iris_images_paths
 
+
+def load_dataset_from_npz(dataset_name: str):
+    """Loads the raw dataset from the npz files in the
+    root data folder.
+    """
+    loaded = np.load(f'{ROOT_DATA_FOLDER}/{dataset_name}.npz',
+                     allow_pickle=True)
+    data = loaded['data']
+    labels = loaded['labels']
+    masks = loaded['masks']
+    image_paths = loaded['image_paths']
+    return data, labels, masks, image_paths
+
+
+def load_iris_dataset(dataset_name: str, partition: int,
+                      scale_data: bool = True, apply_masks: bool = True,
+                      test_size: float = 0.3):
+    """Loads the iris dataset. The dataset may be scaled to 0 and 1,
+    and masks may be applied. If partition is not None, data is
+    separated into train and test.
+
+    Parameters
+    ----------
+    dataset_name : str
+        Name of the iris dataset to load
+    partition : int or None.
+        Specific train/test partition to load. Used as seed. If None,
+        the data and labels are returned without partitioning.
+    scale_data : bool, optional
+        If True, samples will be individually scaled to [0-1.0].
+        This is done after applying masks (if applied). Default True.
+    apply_masks : bool, optional
+        If True, individual samples will be scaled to [1-255], and
+        masked values will be assigned to 0. The initial scaling
+        ignores masked values. Default True.
+    test_size : float, optional
+        Percentage of samples to use for test partition. Default 0.3.
+    """
+    from sklearn.model_selection import train_test_split
+    data, labels, masks, _ = load_dataset_from_npz(dataset_name)
+    n_feats = data.shape[1]
+    # Apply masks and/or scale
+    if apply_masks:
+        # Find medians per row
+        row_meds = np.median(data, axis=1)
+        mids_mask = np.tile(row_meds[:, np.newaxis], (1, n_feats))
+        # Temporarily set masked values in between max and min
+        data[masks == 1] = mids_mask[masks == 1]
+        # Scale data
+        data = scale_data_by_row(data)
+        # Constrain values from 1 to 255 uints
+        data = np.round(data*254 + 1).astype('uint8')
+        # Set mask to 0
+        data[masks == 1] = 0
+    if scale_data:
+        data = scale_data_by_row(data)
+    if partition is None:
+        return data, labels
+    # Partition dataset
+    train_x, test_x, train_y, test_y = train_test_split(
+        data, labels, test_size=test_size, stratify=labels,
+        random_state=partition
+    )
+    return train_x, train_y, test_x, test_y

@@ -53,3 +53,14 @@ def save_raw_dataset(data: np.ndarray, labels: np.ndarray, masks: np.ndarray,
         masks=masks,
         image_paths=np.array(image_paths)
     )
+
+
+def scale_data_by_row(data: np.array):
+    n_feats = data.shape[1]
+    row_mins = data.min(axis=1)
+    row_maxs = data.max(axis=1)
+    tile_mins = np.tile(row_mins[:, np.newaxis], (1, n_feats))
+    tile_maxs = np.tile(row_maxs[:, np.newaxis], (1, n_feats))
+    # Scale rows using these values
+    data = np.divide(data - tile_mins, tile_maxs - tile_mins)
+    return data
