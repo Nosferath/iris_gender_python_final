@@ -36,10 +36,13 @@ def vgg_feat_lsvm_parall(data_x, labels, partition: int):
 
 def perform_vgg_feat_lsvm_test(dataset_name: str, n_partitions: int,
                                n_jobs: int):
+    t = Timer(f"Loading dataset {dataset_name}")
+    t.start()
     feat_model = load_vgg_model_features()
     data, labels = load_iris_dataset(dataset_name, None)
     data = prepare_data_for_vgg(data)
     data = feat_model.predict(data)
+    t.stop()
 
     args = [(data, labels, i) for i in range(n_partitions)]
     with Pool(n_jobs) as p:

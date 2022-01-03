@@ -94,8 +94,8 @@ def load_dataset_from_npz(dataset_name: str):
     data = loaded['data']
     labels = loaded['labels']
     masks = loaded['masks']
-    image_paths = loaded['image_paths']
-    return data, labels, masks, image_paths
+    # image_paths = loaded['image_paths']
+    return data, labels, masks  # , image_paths
 
 
 def load_iris_dataset(dataset_name: str, partition: Union[int, None],
@@ -123,7 +123,7 @@ def load_iris_dataset(dataset_name: str, partition: Union[int, None],
         Percentage of samples to use for test partition. Default 0.3.
     """
     from sklearn.model_selection import train_test_split
-    data, labels, masks, _ = load_dataset_from_npz(dataset_name)
+    data, labels, masks = load_dataset_from_npz(dataset_name)
     n_feats = data.shape[1]
     # Apply masks and/or scale
     if apply_masks:
