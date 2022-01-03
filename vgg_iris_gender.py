@@ -73,7 +73,7 @@ def main_vgg_feat_lsvm_test():
     n_jobs = args.n_jobs
     n_parts = args.n_parts
 
-    for d in datasets[1:]:  # TODO borrar []
+    for d in datasets:
         perform_vgg_feat_lsvm_test(d, n_parts, n_jobs)
 
 
