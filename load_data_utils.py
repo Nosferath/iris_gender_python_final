@@ -64,3 +64,33 @@ def scale_data_by_row(data: np.array):
     # Scale rows using these values
     data = np.divide(data - tile_mins, tile_maxs - tile_mins)
     return data
+
+
+def balance_partition(data_x, data_y):
+    """Balances the partition, ensuring same number of samples
+    per class. If unbalanced, removes the last examples until
+    balanced.
+    """
+    n_samples = data_x.shape[0]
+    n_per_class = [(data_y == 0).size, (data_y == 1).size]
+    if n_per_class[0] == n_per_class[1]:
+        return data_x, data_y
+    highest = np.argmax(n_per_class)
+    delta = abs(n_per_class[0] - n_per_class[1])
+    locations = (data_y == highest).nonzero()[0]
+    to_remove = locations[-delta:]
+    to_include = np.ones(n_samples, dtype=bool)
+    to_include[to_remove] = False
+    return data_x[to_include, :], data_y[to_include]
+
+
+def partition_data(data, labels, test_size: float, partition: int):
+    """Partitions and balances the data"""
+    from sklearn.model_selection import train_test_split
+    train_x, test_x, train_y, test_y = train_test_split(
+        data, labels, test_size=test_size, stratify=labels,
+        random_state=partition
+    )
+    train_x, train_y = balance_partition(train_x, train_y)
+    test_x, test_y = balance_partition(test_x, test_y)
+    return train_x, train_y, test_x, test_y

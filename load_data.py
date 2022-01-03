@@ -1,8 +1,10 @@
+from typing import Union
+
 import numpy as np
 
 from constants import ROOT_DATA_FOLDER
 from load_data_utils import get_labels_df, fix_labels_df, DEFAULT_ROOT_PATH, \
-    scale_data_by_row
+    scale_data_by_row, partition_data
 
 
 def load_dataset_from_images(dataset_name: str, root_path=DEFAULT_ROOT_PATH):
@@ -96,7 +98,7 @@ def load_dataset_from_npz(dataset_name: str):
     return data, labels, masks, image_paths
 
 
-def load_iris_dataset(dataset_name: str, partition: int,
+def load_iris_dataset(dataset_name: str, partition: Union[int, None],
                       scale_data: bool = True, apply_masks: bool = True,
                       test_size: float = 0.3):
     """Loads the iris dataset. The dataset may be scaled to 0 and 1,
@@ -141,8 +143,4 @@ def load_iris_dataset(dataset_name: str, partition: int,
     if partition is None:
         return data, labels
     # Partition dataset
-    train_x, test_x, train_y, test_y = train_test_split(
-        data, labels, test_size=test_size, stratify=labels,
-        random_state=partition
-    )
-    return train_x, train_y, test_x, test_y
+    return partition_data(data, labels, test_size, partition)
