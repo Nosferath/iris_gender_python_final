@@ -38,6 +38,21 @@ def find_n_features(datase_name: str):
     shape = find_dataset_shape(datase_name)
     return shape[0]*shape[1]
 
+
+def find_shape(n_features: int = None, dataset_name: str = None):
+    if n_features is None and dataset_name is None \
+            or n_features is not None and dataset_name is not None:
+        raise ValueError(
+            'You must set EITHER n_features or dataset_name'
+        )
+    if n_features is None:
+        dataset_name: str
+        return find_dataset_shape(dataset_name)
+
+    shapes = {4800: (20, 240), 9600: (40, 240), 38400: (80, 480)}
+    return shapes[n_features]
+
+
 def process_ndiris(root_folder, csv_path, dest_folder):
     """Separates ND-Iris dataset folders into subfolders according
     to sensor and eye, and gathers the labels of every image."""
@@ -142,8 +157,7 @@ def import_matlab_results(in_root: str, in_folders: list, out_folders: list):
 
 def plot_feature_importances(importances: np.ndarray, out_path):
     import matplotlib.pyplot as plt
-    shapes = {4800: (20, 240), 9600: (40, 240), 38400: (80, 480)}
-    cur_shape = shapes[importances.size]
+    cur_shape = find_shape(n_features=importances.size)
     importances = importances.reshape(cur_shape)
     plt.imshow(importances, cmap='jet')
     plt.axis('off')
