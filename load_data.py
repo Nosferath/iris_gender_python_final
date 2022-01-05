@@ -1,10 +1,11 @@
+from pathlib import Path
 from typing import Union
 
 import numpy as np
 
-from constants import ROOT_DATA_FOLDER
-from load_data_utils import get_labels_df, fix_labels_df, DEFAULT_ROOT_PATH, \
-    scale_data_by_row, partition_data
+from constants import ROOT_DATA_FOLDER, ROOT_PERI_FOLDER
+from load_data_utils import get_labels_df, fix_unlabeled,\
+    DEFAULT_ROOT_PATH, scale_data_by_row, partition_data
 
 
 def load_dataset_from_images(dataset_name: str, root_path=DEFAULT_ROOT_PATH):
@@ -31,39 +32,13 @@ def load_dataset_from_images(dataset_name: str, root_path=DEFAULT_ROOT_PATH):
     unlabeled = [f.stem for f in iris_images_paths
                  if f.stem not in labels_df.filename.values]
     if unlabeled:  # Fix unlabeled
-        from scipy.io import loadmat
-        data_mat = loadmat(f'_old_data/{dataset_name}.mat')
-        label_arr = data_mat['labelArray'][:, 0]
-        img_names = data_mat['imagesList']
-        img_names = [
-            img_names[i, 0][0][0].split('_')[0].split('.')[0]
-            for i in range(img_names.shape[0])
-        ]
-        # Check an already labeled image to check for inverse labels
-        lbl_idx = 0
-        labeled = iris_images_paths[lbl_idx].stem
-        while labeled in unlabeled or labeled not in img_names:
-            # Ensure labeled is labeled
-            lbl_idx += 1
-            labeled = iris_images_paths[lbl_idx].stem
-        df_label = labels_df[labels_df.filename == labeled].gender.values[0]
-        arr_idx = img_names.index(labeled)
-        old_label = label_arr[arr_idx]
-        if int(old_label) == int(df_label):
-            invert = False
-        else:
-            invert = True
-        # Fix unlabeled
-        labels_tofix = []
-        for ul in unlabeled:
-            arr_idx = img_names.index(ul)
-            old_label = int(label_arr[arr_idx])
-            if invert:
-                old_label = int(not bool(old_label))
-            labels_tofix.append(old_label)
-        fix_labels_df(unlabeled, labels_tofix, eye, root_path)
-        labels_df = get_labels_df(eye, root_path)
-        del data_mat, label_arr, img_names
+        labels_df = fix_unlabeled(
+            dataset_name=dataset_name,
+            iris_images_paths=iris_images_paths,
+            unlabeled=unlabeled,
+            labels_df=labels_df,
+            labels_path=root_path
+        )
 
     # Load images and masks
     n_features = find_n_features(dataset_name)
@@ -122,7 +97,6 @@ def load_iris_dataset(dataset_name: str, partition: Union[int, None],
     test_size : float, optional
         Percentage of samples to use for test partition. Default 0.3.
     """
-    from sklearn.model_selection import train_test_split
     data, labels, masks = load_dataset_from_npz(dataset_name)
     n_feats = data.shape[1]
     # Apply masks and/or scale
@@ -144,3 +118,54 @@ def load_iris_dataset(dataset_name: str, partition: Union[int, None],
         return data, labels
     # Partition dataset
     return partition_data(data, labels, test_size, partition)
+
+
+def load_periocular_dataset_raw(eye: str, root_path=Path('S:/'),
+                                labels_path=DEFAULT_ROOT_PATH):
+    """Loads the periocular iris images. This was used initially.
+    Afterwards, directly loading the .npz with VGG features was
+    preferred."""
+    from PIL import Image
+    from constants import PERIOCULAR_SHAPE
+    dataset_folder = root_path / f'NUND_{eye}'
+    labels_df = get_labels_df(eye, labels_path)
+    iris_images_paths = list(dataset_folder.glob('*.tiff'))
+    iris_images_paths = sorted(iris_images_paths)
+
+    # Check that all images have a label
+    unlabeled = [f.stem for f in iris_images_paths
+                 if f.stem not in labels_df.filename.values]
+    if unlabeled:  # Fix unlabeled
+        labels_df = fix_unlabeled(
+            dataset_name=f'{eye}_240x20_fixed',
+            iris_images_paths=iris_images_paths,
+            unlabeled=unlabeled,
+            labels_df=labels_df,
+            labels_path=labels_path
+        )
+
+    # Load images and masks
+    n_features = np.product(PERIOCULAR_SHAPE)
+    n_samples = len(iris_images_paths)
+    data = np.zeros((n_samples, n_features), dtype='uint8')
+    labels = np.zeros(n_samples, dtype='uint8')
+    for i in range(n_samples):
+        cur_path = iris_images_paths[i]
+        cur_label = labels_df[
+            labels_df.filename == cur_path.stem].gender.values[0]
+        img = np.array(Image.open(cur_path)).flatten()
+        data[i, :] = img
+        labels[i] = cur_label
+
+    return data, labels, iris_images_paths
+
+
+def load_peri_dataset_from_npz(eye: str):
+    """Loads the raw periocular dataset from the npz files in the
+    root data folder.
+    """
+    loaded = np.load(f'{ROOT_PERI_FOLDER}/{eye}.npz',
+                     allow_pickle=True)
+    data = loaded['data']
+    labels = loaded['labels']
+    return data, labels

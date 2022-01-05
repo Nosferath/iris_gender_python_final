@@ -15,6 +15,9 @@ PAIR_METHOD = 'agrowth_hung_10'
 PARAMS_PARTITION = 1
 MODEL_PARAMS_FOLDER = 'model_params'
 ROOT_DATA_FOLDER = 'data'
+ROOT_PERI_FOLDER = 'data_peri'
+
+PERIOCULAR_SHAPE = (480, 640)
 
 LBP_METHOD = 'uniform'
 LBP_RADIUS = 3

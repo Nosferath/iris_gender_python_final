@@ -12,7 +12,6 @@ def get_labels_df(eye: str, root_path=DEFAULT_ROOT_PATH):
     Filenames are kept without their extension.
     """
     import pandas as pd
-
     filename = f'List_{eye.lower()}_GFI.txt'
     df = pd.read_csv(root_path / filename, sep='\t', header=None)
     df.columns = ['filename', 'gender']
@@ -20,8 +19,70 @@ def get_labels_df(eye: str, root_path=DEFAULT_ROOT_PATH):
     return df
 
 
-def fix_labels_df(images: List[str], classes: List[int], eye: str,
-                  root_path=DEFAULT_ROOT_PATH):
+def fix_unlabeled(dataset_name: str, iris_images_paths: list,
+                  unlabeled: list, labels_df,
+                  labels_path=DEFAULT_ROOT_PATH):
+    """Finds the labels of images that do not have their
+    labels in the GFI.txt file.
+
+    The labels are taken from previously found labels, in old
+    datasets.
+
+    Parameters
+    ----------
+    dataset_name : str
+        Name of the dataset
+    iris_images_paths : list
+        Sorted list of the paths of the images that are being
+        loaded. Obtained using glob().
+    unlabeled : list
+        List of file stems that were not found in GFI.txt and
+        thus are not present in labels_df
+    labels_df : pd.DataFrame
+        DataFrame with labels, obtained using get_labels_df
+    labels_path : pathlib Path, optional
+        Path where the GFI.txt file is located
+    """
+    from scipy.io import loadmat
+    data_mat = loadmat(f'_old_data/{dataset_name}.mat')
+    label_arr = data_mat['labelArray'][:, 0]
+    img_names = data_mat['imagesList']
+    img_names = [
+        img_names[i, 0][0][0].split('_')[0].split('.')[0]
+        for i in range(img_names.shape[0])
+    ]
+    # Check an already labeled image to check for inverse labels
+    lbl_idx = 0
+    labeled = iris_images_paths[lbl_idx].stem
+    while labeled in unlabeled or labeled not in img_names:
+        # Ensure labeled is labeled
+        lbl_idx += 1
+        labeled = iris_images_paths[lbl_idx].stem
+    df_label = labels_df[labels_df.filename == labeled].gender.values[0]
+    arr_idx = img_names.index(labeled)
+    old_label = label_arr[arr_idx]
+    if int(old_label) == int(df_label):
+        invert = False
+    else:
+        invert = True
+    # Fix unlabeled
+    eye = dataset_name.split('_')[0]
+    labels_tofix = []
+    for ul in unlabeled:
+        arr_idx = img_names.index(ul)
+        old_label = int(label_arr[arr_idx])
+        if invert:
+            old_label = int(not bool(old_label))
+        labels_tofix.append(old_label)
+    fix_labels_txt(unlabeled, labels_tofix, eye, labels_path)
+    labels_df = get_labels_df(eye, labels_path)
+    del data_mat, label_arr, img_names
+
+    return labels_df
+
+
+def fix_labels_txt(images: List[str], classes: List[int], eye: str,
+                   root_path=DEFAULT_ROOT_PATH):
     """Adds the missing labels to the GFI.txt.
     DOES NOT CHECK FOR DUPLICATES.
 

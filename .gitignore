@@ -11,3 +11,6 @@ _clear_start_code/
 _additional_xgb_tests/
 tables_xgb/
 plots_early_cmim*/
+data_peri/left.npz
+data_peri/right.npz
+vgg_feat_lsvm_results_prelim/
