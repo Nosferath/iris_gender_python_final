@@ -102,8 +102,7 @@ def main_vgg_feat_lsvm_test():
             perform_peri_vgg_feat_lsvm_test(eye, n_parts, n_jobs)
 
 
-def perform_vgg_test(dataset_name: str, n_partitions: int,
-                     n_jobs: int):
+def perform_vgg_test(dataset_name: str, partition: int):
     from tensorflow.keras.callbacks import TensorBoard
     t = Timer(f"Loading dataset {dataset_name}")
     t.start()
@@ -113,28 +112,27 @@ def perform_vgg_test(dataset_name: str, n_partitions: int,
     t.stop()
 
     results = []
-    for part in range(n_partitions):
-        train_x, train_y, test_x, test_y = partition_data(
-            data, labels, 0.3, part
-        )
-        model = load_vgg_model_finetune()
-        tb = TensorBoard(log_dir=f'vgg_logs/{dataset_name}/{part}/',
-                         write_graph=True, histogram_freq=0, write_images=True,
-                         update_freq='batch')
-        print("VGG Feats and Classifying Test")
-        t = Timer(f"{dataset_name}, {n_partitions} partitions, {n_jobs} jobs")
-        t.start()
-        model.fit(train_x, train_y, epochs=5, callbacks=[tb])
-        preds = model.predict(test_x)
-        preds = preds.argmax(axis=1)
-        result = classification_report(test_y.argmax(axis=1), preds,
-                                       output_dict=True)
-        results.append(result)
-        t.stop()
+    train_x, train_y, test_x, test_y = partition_data(
+        data, labels, 0.3, partition
+    )
+    model = load_vgg_model_finetune()
+    tb = TensorBoard(log_dir=f'vgg_logs/{dataset_name}/{partition}/',
+                     write_graph=True, histogram_freq=0, write_images=True,
+                     update_freq='batch')
+    print("VGG Feats and Classifying Test")
+    t = Timer(f"{dataset_name}, partition {partition}")
+    t.start()
+    model.fit(train_x, train_y, epochs=5, callbacks=[tb])
+    preds = model.predict(test_x)
+    preds = preds.argmax(axis=1)
+    result = classification_report(test_y.argmax(axis=1), preds,
+                                   output_dict=True)
+    results.append(result)
+    t.stop()
 
-    out_folder = Path('vgg_feat_lsvm_results_prelim')
+    out_folder = Path('vgg_full_results')
     out_folder.mkdir(exist_ok=True, parents=True)
-    with open(out_folder / f'{dataset_name}.pickle', 'wb') as f:
+    with open(out_folder / f'{dataset_name}_{partition}.pickle', 'wb') as f:
         pickle.dump(results, f)
 
     del data, labels
@@ -145,20 +143,20 @@ def main_vgg_test():
     from constants import datasets
 
     ap = argparse.ArgumentParser()
-    ap.add_argument('n_jobs', type=int,
-                    help='Number of jobs')
-    ap.add_argument('-p', '--n_parts', type=int, default=10,
-                    help='Number of random partitions to test on')
+    ap.add_argument('-d', '--d_idx', type=int,
+                    help='Dataset index')
+    ap.add_argument('-p', '--n_part', type=int,
+                    help='Number of partition to test on')
     # ap.add_argument('--use_peri', action='store_true',
     #                 help='Perform periocular test')
     args = ap.parse_args()
-    n_jobs = args.n_jobs
-    n_parts = args.n_parts
+    d_idx = args.d_idx
+    n_part = args.n_part
     # use_peri = args.use_peri
 
     # if not use_peri:
-    for d in datasets:
-        perform_vgg_test(d, n_parts, n_jobs)
+    d = datasets[d_idx]
+    perform_vgg_test(d, n_part)
     # else:
     #     for eye in ('left', 'right',):
     #         perform_peri_vgg_feat_lsvm_test(eye, n_parts, n_jobs)
