@@ -37,17 +37,22 @@ def load_vgg_model_features():
     return model
 
 
-def _prepare_data_for_vgg(data_x: np.ndarray, orig_shape: Tuple[int, int]):
+def _prepare_data_for_vgg(data_x: np.ndarray, orig_shape: Tuple[int, int],
+                          scale_data=False):
     from skimage.color import gray2rgb
     from skimage.transform import resize
     from tensorflow.keras.applications.vgg16 import preprocess_input
 
+    if scale_data:
+        from load_data_utils import scale_data_by_row
+        data_x = (scale_data_by_row(data_x) * 255).astype('uint8')
     data_x = gray2rgb(data_x.reshape((-1, *orig_shape)))
     out_data_x = np.zeros((data_x.shape[0], 224, 224, 3))
     for i in range(data_x.shape[0]):
         cur_img = data_x[i]
-        cur_img = resize(cur_img, output_shape=(224, 224), mode='edge',
-                         order=3)
+        cur_img = resize(
+            cur_img, output_shape=(224, 224), mode='edge', order=3
+        )
         out_data_x[i, :, :, :] = cur_img
 
     out_data_x = preprocess_input(out_data_x)
@@ -55,11 +60,16 @@ def _prepare_data_for_vgg(data_x: np.ndarray, orig_shape: Tuple[int, int]):
     return out_data_x
 
 
-def prepare_data_for_vgg(data_x: np.ndarray):
+def prepare_data_for_vgg(data_x: np.array):
+    """Prepares normalized iris images for use with VGG feature
+    extractor.
+    """
     from utils import find_shape
 
     orig_shape = find_shape(n_features=data_x.shape[1])
-    return _prepare_data_for_vgg(data_x, orig_shape)
+    if data_x.max() == 1:
+        data_x = data_x * 255
+    return _prepare_data_for_vgg(data_x, orig_shape, scale_data=False)
 
 
 def labels_to_onehot(labels):
@@ -69,6 +79,12 @@ def labels_to_onehot(labels):
     return encoder.fit_transform(labels.reshape((-1, 1))).astype('float32')
 
 
-def prepare_periocular_for_vgg(data_x: np.ndarray):
+def prepare_periocular_for_vgg(data_x: np.ndarray, scale_data=False):
     from constants import PERIOCULAR_SHAPE
-    return _prepare_data_for_vgg(data_x, PERIOCULAR_SHAPE)
+    return _prepare_data_for_vgg(data_x, PERIOCULAR_SHAPE,
+                                 scale_data=scale_data)
+
+
+def load_periocular_vgg(eye: str):
+    from load_data import load_peri_dataset_from_npz
+    return load_peri_dataset_from_npz(f'{eye}_vgg')
