@@ -12,7 +12,8 @@ from constants import TEST_SIZE
 from load_data import load_iris_dataset
 from load_data_utils import partition_data
 from utils import Timer
-from vgg import load_vgg_model_features, prepare_data_for_vgg
+from vgg import load_vgg_model_finetune, load_vgg_model_features,\
+    prepare_data_for_vgg, labels_to_onehot
 
 
 def vgg_feat_lsvm_parall(data_x, labels, partition: int):
@@ -52,12 +53,12 @@ def perform_vgg_feat_lsvm_test(dataset_name: str, n_partitions: int,
         results = p.starmap(vgg_feat_lsvm_parall, args)
         t.stop()
 
-    out_folder = Path('vgg_feat_lsvm_results')
+    out_folder = Path('vgg_feat_lsvm_results_prelim')
     out_folder.mkdir(exist_ok=True, parents=True)
     with open(out_folder / f'{dataset_name}.pickle', 'wb') as f:
         pickle.dump(results, f)
 
-    del data, labels
+    del feat_model, data, labels
 
 
 def main_vgg_feat_lsvm_test():
@@ -77,8 +78,40 @@ def main_vgg_feat_lsvm_test():
         perform_vgg_feat_lsvm_test(d, n_parts, n_jobs)
 
 
-# def perform_vgg_test(dataset_name: str, n_partitions: int,
-#                      n_jobs: int):
+def perform_vgg_test(dataset_name: str, n_partitions: int,
+                     n_jobs: int):
+    from tensorflow.keras.callbacks import TensorBoard
+    t = Timer(f"Loading dataset {dataset_name}")
+    t.start()
+    data, labels = load_iris_dataset(dataset_name, None)
+    data = prepare_data_for_vgg(data)
+    labels = labels_to_onehot(labels)
+    t.stop()
+
+    results = []
+    for part in range(n_partitions):
+        train_x, train_y, test_x, test_y = partition_data(
+            data, labels, 0.3, part
+        )
+        model = load_vgg_model_finetune()
+        tb = TensorBoard(log_dir='vgg_logs/', write_graph=True, )
+        print("VGG Feats and Classifying Test")
+        t = Timer(f"{dataset_name}, {n_partitions} partitions, {n_jobs} jobs")
+        t.start()
+        model.fit(train_x, train_y, epochs=5)
+        preds = model.predict(test_x)
+        preds = preds.argmax(axis=1)
+        result = classification_report(test_y.argmax(axis=1), preds,
+                                       output_dict=True)
+        results.append(result)
+        t.stop()
+
+    out_folder = Path('vgg_feat_lsvm_results_prelim')
+    out_folder.mkdir(exist_ok=True, parents=True)
+    with open(out_folder / f'{dataset_name}.pickle', 'wb') as f:
+        pickle.dump(results, f)
+
+    del data, labels
 
 
 def main_vgg_test():
