@@ -118,11 +118,13 @@ def perform_vgg_test(dataset_name: str, n_partitions: int,
             data, labels, 0.3, part
         )
         model = load_vgg_model_finetune()
-        tb = TensorBoard(log_dir='vgg_logs/', write_graph=True, )
+        tb = TensorBoard(log_dir=f'vgg_logs/{dataset_name}/{part}/',
+                         write_graph=True, histogram_freq=0, write_images=True,
+                         update_freq='batch')
         print("VGG Feats and Classifying Test")
         t = Timer(f"{dataset_name}, {n_partitions} partitions, {n_jobs} jobs")
         t.start()
-        model.fit(train_x, train_y, epochs=5)
+        model.fit(train_x, train_y, epochs=5, callbacks=[tb])
         preds = model.predict(test_x)
         preds = preds.argmax(axis=1)
         result = classification_report(test_y.argmax(axis=1), preds,
@@ -139,8 +141,29 @@ def perform_vgg_test(dataset_name: str, n_partitions: int,
 
 
 def main_vgg_test():
-    pass
+    import argparse
+    from constants import datasets
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument('n_jobs', type=int,
+                    help='Number of jobs')
+    ap.add_argument('-p', '--n_parts', type=int, default=10,
+                    help='Number of random partitions to test on')
+    # ap.add_argument('--use_peri', action='store_true',
+    #                 help='Perform periocular test')
+    args = ap.parse_args()
+    n_jobs = args.n_jobs
+    n_parts = args.n_parts
+    # use_peri = args.use_peri
+
+    # if not use_peri:
+    for d in datasets:
+        perform_vgg_test(d, n_parts, n_jobs)
+    # else:
+    #     for eye in ('left', 'right',):
+    #         perform_peri_vgg_feat_lsvm_test(eye, n_parts, n_jobs)
 
 
 if __name__ == '__main__':
-    main_vgg_feat_lsvm_test()
+    # main_vgg_feat_lsvm_test()
+    main_vgg_test()

@@ -5,8 +5,10 @@ from tensorflow.keras.applications.vgg16 import VGG16
 from tensorflow.keras.models import Model
 
 
-def load_vgg_model_finetune(lr=0.01):
-    """Loads the VGG-16 model without the original FC layers,
+def load_vgg_model_finetune(lr=0.01, fc_size=2048):
+    """Loads the VGG-16 model without the original FC layers, freezing
+    the original conv layers, and adding new FC layers for training on
+    iris.
     """
     from tensorflow.keras.layers import Flatten, Dense
     from tensorflow.keras.optimizers import Adam
@@ -14,7 +16,7 @@ def load_vgg_model_finetune(lr=0.01):
                        input_shape=(224, 224, 3))
     x = base_model.output
     x = Flatten()(x)
-    x = Dense(4096, activation='relu')(x)
+    x = Dense(fc_size, activation='relu')(x)
     predictions = Dense(2, activation='softmax')(x)
     model = Model(inputs=base_model.input, outputs=predictions)
     # Freeze original layers
