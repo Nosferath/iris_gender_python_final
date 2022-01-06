@@ -90,3 +90,9 @@ def prepare_periocular_for_vgg(data_x: np.ndarray, scale_data=False):
 def load_periocular_vgg(eye: str):
     from load_data import load_peri_dataset_from_npz
     return load_peri_dataset_from_npz(f'{eye}_vgg')
+
+
+def load_periocular_pre_vgg(eye: str):
+    """Data is already prepared and labels are one-hot-encoded"""
+    from load_data import load_peri_dataset_from_npz
+    return load_peri_dataset_from_npz(f'{eye}_pre_vgg')

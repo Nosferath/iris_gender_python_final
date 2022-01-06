@@ -13,7 +13,8 @@ from load_data import load_iris_dataset
 from load_data_utils import partition_data
 from utils import Timer
 from vgg import load_vgg_model_finetune, load_vgg_model_features, \
-    prepare_data_for_vgg, labels_to_onehot, load_periocular_vgg
+    prepare_data_for_vgg, labels_to_onehot, load_periocular_vgg, \
+    load_periocular_pre_vgg
 
 
 def vgg_feat_lsvm_parall(data_x, labels, partition: int):
@@ -102,15 +103,9 @@ def main_vgg_feat_lsvm_test():
             perform_peri_vgg_feat_lsvm_test(eye, n_parts, n_jobs)
 
 
-def perform_vgg_test(dataset_name: str, partition: int):
+def _perform_vgg_test(data, labels, dataset_name: str, partition: int,
+                      out_folder):
     from tensorflow.keras.callbacks import TensorBoard
-    t = Timer(f"Loading dataset {dataset_name}")
-    t.start()
-    data, labels = load_iris_dataset(dataset_name, None)
-    data = prepare_data_for_vgg(data)
-    labels = labels_to_onehot(labels)
-    t.stop()
-
     results = []
     train_x, train_y, test_x, test_y = partition_data(
         data, labels, 0.3, partition
@@ -130,11 +125,35 @@ def perform_vgg_test(dataset_name: str, partition: int):
     results.append(result)
     t.stop()
 
-    out_folder = Path('vgg_full_results')
+    out_folder = Path(out_folder)
     out_folder.mkdir(exist_ok=True, parents=True)
     with open(out_folder / f'{dataset_name}_{partition}.pickle', 'wb') as f:
         pickle.dump(results, f)
 
+    del train_x, train_y
+
+
+def perform_vgg_test(dataset_name: str, partition: int,
+                     out_folder='vgg_full_results'):
+    t = Timer(f"Loading dataset {dataset_name}")
+    t.start()
+    data, labels = load_iris_dataset(dataset_name, None)
+    data = prepare_data_for_vgg(data)
+    labels = labels_to_onehot(labels)
+    t.stop()
+
+    _perform_vgg_test(data, labels, dataset_name, partition, out_folder)
+    del data, labels
+
+
+def perform_peri_vgg_test(eye: str, partition: int,
+                          out_folder='vgg_full_peri_results'):
+    t = Timer(f"Loading dataset periocular pre-VGG {eye}")
+    t.start()
+    data, labels = load_periocular_pre_vgg(eye)
+    t.stop()
+
+    _perform_vgg_test(data, labels, eye, partition, out_folder)
     del data, labels
 
 
@@ -147,21 +166,21 @@ def main_vgg_test():
                     help='Dataset index')
     ap.add_argument('-p', '--n_part', type=int,
                     help='Number of partition to test on')
-    # ap.add_argument('--use_peri', action='store_true',
-    #                 help='Perform periocular test')
+    ap.add_argument('--use_peri', action='store_true',
+                    help='Perform periocular test')
     args = ap.parse_args()
     d_idx = args.d_idx
     n_part = args.n_part
-    # use_peri = args.use_peri
+    use_peri = args.use_peri
 
-    # if not use_peri:
-    d = datasets[d_idx]
-    perform_vgg_test(d, n_part)
-    # else:
-    #     for eye in ('left', 'right',):
-    #         perform_peri_vgg_feat_lsvm_test(eye, n_parts, n_jobs)
+    if not use_peri:
+        d = datasets[d_idx]
+        perform_vgg_test(d, n_part)
+    else:
+        eye = ('left', 'right')[d_idx]
+        perform_peri_vgg_test(eye, n_part)
 
 
 if __name__ == '__main__':
-    main_vgg_feat_lsvm_test()
-    # main_vgg_test()
+    # main_vgg_feat_lsvm_test()
+    main_vgg_test()

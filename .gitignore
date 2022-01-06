@@ -13,4 +13,6 @@ tables_xgb/
 plots_early_cmim*/
 data_peri/left.npz
 data_peri/right.npz
+data_peri/left_pre_vgg.npz
+data_peri/right_pre_vgg.npz
 vgg_feat_lsvm_results_prelim/
