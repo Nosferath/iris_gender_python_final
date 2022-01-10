@@ -155,3 +155,24 @@ def partition_data(data, labels, test_size: float, partition: int):
     train_x, train_y = balance_partition(train_x, train_y)
     test_x, test_y = balance_partition(test_x, test_y)
     return train_x, train_y, test_x, test_y
+
+
+def apply_masks_to_data(data, masks):
+    """Applies the masks to the data. For this, the non-masked values
+    are scaled to 1-255 (each sample is scaled individually), and masks
+    are applied on value 0.
+    """
+    data = data.copy()
+    n_feats = data.shape[1]
+    # Find medians per row
+    row_meds = np.median(data, axis=1)
+    mids_mask = np.tile(row_meds[:, np.newaxis], (1, n_feats))
+    # Temporarily set masked values in between max and min
+    data[masks == 1] = mids_mask[masks == 1]
+    # Scale data
+    data = scale_data_by_row(data)
+    # Constrain values from 1 to 255 uints
+    data = np.round(data * 254 + 1).astype('uint8')
+    # Set mask to 0
+    data[masks == 1] = 0
+    return data

@@ -23,7 +23,7 @@ def load_vgg_model_finetune(lr=0.01, fc_size=2048):
     for layer in base_model.layers:
         layer.trainable = False
 
-    opt = Adam(lr=lr)
+    opt = Adam(learning_rate=lr)
     model.compile(optimizer=opt, loss='categorical_crossentropy')
     return model
 

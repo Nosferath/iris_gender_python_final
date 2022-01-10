@@ -4,8 +4,9 @@ from typing import Union
 import numpy as np
 
 from constants import ROOT_DATA_FOLDER, ROOT_PERI_FOLDER
-from load_data_utils import get_labels_df, fix_unlabeled,\
-    DEFAULT_ROOT_PATH, scale_data_by_row, partition_data
+from load_data_utils import get_labels_df, fix_unlabeled, \
+    DEFAULT_ROOT_PATH, scale_data_by_row, partition_data, apply_masks_to_data, \
+    balance_partition
 
 
 def load_dataset_from_images(dataset_name: str, root_path=DEFAULT_ROOT_PATH):
@@ -69,8 +70,9 @@ def load_dataset_from_npz(dataset_name: str):
     data = loaded['data']
     labels = loaded['labels']
     masks = loaded['masks']
-    # image_paths = loaded['image_paths']
-    return data, labels, masks  # , image_paths
+    image_paths = loaded['image_paths']
+    image_paths = [p.name for p in image_paths]
+    return data, labels, masks, image_paths
 
 
 def load_iris_dataset(dataset_name: str, partition: Union[int, None],
@@ -97,21 +99,10 @@ def load_iris_dataset(dataset_name: str, partition: Union[int, None],
     test_size : float, optional
         Percentage of samples to use for test partition. Default 0.3.
     """
-    data, labels, masks = load_dataset_from_npz(dataset_name)
-    n_feats = data.shape[1]
+    data, labels, masks, _ = load_dataset_from_npz(dataset_name)
     # Apply masks and/or scale
     if apply_masks:
-        # Find medians per row
-        row_meds = np.median(data, axis=1)
-        mids_mask = np.tile(row_meds[:, np.newaxis], (1, n_feats))
-        # Temporarily set masked values in between max and min
-        data[masks == 1] = mids_mask[masks == 1]
-        # Scale data
-        data = scale_data_by_row(data)
-        # Constrain values from 1 to 255 uints
-        data = np.round(data*254 + 1).astype('uint8')
-        # Set mask to 0
-        data[masks == 1] = 0
+        data = apply_masks_to_data(data, masks)
     if scale_data:
         data = scale_data_by_row(data)
     if partition is None:
@@ -169,3 +160,67 @@ def load_peri_dataset_from_npz(eye: str):
     data = loaded['data']
     labels = loaded['labels']
     return data, labels
+
+
+def load_dataset_both_eyes(dataset_name: str, test_size: float, partition: int,
+                           apply_masks=True, scale_data=True):
+    rng = np.random.default_rng(partition)
+    eyes = ('left', 'right')
+    if dataset_name.startswith('left') or dataset_name.startswith('right'):
+        dataset_name = '_'.join(dataset_name.split('_')[1:])
+    # Get all data and subject IDs
+    males_set = set()
+    females_set = set()
+    all_data = {}
+    for eye in eyes:
+        cur_dataset = eye + '_' + dataset_name
+        data, labels, masks, paths = load_dataset_from_npz(cur_dataset)
+        if apply_masks:
+            data = apply_masks_to_data(data, masks)
+        if scale_data:
+            data = scale_data_by_row(data)
+        all_data[eye] = [data, labels, masks, paths]
+        ids = np.array([p.split('d')[0] for p in paths])
+        males_set.update(set(ids[labels == 0]))
+        females_set.update(set(ids[labels == 1]))
+    # Split IDs into train and test
+    males = np.array(list(males_set))
+    females = np.array(list(females_set))
+    n_males = len(males)
+    n_females = len(females)
+    test_males = rng.choice(
+        males, np.int(test_size * n_males), replace=False
+    )
+    test_females = rng.choice(
+        females, np.int(test_size * n_females), replace=False
+    )
+    test_ids = np.hstack([test_males, test_females])
+    # Split data into partitions
+    train_images = {v: [] for v in ('data', 'labels')}
+    test_images = {v: [] for v in ('data', 'labels')}
+    for eye in eyes:
+        data, labels, masks, paths = all_data[eye]
+        ids = np.array([p.split('d')[0] for p in paths])
+        for i in range(len(ids)):
+            if ids[i] in test_ids:
+                test_images['data'].append(data[i, :])
+                test_images['labels'].append(labels[i])
+            else:
+                train_images['data'].append(data[i, :])
+                train_images['labels'].append(labels[i])
+    train_x = np.array(train_images['data'])
+    train_y = np.array(train_images['labels'])
+    test_x = np.array(test_images['data'])
+    test_y = np.array(test_images['labels'])
+    # Balance partitions
+    train_x, train_y = balance_partition(train_x, train_y)
+    test_x, test_y = balance_partition(test_x, test_y)
+    # Permutate partitions
+    train_idx = rng.permutation(len(train_y))
+    train_x = train_x[train_idx, :]
+    train_y = train_y[train_idx]
+    test_idx = rng.permutation(len(test_y))
+    test_x = test_x[test_idx, :]
+    test_y = test_y[test_idx]
+
+    return train_x, train_y, test_x, test_y
