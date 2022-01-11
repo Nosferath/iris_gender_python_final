@@ -191,8 +191,7 @@ def vgg_feat_lsvm_parall_botheyes(all_data, males_set, females_set,
     # Train model
     model = Pipeline([
         ('scaler', MinMaxScaler()),
-        ('model', LinearSVC(max_iter=10000,
-                            random_state=42))
+        ('model', LinearSVC(random_state=42))
     ])
     model.fit(train_x, train_y)
     pred = model.predict(test_x)
