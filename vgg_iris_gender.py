@@ -36,8 +36,6 @@ def vgg_feat_lsvm_parall(data_x, labels, partition: int):
     return results
 
 
-
-
 def _perform_vgg_feat_lsvm_test(data, labels, dataset_name: str,
                                 n_partitions: int, n_jobs: int, out_folder):
     """Performs VGG feat lsvm test on an already loaded dataset."""
@@ -75,7 +73,7 @@ def perform_peri_vgg_feat_lsvm_test(eye: str, n_partitions: int, n_jobs: int,
                                     out_folder='vgg_feat_lsvm_peri_results'):
     t = Timer(f"Loading dataset VGG peri {eye}")
     t.start()
-    data, labels = load_periocular_vgg(eye)
+    data, labels, _ = load_periocular_vgg(eye)
     t.stop()
     _perform_vgg_feat_lsvm_test(data, labels, eye, n_partitions,
                                 n_jobs, out_folder)
@@ -153,7 +151,7 @@ def perform_peri_vgg_test(eye: str, partition: int,
                           out_folder='vgg_full_peri_results'):
     t = Timer(f"Loading dataset periocular pre-VGG {eye}")
     t.start()
-    data, labels = load_periocular_pre_vgg(eye)
+    data, labels, _ = load_periocular_pre_vgg(eye)
     t.stop()
 
     _perform_vgg_test(data, labels, eye, partition, out_folder)

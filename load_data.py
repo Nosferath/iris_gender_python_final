@@ -159,15 +159,20 @@ def load_peri_dataset_from_npz(eye: str):
     """Loads the raw periocular dataset from the npz files in the
     root data folder.
     """
+    plt = platform.system()
+    if plt != 'Windows':
+        pathlib.WindowsPath = pathlib.PosixPath
     loaded = np.load(f'{ROOT_PERI_FOLDER}/{eye}.npz',
                      allow_pickle=True)
     data = loaded['data']
     labels = loaded['labels']
-    return data, labels
+    image_paths = loaded['image_paths']
+    image_paths = [p.name for p in image_paths]
+    return data, labels, image_paths
 
 
-def load_dataset_both_eyes(dataset_name: str, apply_masks=True,
-                           scale_data=True):
+def _load_dataset_both_eyes(dataset_name: str, use_peri: bool,
+                            apply_masks=True, scale_data=True):
     eyes = ('left', 'right')
     if dataset_name.startswith('left') or dataset_name.startswith('right'):
         dataset_name = '_'.join(dataset_name.split('_')[1:])
@@ -177,9 +182,13 @@ def load_dataset_both_eyes(dataset_name: str, apply_masks=True,
     all_data = {}
     for eye in eyes:
         cur_dataset = eye + '_' + dataset_name
-        data, labels, masks, paths = load_dataset_from_npz(cur_dataset)
-        if apply_masks:
-            data = apply_masks_to_data(data, masks)
+        if use_peri:
+            data, labels, paths = load_peri_dataset_from_npz(eye)
+            masks = []
+        else:
+            data, labels, masks, paths = load_dataset_from_npz(cur_dataset)
+            if apply_masks:
+                data = apply_masks_to_data(data, masks)
         if scale_data:
             data = scale_data_by_row(data)
         all_data[eye] = [data, labels, masks, paths]
@@ -188,3 +197,14 @@ def load_dataset_both_eyes(dataset_name: str, apply_masks=True,
         females_set.update(set(ids[labels == 1]))
     return all_data, males_set, females_set
 
+
+def load_dataset_both_eyes(dataset_name: str, apply_masks=True,
+                           scale_data=True):
+    return _load_dataset_both_eyes(dataset_name, use_peri=False,
+                                   apply_masks=apply_masks,
+                                   scale_data=scale_data)
+
+
+def load_peri_dataset_both_eyes(scale_data=True):
+    return _load_dataset_both_eyes('peri_dataset', use_peri=True,
+                                   apply_masks=False, scale_data=scale_data)

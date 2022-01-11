@@ -95,12 +95,43 @@ def prepare_periocular_for_vgg(data_x: np.ndarray, scale_data=False):
                                  scale_data=scale_data)
 
 
+def prepare_periocular_botheyes_for_vgg(all_data, scale_data=False):
+    from constants import PERIOCULAR_SHAPE
+    for eye in all_data:
+        cur_x = all_data[eye][0]
+        all_data[eye][0] = _prepare_data_for_vgg(cur_x, PERIOCULAR_SHAPE,
+                                                 scale_data=scale_data)
+    return all_data
+
+
 def load_periocular_vgg(eye: str):
+    """Loads the periocular dataset that has already been processed by
+    VGG to extract features. Used for the LSVM test.
+    """
     from load_data import load_peri_dataset_from_npz
     return load_peri_dataset_from_npz(f'{eye}_vgg')
 
 
 def load_periocular_pre_vgg(eye: str):
-    """Data is already prepared and labels are one-hot-encoded"""
+    """Data is already prepared and labels are one-hot-encoded. Used for
+    the full VGG test.
+    """
     from load_data import load_peri_dataset_from_npz
     return load_peri_dataset_from_npz(f'{eye}_pre_vgg')
+
+
+def _load_periocular_botheyes_vgg(filename):
+    from constants import ROOT_PERI_FOLDER
+    loaded = np.load(ROOT_PERI_FOLDER + f'/{filename}.npz', allow_pickle=True)
+    all_data = loaded['all_data'].item()
+    males_set = loaded['males_set'].item()
+    females_set = loaded['females_set'].item()
+    return all_data, males_set, females_set
+
+
+def load_periocular_botheyes_vgg():
+    return _load_periocular_botheyes_vgg('both_vgg')
+
+
+def load_periocular_botheyes_pre_vgg():
+    return _load_periocular_botheyes_vgg('both_pre_vgg')
