@@ -176,3 +176,50 @@ def apply_masks_to_data(data, masks):
     # Set mask to 0
     data[masks == 1] = 0
     return data
+
+
+def partition_both_eyes(all_data: dict, males_set: set, females_set: set,
+                        partition: int, test_size: float):
+    rng = np.random.default_rng(partition)
+    eyes = ('left', 'right')
+    # Split IDs into train and test
+    males = np.array(list(males_set))
+    females = np.array(list(females_set))
+    n_males = len(males)
+    n_females = len(females)
+    test_males = rng.choice(
+        males, np.int(test_size * n_males), replace=False
+    )
+    test_females = rng.choice(
+        females, np.int(test_size * n_females), replace=False
+    )
+    test_ids = np.hstack([test_males, test_females])
+    # Split data into partitions
+    train_images = {v: [] for v in ('data', 'labels')}
+    test_images = {v: [] for v in ('data', 'labels')}
+    for eye in eyes:
+        data, labels, masks, paths = all_data[eye]
+        ids = np.array([p.split('d')[0] for p in paths])
+        for i in range(len(ids)):
+            if ids[i] in test_ids:
+                test_images['data'].append(data[i, :])
+                test_images['labels'].append(labels[i])
+            else:
+                train_images['data'].append(data[i, :])
+                train_images['labels'].append(labels[i])
+    train_x = np.array(train_images['data'])
+    train_y = np.array(train_images['labels'])
+    test_x = np.array(test_images['data'])
+    test_y = np.array(test_images['labels'])
+    # Balance partitions
+    train_x, train_y = balance_partition(train_x, train_y)
+    test_x, test_y = balance_partition(test_x, test_y)
+    # Permutate partitions
+    train_idx = rng.permutation(len(train_y))
+    train_x = train_x[train_idx, :]
+    train_y = train_y[train_idx]
+    test_idx = rng.permutation(len(test_y))
+    test_x = test_x[test_idx, :]
+    test_y = test_y[test_idx]
+
+    return train_x, train_y, test_x, test_y

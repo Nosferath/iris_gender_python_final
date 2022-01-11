@@ -74,6 +74,14 @@ def prepare_data_for_vgg(data_x: np.array):
     return _prepare_data_for_vgg(data_x, orig_shape, scale_data=False)
 
 
+def prepare_botheyes_for_vgg(all_data):
+    for eye in all_data:
+        cur_x = all_data[eye][0]
+        all_data[eye][0] = prepare_data_for_vgg(cur_x)
+
+    return all_data
+
+
 def labels_to_onehot(labels):
     """Convert binary labels to one-hot encoding"""
     from sklearn.preprocessing import OneHotEncoder
