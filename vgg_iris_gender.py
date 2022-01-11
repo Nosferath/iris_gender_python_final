@@ -183,7 +183,7 @@ def main_vgg_test():
 
 
 def vgg_feat_lsvm_parall_botheyes(all_data, males_set, females_set,
-                                  partition: int):
+                                  partition: int, n_iters: int):
     # Prepare data
     train_x, train_y, test_x, test_y = partition_both_eyes(
         all_data, males_set, females_set, partition, TEST_SIZE
@@ -191,7 +191,8 @@ def vgg_feat_lsvm_parall_botheyes(all_data, males_set, females_set,
     # Train model
     model = Pipeline([
         ('scaler', MinMaxScaler()),
-        ('model', LinearSVC(random_state=42))
+        ('model', LinearSVC(max_iter=n_iters,
+                            random_state=42))
     ])
     model.fit(train_x, train_y)
     pred = model.predict(test_x)
@@ -203,8 +204,9 @@ def vgg_feat_lsvm_parall_botheyes(all_data, males_set, females_set,
 
 def _perform_vgg_feat_lsvm_test_botheyes(all_data, males_set, females_set,
                                          dataset_name: str, n_partitions: int,
-                                         n_jobs, out_folder):
-    args = [(all_data, males_set, females_set, i) for i in range(n_partitions)]
+                                         n_jobs, out_folder, n_iters):
+    args = [(all_data, males_set, females_set, i, n_iters)
+            for i in range(n_partitions)]
     with Pool(n_jobs) as p:
         print("VGG Features, LSVM Test , both eyes dataset")
         t = Timer(f"{dataset_name}, {n_partitions} partitions, {n_jobs} jobs")
@@ -221,7 +223,7 @@ def _perform_vgg_feat_lsvm_test_botheyes(all_data, males_set, females_set,
 
 def perform_vgg_feat_lsvm_test_botheyes(
         dataset_name: str, n_partitions: int, n_jobs: int,
-        out_folder='vgg_feat_lsvm_botheyes_results'
+        out_folder='vgg_feat_lsvm_botheyes_results', n_iters: int = 10000
 ):
     t = Timer(f"Loading dataset {dataset_name}")
     t.start()
@@ -235,13 +237,14 @@ def perform_vgg_feat_lsvm_test_botheyes(
     del feat_model
     _perform_vgg_feat_lsvm_test_botheyes(all_data, males_set, females_set,
                                          dataset_name, n_partitions, n_jobs,
-                                         out_folder)
+                                         out_folder, n_iters)
     del all_data, males_set, females_set
 
 
 def perform_vgg_feat_lsvm_test_botheyes_peri(
         n_partitions: int, n_jobs: int,
-        out_folder='vgg_feat_lsvm_botheyes_peri_results'
+        out_folder='vgg_feat_lsvm_botheyes_peri_results',
+        n_iters: int = 10000
 ):
     dataset_name = 'both_peri'
     t = Timer(f"Loading dataset {dataset_name}")
@@ -250,7 +253,7 @@ def perform_vgg_feat_lsvm_test_botheyes_peri(
     t.stop()
     _perform_vgg_feat_lsvm_test_botheyes(all_data, males_set, females_set,
                                          dataset_name, n_partitions, n_jobs,
-                                         out_folder)
+                                         out_folder, n_iters)
     del all_data, males_set, females_set
 
 
@@ -263,18 +266,27 @@ def main_vgg_feat_lsvm_test_botheyes():
                     help='Number of jobs')
     ap.add_argument('-p', '--n_parts', type=int, default=10,
                     help='Number of random partitions to test on')
+    ap.add_argument('-i', '--n_iters', type=int, default=10000,
+                    help='Number of iterations for LSVM')
     ap.add_argument('--use_peri', action='store_true',
                     help='Perform periocular test')
     args = ap.parse_args()
     n_jobs = args.n_jobs
     n_parts = args.n_parts
+    n_iters = args.n_iters
     use_peri = args.use_peri
 
     if not use_peri:
+        out_folder = f'vgg_feat_lsvm_botheyes_results_{n_iters/1000:0.0f}' \
+                     f'k_iters'
         for d in datasets_botheyes:
-            perform_vgg_feat_lsvm_test_botheyes(d, n_parts, n_jobs)
+            perform_vgg_feat_lsvm_test_botheyes(d, n_parts, n_jobs, out_folder,
+                                                n_iters)
     else:
-        perform_vgg_feat_lsvm_test_botheyes_peri(n_parts, n_jobs)
+        out_folder = f'vgg_feat_lsvm_botheyes_peri_results_' \
+                     f'{n_iters/1000:0.0f}k_iters'
+        perform_vgg_feat_lsvm_test_botheyes_peri(n_parts, n_jobs, out_folder,
+                                                 n_iters)
 
 
 if __name__ == '__main__':
