@@ -1,3 +1,5 @@
+import pathlib
+import platform
 from pathlib import Path
 from typing import Union
 
@@ -64,6 +66,9 @@ def load_dataset_from_npz(dataset_name: str):
     """Loads the raw dataset from the npz files in the
     root data folder.
     """
+    plt = platform.system()
+    if plt != 'Windows':
+        pathlib.WindowsPath = pathlib.PosixPath
     loaded = np.load(f'{ROOT_DATA_FOLDER}/{dataset_name}.npz',
                      allow_pickle=True)
     data = loaded['data']
