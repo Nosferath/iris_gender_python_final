@@ -215,7 +215,7 @@ def perform_vgg_feat_lsvm_test_botheyes(
     all_data = prepare_botheyes_for_vgg(all_data)
     for eye in all_data:
         cur_x = all_data[eye][0]
-        all_data[eye] = feat_model.predict(cur_x)
+        all_data[eye][0] = feat_model.predict(cur_x)
     t.stop()
     del feat_model
     args = [(all_data, males_set, females_set, i) for i in range(n_partitions)]
