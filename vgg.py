@@ -130,6 +130,7 @@ def _load_periocular_botheyes_vgg(filename):
 
 
 def load_periocular_botheyes_vgg():
+    """Dataset already processed using VGG. For LSVM."""
     return _load_periocular_botheyes_vgg('both_vgg')
 
 

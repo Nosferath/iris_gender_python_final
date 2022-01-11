@@ -5,7 +5,6 @@ from pathlib import Path
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import classification_report
-from sklearn.model_selection import GridSearchCV
 from sklearn.svm import LinearSVC
 
 from constants import TEST_SIZE
@@ -14,7 +13,8 @@ from load_data_utils import partition_data, partition_both_eyes
 from utils import Timer
 from vgg import load_vgg_model_finetune, load_vgg_model_features, \
     prepare_data_for_vgg, labels_to_onehot, load_periocular_vgg, \
-    load_periocular_pre_vgg, prepare_botheyes_for_vgg
+    load_periocular_pre_vgg, prepare_botheyes_for_vgg, \
+    load_periocular_botheyes_vgg
 
 
 def vgg_feat_lsvm_parall(data_x, labels, partition: int):
@@ -191,7 +191,7 @@ def vgg_feat_lsvm_parall_botheyes(all_data, males_set, females_set,
     # Train model
     model = Pipeline([
         ('scaler', MinMaxScaler()),
-        ('model', LinearSVC(max_iter=5000,
+        ('model', LinearSVC(max_iter=10000,
                             random_state=42))
     ])
     model.fit(train_x, train_y)
@@ -200,6 +200,24 @@ def vgg_feat_lsvm_parall_botheyes(all_data, males_set, females_set,
 
     del train_x, train_y, test_x, test_y
     return results
+
+
+def _perform_vgg_feat_lsvm_test_botheyes(all_data, males_set, females_set,
+                                         dataset_name: str, n_partitions: int,
+                                         n_jobs, out_folder):
+    args = [(all_data, males_set, females_set, i) for i in range(n_partitions)]
+    with Pool(n_jobs) as p:
+        print("VGG Features, LSVM Test , both eyes dataset")
+        t = Timer(f"{dataset_name}, {n_partitions} partitions, {n_jobs} jobs")
+        t.start()
+        results = p.starmap(vgg_feat_lsvm_parall_botheyes, args)
+        t.stop()
+
+    out_folder = Path(out_folder)
+    out_folder.mkdir(exist_ok=True, parents=True)
+    with open(out_folder / f'{dataset_name}.pickle', 'wb') as f:
+        pickle.dump(results, f)
+    del all_data, males_set, females_set
 
 
 def perform_vgg_feat_lsvm_test_botheyes(
@@ -216,18 +234,24 @@ def perform_vgg_feat_lsvm_test_botheyes(
         all_data[eye][0] = feat_model.predict(cur_x)
     t.stop()
     del feat_model
-    args = [(all_data, males_set, females_set, i) for i in range(n_partitions)]
-    with Pool(n_jobs) as p:
-        print("VGG Features, LSVM Test , both eyes dataset")
-        t = Timer(f"{dataset_name}, {n_partitions} partitions, {n_jobs} jobs")
-        t.start()
-        results = p.starmap(vgg_feat_lsvm_parall_botheyes, args)
-        t.stop()
+    _perform_vgg_feat_lsvm_test_botheyes(all_data, males_set, females_set,
+                                         dataset_name, n_partitions, n_jobs,
+                                         out_folder)
+    del all_data, males_set, females_set
 
-    out_folder = Path(out_folder)
-    out_folder.mkdir(exist_ok=True, parents=True)
-    with open(out_folder / f'{dataset_name}.pickle', 'wb') as f:
-        pickle.dump(results, f)
+
+def perform_vgg_feat_lsvm_test_botheyes_peri(
+        n_partitions: int, n_jobs: int,
+        out_folder='vgg_feat_lsvm_botheyes_peri_results'
+):
+    dataset_name = 'both_peri'
+    t = Timer(f"Loading dataset {dataset_name}")
+    t.start()
+    all_data, males_set, females_set = load_periocular_botheyes_vgg()
+    t.stop()
+    _perform_vgg_feat_lsvm_test_botheyes(all_data, males_set, females_set,
+                                         dataset_name, n_partitions, n_jobs,
+                                         out_folder)
     del all_data, males_set, females_set
 
 
@@ -240,12 +264,18 @@ def main_vgg_feat_lsvm_test_botheyes():
                     help='Number of jobs')
     ap.add_argument('-p', '--n_parts', type=int, default=10,
                     help='Number of random partitions to test on')
+    ap.add_argument('--use_peri', action='store_true',
+                    help='Perform periocular test')
     args = ap.parse_args()
     n_jobs = args.n_jobs
     n_parts = args.n_parts
+    use_peri = args.use_peri
 
-    for d in datasets_botheyes:
-        perform_vgg_feat_lsvm_test_botheyes(d, n_parts, n_jobs)
+    if not use_peri:
+        for d in datasets_botheyes:
+            perform_vgg_feat_lsvm_test_botheyes(d, n_parts, n_jobs)
+    else:
+        perform_vgg_feat_lsvm_test_botheyes_peri(n_parts, n_jobs)
 
 
 if __name__ == '__main__':
