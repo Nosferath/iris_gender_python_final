@@ -9,7 +9,7 @@ datasets = ('left_240x20_fixed', 'right_240x20_fixed',
 #             'left_480x80', 'right_480x80')
 datasets_botheyes = ('240x20_fixed', '240x40_fixed', '240x20', '240x40')
 MASK_VALUE = 0
-TEST_SIZE = 0.3
+TEST_SIZE = 0.2
 SCALE_DATASET = True
 N_PARTS = 10  # Number of partitions that are being used in total
 PAIR_METHOD = 'agrowth_hung_10'

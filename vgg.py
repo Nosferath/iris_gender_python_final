@@ -5,7 +5,7 @@ from tensorflow.keras.applications.vgg16 import VGG16
 from tensorflow.keras.models import Model
 
 
-def load_vgg_model_finetune(lr=0.01, fc_size=2048):
+def load_vgg_model_finetune(lr=0.001, fc_size=2048):
     """Loads the VGG-16 model without the original FC layers, freezing
     the original conv layers, and adding new FC layers for training on
     iris.
