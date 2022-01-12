@@ -19,7 +19,6 @@ def load_vgg_model_finetune(lr=0.001, fc_size=2048):
                        outputs=base_model.get_layer(layer).output)
 
     x = base_model.output
-    x = Flatten()(x)
     x = Dense(fc_size, activation='relu')(x)
     predictions = Dense(2, activation='softmax')(x)
     model = Model(inputs=base_model.input, outputs=predictions)
