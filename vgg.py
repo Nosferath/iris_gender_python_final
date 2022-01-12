@@ -89,6 +89,14 @@ def labels_to_onehot(labels):
     return encoder.fit_transform(labels.reshape((-1, 1))).astype('float32')
 
 
+def labels_to_onehot_botheyes(all_data):
+    for eye in all_data:
+        cur_y = all_data[eye][1]
+        all_data[eye][1] = labels_to_onehot(cur_y)
+
+    return all_data
+
+
 def prepare_periocular_for_vgg(data_x: np.ndarray, scale_data=False):
     from constants import PERIOCULAR_SHAPE
     return _prepare_data_for_vgg(data_x, PERIOCULAR_SHAPE,

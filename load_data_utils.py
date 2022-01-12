@@ -179,7 +179,7 @@ def apply_masks_to_data(data, masks):
 
 
 def partition_both_eyes(all_data: dict, males_set: set, females_set: set,
-                        partition: int, test_size: float):
+                        test_size: float, partition: int):
     rng = np.random.default_rng(partition)
     eyes = ('left', 'right')
     # Split IDs into train and test
