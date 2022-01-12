@@ -347,6 +347,7 @@ def perform_peri_vgg_test_botheyes(
     t = Timer(f"Loading dataset periocular pre-VGG {eye}")
     t.start()
     all_data, males_set, females_set = load_periocular_botheyes_pre_vgg()
+    all_data = labels_to_onehot_botheyes(all_data)
     t.stop()
 
     _perform_vgg_test_botheyes(all_data, males_set, females_set, eye,
