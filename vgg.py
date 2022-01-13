@@ -12,13 +12,10 @@ def load_vgg_model_finetune(lr=0.001, fc_size=2048):
     """
     from tensorflow.keras.layers import Flatten, Dense
     from tensorflow.keras.optimizers import Adam
-    base_model = VGG16(include_top=True, weights='imagenet',
+    base_model = VGG16(include_top=False, weights='imagenet',
                        input_shape=(224, 224, 3))
-    layer = 'fc1'
-    base_model = Model(inputs=base_model.input,
-                       outputs=base_model.get_layer(layer).output)
-
     x = base_model.output
+    x = Flatten()(x)
     x = Dense(fc_size, activation='relu')(x)
     predictions = Dense(2, activation='softmax')(x)
     model = Model(inputs=base_model.input, outputs=predictions)
