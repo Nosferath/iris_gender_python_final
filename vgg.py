@@ -3,9 +3,14 @@ from typing import Tuple
 import numpy as np
 from tensorflow.keras.applications.vgg16 import VGG16
 from tensorflow.keras.models import Model
+from tensorflow.keras import mixed_precision
 
 
-def load_vgg_model_finetune(lr=0.001, fc_size=2048):
+policy = mixed_precision.Policy('mixed_float16')
+mixed_precision.set_global_policy(policy)
+
+
+def load_vgg_model_finetune(lr=0.001, fc_size=2048, input_shape=(224, 224, 3)):
     """Loads the VGG-16 model without the original FC layers, freezing
     the original conv layers, and adding new FC layers for training on
     iris.
@@ -13,10 +18,11 @@ def load_vgg_model_finetune(lr=0.001, fc_size=2048):
     from tensorflow.keras.layers import Flatten, Dense
     from tensorflow.keras.optimizers import Adam
     base_model = VGG16(include_top=False, weights='imagenet',
-                       input_shape=(224, 224, 3))
+                       input_shape=input_shape)
     x = base_model.output
     x = Flatten()(x)
     x = Dense(fc_size, activation='relu')(x)
+    x = Dense(fc_size, activation='relu')(x)  # New FC2
     predictions = Dense(2, activation='softmax')(x)
     model = Model(inputs=base_model.input, outputs=predictions)
     # Freeze original layers
@@ -40,7 +46,7 @@ def load_vgg_model_features():
 
 
 def _prepare_data_for_vgg(data_x: np.ndarray, orig_shape: Tuple[int, int],
-                          scale_data=False):
+                          scale_data=False, img_shapes=(224, 224, 3)):
     from skimage.color import gray2rgb
     from skimage.transform import resize
     from tensorflow.keras.applications.vgg16 import preprocess_input
@@ -49,12 +55,13 @@ def _prepare_data_for_vgg(data_x: np.ndarray, orig_shape: Tuple[int, int],
         from load_data_utils import scale_data_by_row
         data_x = (scale_data_by_row(data_x) * 255).astype('uint8')
     data_x = gray2rgb(data_x.reshape((-1, *orig_shape)))
-    out_data_x = np.zeros((data_x.shape[0], 224, 224, 3))
+    out_data_x = np.zeros((data_x.shape[0], *img_shapes))
     for i in range(data_x.shape[0]):
         cur_img = data_x[i]
-        cur_img = resize(
-            cur_img, output_shape=(224, 224), mode='edge', order=3
-        )
+        if orig_shape != img_shapes[:2]:
+            cur_img = resize(
+                cur_img, output_shape=img_shapes[:2], mode='edge', order=3
+            )
         out_data_x[i, :, :, :] = cur_img
 
     out_data_x = preprocess_input(out_data_x)
@@ -144,3 +151,36 @@ def load_periocular_botheyes_vgg():
 
 def load_periocular_botheyes_pre_vgg():
     return _load_periocular_botheyes_vgg('both_pre_vgg')
+
+
+def load_data(data_type: str, **kwargs):
+    if data_type == 'periocular_vgg_feats':
+        eye = kwargs['eye']
+        data, labels, _ = load_periocular_vgg(eye)
+        data = (data, labels)
+    elif data_type == 'iris_vgg_feats':
+        from load_data import load_iris_dataset
+        feat_model = load_vgg_model_features()
+        dataset_name = kwargs['dataset_name']
+        data, labels = load_iris_dataset(dataset_name, None)
+        data = prepare_data_for_vgg(data)
+        data = feat_model.predict(data)
+        data = (data, labels)
+        del feat_model
+    elif data_type == 'iris_botheyes_vgg_feats':
+        from load_data import load_dataset_both_eyes
+        dataset_name = kwargs['dataset_name']
+        all_data, males_set, females_set = load_dataset_both_eyes(dataset_name)
+        feat_model = load_vgg_model_features()
+        all_data = prepare_botheyes_for_vgg(all_data)
+        for eye in all_data:
+            cur_x = all_data[eye][0]
+            all_data[eye][0] = feat_model.predict(cur_x)
+        data = (all_data, males_set, females_set)
+        del feat_model
+    elif data_type == 'periocular_botheyes_vgg_feats':
+        all_data, males_set, females_set = load_periocular_botheyes_vgg()
+        data = (all_data, males_set, females_set)
+    else:
+        raise ValueError(f'Option {data_type} not recognized')
+    return data

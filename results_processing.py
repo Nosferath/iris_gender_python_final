@@ -134,7 +134,6 @@ def merge_vgg_full_results(results_folder):
     results_folder = Path(results_folder)
     # Find prefixes
     prefixes = []
-    print(prefixes)
     for rf in results_folder.glob('*.pickle'):
         prefix = '_'.join(rf.stem.split('_')[:-1])
         if prefix not in prefixes:
