@@ -278,15 +278,23 @@ def main_vgg_test():
 
 def _perform_vgg_test_botheyes(all_data, males_set, females_set,
                                dataset_name: str, partition: int,
-                               out_folder, epochs=20, use_val=False):
+                               out_folder, epochs=20, use_val=False, lr=0.001,
+                               batch_size=32):
     from tensorflow.keras.callbacks import TensorBoard
     results = []
     train_x, train_y, test_x, test_y = partition_both_eyes(all_data, males_set,
                                                            females_set,
                                                            TEST_SIZE,
                                                            partition)
-    model = load_vgg_model_finetune()
-    tb = TensorBoard(log_dir=f'vgg_logs_botheyes/{dataset_name}/{partition}/',
+    if dataset_name.startswith('240') or dataset_name.startswith('480'):
+        # Change input shape to closest possible if dataset is normalized
+        w = int(dataset_name[:3])
+        h = int(dataset_name[4:6])
+        input_shape = (max(h, 32), w, 3)
+        model = load_vgg_model_finetune(lr=lr, input_shape=input_shape)
+    else:
+        model = load_vgg_model_finetune(lr=lr)
+    tb = TensorBoard(log_dir=f'{out_folder}/logs/{dataset_name}/{partition}/',
                      write_graph=True, histogram_freq=0, write_images=True,
                      update_freq='batch')
     print("VGG Feats and Classifying Test, Both Eyes")
@@ -294,14 +302,14 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
     t.start()
     if not use_val:
         model.fit(train_x, train_y, epochs=epochs, callbacks=[tb],
-                  validation_data=(test_x, test_y))
+                  validation_data=(test_x, test_y), batch_size=batch_size)
     else:
         from sklearn.model_selection import train_test_split
         test_x, val_x, test_y, val_y = train_test_split(test_x, test_y,
                                                         test_size=0.5,
                                                         stratify=test_y)
         model.fit(train_x, train_y, epochs=epochs, callbacks=[tb],
-                  validation_data=(val_x, val_y))
+                  validation_data=(val_x, val_y), batch_size=batch_size)
 
     preds = model.predict(test_x)
     preds = preds.argmax(axis=1)
@@ -320,16 +328,18 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
 
 def perform_vgg_test_botheyes(dataset_name: str, partition: int,
                               out_folder='vgg_full_botheyes_results',
-                              epochs=20, use_val=False):
+                              epochs=21, use_val=False, lr=0.001,
+                              batch_size=32):
     t = Timer(f"Loading dataset {dataset_name}")
     t.start()
     all_data, males_set, females_set = load_dataset_both_eyes(dataset_name)
-    all_data = prepare_botheyes_for_vgg(all_data)
+    all_data = prepare_botheyes_for_vgg(all_data, preserve_shape=True)
     all_data = labels_to_onehot_botheyes(all_data)
     t.stop()
 
     _perform_vgg_test_botheyes(all_data, males_set, females_set, dataset_name,
-                               partition, out_folder, epochs, use_val)
+                               partition, out_folder, epochs, use_val, lr=lr,
+                               batch_size=batch_size)
     del all_data, males_set, females_set
 
 
@@ -337,7 +347,9 @@ def perform_peri_vgg_test_botheyes(
         partition: int,
         out_folder='vgg_full_peri_botheyes_results',
         epochs=20,
-        use_val=False
+        use_val=False,
+        lr=0.001,
+        batch_size=32
 ):
     eye = 'both_peri'
     t = Timer(f"Loading dataset periocular pre-VGG {eye}")
@@ -347,7 +359,8 @@ def perform_peri_vgg_test_botheyes(
     t.stop()
 
     _perform_vgg_test_botheyes(all_data, males_set, females_set, eye,
-                               partition, out_folder, epochs, use_val)
+                               partition, out_folder, epochs, use_val, lr=lr,
+                               batch_size=batch_size)
     del all_data
 
 
@@ -366,18 +379,35 @@ def main_vgg_botheyes_test():
                     help='Perform periocular test')
     ap.add_argument('--use_val', action='store_true',
                     help='Use a separate validation set')
+    ap.add_argument('-lr', '--learning_rate', type=float, default=0.001,
+                    help='Learning rate for training')
+    ap.add_argument('-bs', '--batch_size', type=int, default=32,
+                    help='Batch size for training')
+    ap.add_argument('-o', '--out_folder', type=str, default=None,
+                    help='Folder where results and logs will be output')
     args = ap.parse_args()
     d_idx = args.d_idx
     n_part = args.n_part
     use_peri = args.use_peri
     epochs = args.epochs
     use_val = args.use_val
+    lr = args.learning_rate
+    batch_size = args.batch_size
+    out_folder = args.out_folder
 
     if not use_peri:
+        if out_folder is None:
+            out_folder = 'vgg_full_botheyes_results'
         d = datasets_botheyes[d_idx]
-        perform_vgg_test_botheyes(d, n_part, epochs=epochs, use_val=use_val)
+        perform_vgg_test_botheyes(d, n_part, out_folder=out_folder,
+                                  epochs=epochs, use_val=use_val,
+                                  lr=lr, batch_size=batch_size)
     else:
-        perform_peri_vgg_test_botheyes(n_part, epochs=epochs, use_val=use_val)
+        if out_folder is None:
+            out_folder = 'vgg_full_peri_botheyes_results'
+        perform_peri_vgg_test_botheyes(n_part, out_folder=out_folder,
+                                       epochs=epochs, use_val=use_val,
+                                       lr=lr, batch_size=batch_size)
 
 
 if __name__ == '__main__':

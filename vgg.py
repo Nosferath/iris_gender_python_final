@@ -69,7 +69,7 @@ def _prepare_data_for_vgg(data_x: np.ndarray, orig_shape: Tuple[int, int],
     return out_data_x
 
 
-def prepare_data_for_vgg(data_x: np.array):
+def prepare_data_for_vgg(data_x: np.array, preserve_shape=False):
     """Prepares normalized iris images for use with VGG feature
     extractor.
     """
@@ -78,13 +78,20 @@ def prepare_data_for_vgg(data_x: np.array):
     orig_shape = find_shape(n_features=data_x.shape[1])
     if data_x.max() == 1:
         data_x = data_x * 255
-    return _prepare_data_for_vgg(data_x, orig_shape, scale_data=False)
+    if preserve_shape:
+        img_shapes = (max(orig_shape[0], 32), orig_shape[1], 3)
+    else:
+        img_shapes = (224, 224, 3)
+    return _prepare_data_for_vgg(data_x, orig_shape, scale_data=False,
+                                 img_shapes=img_shapes)
 
 
-def prepare_botheyes_for_vgg(all_data):
+def prepare_botheyes_for_vgg(all_data, preserve_shape=False):
     for eye in all_data:
         cur_x = all_data[eye][0]
-        all_data[eye][0] = prepare_data_for_vgg(cur_x)
+        all_data[eye][0] = prepare_data_for_vgg(
+            cur_x, preserve_shape=preserve_shape
+        )
 
     return all_data
 

@@ -18,3 +18,4 @@ data_peri/right_pre_vgg.npz
 data_peri/both_pre_vgg.npz
 vgg_feat_lsvm_results_prelim/
 results_pre_param_selection/
+*.swp
