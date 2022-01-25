@@ -131,7 +131,13 @@ def generate_results_table_from_folders(
 
 
 def merge_vgg_full_results(results_folder):
+    """VGG results are currently dumped on separate files, due to the
+    tests being run using a bash file. This function merges the results
+    of the same test but different partitions together.
+    """
     results_folder = Path(results_folder)
+    unpacked_folder = results_folder / 'unpacked'
+    unpacked_folder.mkdir(exist_ok=True)
     # Find prefixes
     prefixes = []
     for rf in results_folder.glob('*.pickle'):
@@ -149,5 +155,6 @@ def merge_vgg_full_results(results_folder):
             if isinstance(cur_res, list):
                 cur_res = cur_res[0]
             results.append(cur_res)
+            rf.rename(unpacked_folder / rf.name)
         with open(results_folder / f'{prefix}.pickle', 'wb') as f:
             pickle.dump(results, f)
