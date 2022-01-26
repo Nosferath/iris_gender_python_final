@@ -47,8 +47,8 @@ def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
             ('scaler', MinMaxScaler()),
             ('model', LinearSVC(random_state=42))
         ])
-        param_grid = {'model__max_iter': np.linspace(5000, 15000, 3),
-                      'model__C': np.linspace(0.5, 2.0, 4)}
+        param_grid = {'model__max_iter': np.linspace(1000, 5000, 3),
+                      'model__C': np.linspace(0.125, 1.0, 8)}
         model = GridSearchCV(pipe, param_grid, cv=5)
     model.fit(train_x, train_y)
     pred = model.predict(test_x)

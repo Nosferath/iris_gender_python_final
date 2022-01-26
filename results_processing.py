@@ -1,6 +1,6 @@
 import pickle
 from pathlib import Path
-from textwrap import fill
+# from textwrap import fill
 from typing import Tuple, List, Union
 
 import numpy as np
@@ -158,3 +158,46 @@ def merge_vgg_full_results(results_folder):
             rf.rename(unpacked_folder / rf.name)
         with open(results_folder / f'{prefix}.pickle', 'wb') as f:
             pickle.dump(results, f)
+
+
+def generate_cv_grid_plot(dataset_name: str, results_folder: str,
+                          partition: int):
+    """Generates visualizations of the cross-validation results for the
+    chosen dataset.
+    """
+    from utils import grid_plot
+    cv_file = Path(results_folder) / f'{dataset_name}.pickle'
+    if not cv_file.exists():
+        raise FileNotFoundError(f'{results_folder}/{cv_file.name} not found')
+    with open(cv_file, 'rb') as f:
+        cv_results: dict = pickle.load(f)[partition]['cv_results']
+    params = cv_results['params']
+    results = cv_results['mean_test_score']
+    results_std = cv_results['std_test_score']
+    # Get unique values of params
+    param_types = list(params[0].keys())
+    name_a = param_types[0]
+    name_b = param_types[1]
+    list_a = np.unique(np.array([p[name_a] for p in params]))
+    list_b = np.unique(np.array([p[name_b] for p in params]))
+    # Convert results to a grid
+    n_a = len(list_a)
+    n_b = len(list_b)
+    results_grid = np.zeros((n_a, n_b), dtype='float64')
+    std_grid = np.zeros((n_a, n_b), dtype='float64')
+    for a in range(n_a):
+        for b in range(n_b):
+            i = b + n_b * a
+            results_grid[a, b] = results[i]
+            std_grid[a, b] = results_std[i]
+    # Generate results plot
+    fig, ax = grid_plot(list_a, list_b, results_grid * 100)
+    ax.set_ylabel(name_a)
+    ax.set_xlabel(name_b)
+    ax.set_title(f'{dataset_name}_{partition}, CV results')
+    # Generate results std plot
+    fig_std, ax_std = grid_plot(list_a, list_b, std_grid * 100)
+    ax_std.set_ylabel(name_a)
+    ax_std.set_xlabel(name_b)
+    ax_std.set_title(f'{dataset_name}_{partition}, CV results, std')
+    return fig, fig_std
