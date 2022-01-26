@@ -19,8 +19,11 @@ from vgg import load_vgg_model_finetune, prepare_data_for_vgg,\
     labels_to_onehot_botheyes, load_periocular_botheyes_pre_vgg, load_data
 
 
+PARAMS_SET = 'norm3'
+
+
 def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
-                         both_eyes_mode: bool):
+                         both_eyes_mode: bool, params_set=PARAMS_SET):
     """Parallelizable function that performs the VGG-feat Linear-SVM
     test. If GridSearch is desired, n_iters should be None.
     """
@@ -47,8 +50,17 @@ def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
             ('scaler', MinMaxScaler()),
             ('model', LinearSVC(random_state=42))
         ])
-        param_grid = {'model__max_iter': np.linspace(1000, 5000, 3),
-                      'model__C': np.linspace(0.125, 1.0, 8)}
+        if params_set == 'norm3':
+            param_grid = {'model__max_iter': [100, 300, 500, 1000, 3000],
+                          # np.linspace(1000, 5000, 3),
+                          # 'model__C': np.linspace(0.125, 1.0, 8)}
+                          'model__C': np.logspace(-6, -2, 5, base=2)}
+        elif params_set == 'peri3':
+            param_grid = {'model__max_iter': np.linspace(1000, 6000, 6),
+                          'model__C': np.linspace(0.5, 2.0, 8)}
+        else:
+            raise ValueError('params_set option not recognized')
+
         model = GridSearchCV(pipe, param_grid, cv=5)
     model.fit(train_x, train_y)
     pred = model.predict(test_x)
@@ -151,6 +163,8 @@ def main_vgg_feat_lsvm_test():
                     help='Perform periocular test')
     ap.add_argument('--out_folder', type=str, default=None,
                     help='Out folder for the test')
+    ap.add_argument('--params_set', type=str, default='norm1',
+                    help='Parameters to explore on GridSearch')
     args = ap.parse_args()
     n_jobs = args.n_jobs
     n_parts = args.n_parts
@@ -158,6 +172,8 @@ def main_vgg_feat_lsvm_test():
     use_botheyes = args.use_botheyes
     use_peri = args.use_peri
     out_folder = args.out_folder
+    global PARAMS_SET
+    PARAMS_SET = args.params_set
     if n_iters is None:
         folder_suffix = ''
     else:
@@ -411,6 +427,6 @@ def main_vgg_botheyes_test():
 
 
 if __name__ == '__main__':
-    # main_vgg_feat_lsvm_test()
+    main_vgg_feat_lsvm_test()
     # main_vgg_test()
-    main_vgg_botheyes_test()
+    # main_vgg_botheyes_test()
