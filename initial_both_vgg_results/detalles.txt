@@ -1,0 +1,1 @@
+Tensorboard muestra overfitting en validaciónepochs=100batch size=32LR=0.0005
