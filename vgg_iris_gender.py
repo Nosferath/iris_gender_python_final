@@ -48,13 +48,13 @@ def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
             ('model', LinearSVC(random_state=42))
         ])
         if params_set == 'norm3':
-            param_grid = {'model__max_iter': [100, 300, 500, 1000, 3000],
+            param_grid = {'model__max_iter': [50, 100, 300, 500, 1000],
                           # np.linspace(1000, 5000, 3),
                           # 'model__C': np.linspace(0.125, 1.0, 8)}
-                          'model__C': np.logspace(-6, -2, 5, base=2)}
+                          'model__C': np.logspace(-7, -3, 5, base=2)}
         elif params_set == 'peri3':
             param_grid = {'model__max_iter': np.linspace(1000, 6000, 6),
-                          'model__C': np.linspace(0.5, 2.0, 8)}
+                          'model__C': np.linspace(0.5, 2.0, 4)}
         else:
             raise ValueError('params_set option not recognized')
 
