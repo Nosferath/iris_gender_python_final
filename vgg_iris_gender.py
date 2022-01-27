@@ -307,7 +307,7 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         input_shape = (max(h, 32), w, 3)
         model = load_vgg_model_finetune(lr=lr, input_shape=input_shape)
     else:
-        model = load_vgg_model_finetune(lr=lr)
+        model = load_vgg_model_finetune(lr=lr, use_newfc2=False)
     tb = TensorBoard(log_dir=f'{out_folder}/logs/{dataset_name}/{partition}/',
                      write_graph=True, histogram_freq=0, write_images=True,
                      update_freq='batch')

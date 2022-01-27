@@ -10,7 +10,8 @@ policy = mixed_precision.Policy('mixed_float16')
 mixed_precision.set_global_policy(policy)
 
 
-def load_vgg_model_finetune(lr=0.001, fc_size=2048, input_shape=(224, 224, 3)):
+def load_vgg_model_finetune(lr=0.001, fc_size=2048, input_shape=(224, 224, 3),
+                            use_newfc2=True):
     """Loads the VGG-16 model without the original FC layers, freezing
     the original conv layers, and adding new FC layers for training on
     iris.
@@ -22,7 +23,8 @@ def load_vgg_model_finetune(lr=0.001, fc_size=2048, input_shape=(224, 224, 3)):
     x = base_model.output
     x = Flatten()(x)
     x = Dense(fc_size, activation='relu')(x)
-    x = Dense(fc_size, activation='relu')(x)  # New FC2
+    if use_newfc2:
+        x = Dense(fc_size, activation='relu')(x)  # New FC2
     predictions = Dense(2, activation='softmax')(x)
     model = Model(inputs=base_model.input, outputs=predictions)
     # Freeze original layers
