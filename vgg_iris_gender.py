@@ -20,9 +20,11 @@ from vgg import load_vgg_model_finetune, prepare_data_for_vgg,\
 
 
 def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
-                         both_eyes_mode: bool, params_set='norm3'):
+                         both_eyes_mode: bool, params_set='norm3', n_jobs=1):
     """Parallelizable function that performs the VGG-feat Linear-SVM
     test. If GridSearch is desired, n_iters should be None.
+
+    n_jobs should be 1 unless it is not being parallelized from outside.
     """
     # Prepare data
     if both_eyes_mode:
@@ -58,7 +60,7 @@ def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
         else:
             raise ValueError('params_set option not recognized')
 
-        model = GridSearchCV(pipe, param_grid, cv=5)
+        model = GridSearchCV(pipe, param_grid, cv=5, n_jobs=n_jobs)
     model.fit(train_x, train_y)
     pred = model.predict(test_x)
     results = classification_report(test_y, pred, output_dict=True)
@@ -70,7 +72,8 @@ def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
 
 def _perform_vgg_feat_lsvm_test(data_type, data_params, dataset_name: str,
                                 n_partitions: int, n_jobs: int, out_folder,
-                                n_iters: int, both_eyes_mode: bool):
+                                n_iters: int, both_eyes_mode: bool,
+                                parallel=True):
     """Performs VGG feat lsvm test."""
     # Load data
     if both_eyes_mode:
@@ -87,13 +90,24 @@ def _perform_vgg_feat_lsvm_test(data_type, data_params, dataset_name: str,
         params_set = 'norm3'
 
     # Perform parallel test
-    args = [(data, i, n_iters, both_eyes_mode, params_set)
+    subjobs = 1 if parallel else n_jobs
+    args = [(data, i, n_iters, both_eyes_mode, params_set, subjobs)
             for i in range(n_partitions)]
-    with Pool(n_jobs) as p:
-        print(msg)
+    print(msg)
+    if parallel:
+        with Pool(n_jobs) as p:
+            t = Timer(f"{dataset_name}, {n_partitions} "
+                      f"partitions, {n_jobs} jobs")
+            t.start()
+            results = p.starmap(vgg_feat_lsvm_parall, args)
+            t.stop()
+    else:
         t = Timer(f"{dataset_name}, {n_partitions} partitions, {n_jobs} jobs")
         t.start()
-        results = p.starmap(vgg_feat_lsvm_parall, args)
+        results = []
+        for arg in args:
+            result = vgg_feat_lsvm_parall(*arg)
+            results.append(result)
         t.stop()
 
     # Store results
@@ -107,46 +121,48 @@ def _perform_vgg_feat_lsvm_test(data_type, data_params, dataset_name: str,
 def perform_vgg_feat_lsvm_test(dataset_name: str, n_partitions: int,
                                n_jobs: int,
                                out_folder='vgg_feat_lsvm_results',
-                               n_iters: int = 10000):
+                               n_iters: int = 10000,
+                               parallel=True):
     data_type = 'iris_vgg_feats'
     data_params = {'dataset_name': dataset_name}
     _perform_vgg_feat_lsvm_test(data_type, data_params, dataset_name,
                                 n_partitions, n_jobs, out_folder, n_iters,
-                                both_eyes_mode=False)
+                                both_eyes_mode=False, parallel=parallel)
 
 
 def perform_peri_vgg_feat_lsvm_test(eye: str, n_partitions: int, n_jobs: int,
                                     out_folder='vgg_feat_lsvm_peri_results',
-                                    n_iters: int = 10000):
+                                    n_iters: int = 10000, parallel=True):
     data_type = 'periocular_vgg_feats'
     data_params = {'eye': eye}
     _perform_vgg_feat_lsvm_test(data_type, data_params, eye, n_partitions,
                                 n_jobs, out_folder, n_iters,
-                                both_eyes_mode=False)
+                                both_eyes_mode=False, parallel=parallel)
 
 
 def perform_vgg_feat_lsvm_test_botheyes(
         dataset_name: str, n_partitions: int, n_jobs: int,
-        out_folder='vgg_feat_lsvm_botheyes_results', n_iters: int = 10000
+        out_folder='vgg_feat_lsvm_botheyes_results', n_iters: int = 10000,
+        parallel=True
 ):
     data_type = 'iris_botheyes_vgg_feats'
     data_params = {'dataset_name': dataset_name}
     _perform_vgg_feat_lsvm_test(data_type, data_params, dataset_name,
                                 n_partitions, n_jobs, out_folder, n_iters,
-                                both_eyes_mode=True)
+                                both_eyes_mode=True, parallel=parallel)
 
 
 def perform_vgg_feat_lsvm_test_botheyes_peri(
         n_partitions: int, n_jobs: int,
         out_folder='vgg_feat_lsvm_botheyes_peri_results',
-        n_iters: int = 10000
+        n_iters: int = 10000, parallel=True
 ):
     dataset_name = 'both_peri'
     data_type = 'periocular_botheyes_vgg_feats'
     data_params = {}
     _perform_vgg_feat_lsvm_test(data_type, data_params, dataset_name,
                                 n_partitions, n_jobs, out_folder, n_iters,
-                                both_eyes_mode=True)
+                                both_eyes_mode=True, parallel=parallel)
 
 
 def main_vgg_feat_lsvm_test():
@@ -165,6 +181,9 @@ def main_vgg_feat_lsvm_test():
                     help='Perform periocular test')
     ap.add_argument('--out_folder', type=str, default=None,
                     help='Out folder for the test')
+    ap.add_argument('--no_parallel', action='store_true',
+                    help='Do not parallelize from outside, use GridSearchCV '
+                         'n_jobs instead.')
     args = ap.parse_args()
     n_jobs = args.n_jobs
     n_parts = args.n_parts
@@ -172,6 +191,7 @@ def main_vgg_feat_lsvm_test():
     use_botheyes = args.use_botheyes
     use_peri = args.use_peri
     out_folder = args.out_folder
+    no_parallel = args.no_parallel
     if n_iters is None:
         folder_suffix = ''
     else:
@@ -185,14 +205,16 @@ def main_vgg_feat_lsvm_test():
             for d in datasets:
                 perform_vgg_feat_lsvm_test(d, n_parts, n_jobs,
                                            out_folder=out_folder,
-                                           n_iters=n_iters)
+                                           n_iters=n_iters,
+                                           parallel=not no_parallel)
         else:
             if out_folder is None:
                 out_folder = f'vgg_feat_lsvm_peri_results{folder_suffix}'
             for eye in ('left', 'right',):
                 perform_peri_vgg_feat_lsvm_test(eye, n_parts, n_jobs,
                                                 out_folder=out_folder,
-                                                n_iters=n_iters)
+                                                n_iters=n_iters,
+                                                parallel=not no_parallel)
 
     else:
         from constants import datasets_botheyes
@@ -202,14 +224,16 @@ def main_vgg_feat_lsvm_test():
             for d in datasets_botheyes:
                 perform_vgg_feat_lsvm_test_botheyes(d, n_parts, n_jobs,
                                                     out_folder=out_folder,
-                                                    n_iters=n_iters)
+                                                    n_iters=n_iters,
+                                                    parallel=not no_parallel)
         else:
             if out_folder is None:
                 out_folder = f'vgg_feat_lsvm_botheyes_peri_results' \
                              f'{folder_suffix}'
             perform_vgg_feat_lsvm_test_botheyes_peri(n_parts, n_jobs,
                                                      out_folder=out_folder,
-                                                     n_iters=n_iters)
+                                                     n_iters=n_iters,
+                                                     parallel=not no_parallel)
 
 
 def _perform_vgg_test(data, labels, dataset_name: str, partition: int,
