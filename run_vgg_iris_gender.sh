@@ -4,12 +4,12 @@ run_vgg_iris_gender(){
     # SECOND ARG IS EPOCHS
     conda activate iris_keras
     for i in $(seq 6 30); do
-        for d in $(seq 0 3); do
-            python ./vgg_iris_gender.py -d $d -p $i -e $2 -bs $1 -o initial_both_vgg_results -lr 0.0005
-            python ./vgg_iris_gender.py -d $d -p $i -e $2 --use_val -bs $1 -o initial_both_vgg_results_val -lr 0.0005
-        done
-        # python ./vgg_iris_gender.py -d 0 -p $i -e $2 --use_peri -bs $1 -o initial_both_peri_vgg_results -lr 0.0005
-        # python ./vgg_iris_gender.py -d 0 -p $i -e $2 --use_val --use_peri -bs $1 -o initial_both_peri_vgg_results_val -lr 0.0005
+        # for d in $(seq 0 3); do
+        #     python ./vgg_iris_gender.py -d $d -p $i -e $2 -bs $1 -o initial_both_vgg_results -lr 0.0005
+        #     python ./vgg_iris_gender.py -d $d -p $i -e $2 --use_val -bs $1 -o initial_both_vgg_results_val -lr 0.0005
+        # done
+        python ./vgg_iris_gender.py -d 0 -p $i -e $2 --use_peri -bs $1 -o second_both_peri_vgg_results -lr 0.0005
+        python ./vgg_iris_gender.py -d 0 -p $i -e $2 --use_val --use_peri -bs $1 -o second_both_peri_vgg_results_val -lr 0.0005
     done
 
   # for i in $(seq 1 10); do

@@ -449,6 +449,6 @@ def main_vgg_botheyes_test():
 
 
 if __name__ == '__main__':
-    main_vgg_feat_lsvm_test()
+    # main_vgg_feat_lsvm_test()
     # main_vgg_test()
-    # main_vgg_botheyes_test()
+    main_vgg_botheyes_test()
