@@ -19,11 +19,8 @@ from vgg import load_vgg_model_finetune, prepare_data_for_vgg,\
     labels_to_onehot_botheyes, load_periocular_botheyes_pre_vgg, load_data
 
 
-PARAMS_SET = 'norm3'
-
-
 def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
-                         both_eyes_mode: bool, params_set=PARAMS_SET):
+                         both_eyes_mode: bool, params_set='norm3'):
     """Parallelizable function that performs the VGG-feat Linear-SVM
     test. If GridSearch is desired, n_iters should be None.
     """
@@ -84,9 +81,14 @@ def _perform_vgg_feat_lsvm_test(data_type, data_params, dataset_name: str,
     t.start()
     data = load_data(data_type, **data_params)
     t.stop()
+    if 'periocular' in data_type:
+        params_set = 'peri3'
+    else:
+        params_set = 'norm3'
 
     # Perform parallel test
-    args = [(data, i, n_iters, both_eyes_mode) for i in range(n_partitions)]
+    args = [(data, i, n_iters, both_eyes_mode, params_set)
+            for i in range(n_partitions)]
     with Pool(n_jobs) as p:
         print(msg)
         t = Timer(f"{dataset_name}, {n_partitions} partitions, {n_jobs} jobs")
@@ -163,8 +165,6 @@ def main_vgg_feat_lsvm_test():
                     help='Perform periocular test')
     ap.add_argument('--out_folder', type=str, default=None,
                     help='Out folder for the test')
-    ap.add_argument('--params_set', type=str, default='norm1',
-                    help='Parameters to explore on GridSearch')
     args = ap.parse_args()
     n_jobs = args.n_jobs
     n_parts = args.n_parts
@@ -172,8 +172,6 @@ def main_vgg_feat_lsvm_test():
     use_botheyes = args.use_botheyes
     use_peri = args.use_peri
     out_folder = args.out_folder
-    global PARAMS_SET
-    PARAMS_SET = args.params_set
     if n_iters is None:
         folder_suffix = ''
     else:
