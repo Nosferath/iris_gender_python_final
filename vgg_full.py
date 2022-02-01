@@ -93,7 +93,21 @@ def main_vgg_test():
 def _perform_vgg_test_botheyes(all_data, males_set, females_set,
                                dataset_name: str, partition: int,
                                out_folder, epochs=20, use_val=False, lr=0.001,
-                               batch_size=32):
+                               batch_size=32, step_by_step=False):
+    def eval_model(mdl, _train, _test, _val):
+        _results = {}
+        for _name, _data in (('train', _train),
+                             ('test', _test),
+                             ('val', _val)):
+            if _data is None:
+                continue
+            _x, _y = _data
+            _preds = mdl.predict(_x)
+            print(f'{_name} results: \n', classification_report(_y, _preds))
+            _results[_name] = classification_report(_y, _preds,
+                                                    output_dict=True)
+        return _results
+
     from tensorflow.keras.callbacks import TensorBoard
     results = []
     train_x, train_y, test_x, test_y = partition_both_eyes(all_data, males_set,
@@ -113,24 +127,38 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
                      update_freq='batch')
     print("VGG Feats and Classifying Test, Both Eyes")
     t = Timer(f"{dataset_name}, partition {partition}")
-    t.start()
     if not use_val:
-        model.fit(train_x, train_y, epochs=epochs, callbacks=[tb],
-                  validation_data=(test_x, test_y), batch_size=batch_size)
+        val_data = (test_x, test_y)
     else:
         from sklearn.model_selection import train_test_split
         test_x, val_x, test_y, val_y = train_test_split(test_x, test_y,
                                                         test_size=0.5,
                                                         stratify=test_y)
+        val_data = (val_x, val_y)
+    if not step_by_step:
+        t.start()
         model.fit(train_x, train_y, epochs=epochs, callbacks=[tb],
-                  validation_data=(val_x, val_y), batch_size=batch_size)
-
-    preds = model.predict(test_x)
-    preds = preds.argmax(axis=1)
-    result = classification_report(test_y.argmax(axis=1), preds,
-                                   output_dict=True)
-    results.append(result)
-    t.stop()
+                  validation_data=val_data, batch_size=batch_size)
+        preds = model.predict(test_x)
+        preds = preds.argmax(axis=1)
+        result = classification_report(test_y.argmax(axis=1), preds,
+                                       output_dict=True)
+        results.append(result)
+        t.stop()
+    else:
+        train = (train_x, train_y)
+        test = (test_x, test_y)
+        val = val_data if use_val else None
+        result = eval_model(model, train, test, val)
+        results.append(result)
+        for _ in range(epochs):
+            model.fit(train_x, train_y, epochs=1, callbacks=[tb],
+                      validation_data=val_data, batch_size=batch_size)
+            result = eval_model(model, train, test, val)
+            results.append(result)
+            prompt = input('Press <ENTER> to continue, or type stop to stop')
+            if prompt.lower() == 'stop':
+                break
 
     out_folder = Path(out_folder)
     out_folder.mkdir(exist_ok=True, parents=True)
@@ -143,7 +171,7 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
 def perform_vgg_test_botheyes(dataset_name: str, partition: int,
                               out_folder='vgg_full_botheyes_results',
                               epochs=21, use_val=False, lr=0.001,
-                              batch_size=32):
+                              batch_size=32, step_by_step=False):
     t = Timer(f"Loading dataset {dataset_name}")
     t.start()
     all_data, males_set, females_set = load_dataset_both_eyes(dataset_name)
@@ -153,7 +181,8 @@ def perform_vgg_test_botheyes(dataset_name: str, partition: int,
 
     _perform_vgg_test_botheyes(all_data, males_set, females_set, dataset_name,
                                partition, out_folder, epochs, use_val, lr=lr,
-                               batch_size=batch_size)
+                               batch_size=batch_size,
+                               step_by_step=step_by_step)
     del all_data, males_set, females_set
 
 
@@ -163,7 +192,8 @@ def perform_peri_vgg_test_botheyes(
         epochs=20,
         use_val=False,
         lr=0.001,
-        batch_size=32
+        batch_size=32,
+        step_by_step=False
 ):
     eye = 'both_peri'
     t = Timer(f"Loading dataset periocular pre-VGG {eye}")
@@ -174,7 +204,8 @@ def perform_peri_vgg_test_botheyes(
 
     _perform_vgg_test_botheyes(all_data, males_set, females_set, eye,
                                partition, out_folder, epochs, use_val, lr=lr,
-                               batch_size=batch_size)
+                               batch_size=batch_size,
+                               step_by_step=step_by_step)
     del all_data
 
 
@@ -199,6 +230,8 @@ def main_vgg_botheyes_test():
                     help='Batch size for training')
     ap.add_argument('-o', '--out_folder', type=str, default=None,
                     help='Folder where results and logs will be output')
+    ap.add_argument('-sbs', '--step_by_step', action='store_true',
+                    help='Supervise training step by step')
     args = ap.parse_args()
     d_idx = args.d_idx
     n_part = args.n_part
@@ -208,6 +241,7 @@ def main_vgg_botheyes_test():
     lr = args.learning_rate
     batch_size = args.batch_size
     out_folder = args.out_folder
+    step_by_step = args.step_by_step
 
     if not use_peri:
         if out_folder is None:
@@ -215,13 +249,15 @@ def main_vgg_botheyes_test():
         d = datasets_botheyes[d_idx]
         perform_vgg_test_botheyes(d, n_part, out_folder=out_folder,
                                   epochs=epochs, use_val=use_val,
-                                  lr=lr, batch_size=batch_size)
+                                  lr=lr, batch_size=batch_size,
+                                  step_by_step=step_by_step)
     else:
         if out_folder is None:
             out_folder = 'vgg_full_peri_botheyes_results'
         perform_peri_vgg_test_botheyes(n_part, out_folder=out_folder,
                                        epochs=epochs, use_val=use_val,
-                                       lr=lr, batch_size=batch_size)
+                                       lr=lr, batch_size=batch_size,
+                                       step_by_step=step_by_step)
 
 
 if __name__ == "__main__":
