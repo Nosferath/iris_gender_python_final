@@ -102,7 +102,8 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
             if _data is None:
                 continue
             _x, _y = _data
-            _preds = mdl.predict(_x)
+            _y = _y.argmax(axis=1)
+            _preds = mdl.predict(_x).argmax(axis=1)
             print(f'{_name} results: \n', classification_report(_y, _preds))
             _results[_name] = classification_report(_y, _preds,
                                                     output_dict=True)
@@ -224,7 +225,7 @@ def main_vgg_botheyes_test():
                     help='Perform periocular test')
     ap.add_argument('--use_val', action='store_true',
                     help='Use a separate validation set')
-    ap.add_argument('-lr', '--learning_rate', type=float, default=0.001,
+    ap.add_argument('-lr', '--learning_rate', type=float, default=0.0005,
                     help='Learning rate for training')
     ap.add_argument('-bs', '--batch_size', type=int, default=32,
                     help='Batch size for training')
