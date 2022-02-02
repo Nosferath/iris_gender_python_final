@@ -105,7 +105,7 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
                 continue
             _x, _y = _data
             _y = _y.argmax(axis=1)
-            _preds = mdl.predict(_x).argmax(axis=1)
+            _preds = mdl.predict(_x, batch_size=batch_size).argmax(axis=1)
             print(f'{_name} results: \n', classification_report(_y, _preds))
             _results[_name] = classification_report(_y, _preds,
                                                     output_dict=True)
@@ -149,7 +149,7 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         t.start()
         model.fit(train_x, train_y, epochs=epochs, callbacks=[tb],
                   validation_data=val_data, batch_size=batch_size)
-        preds = model.predict(test_x)
+        preds = model.predict(test_x, batch_size=batch_size)
         preds = preds.argmax(axis=1)
         result = classification_report(test_y.argmax(axis=1), preds,
                                        output_dict=True)
@@ -182,11 +182,12 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         model.fit(train_x, train_y, epochs=epochs,
                   validation_data=val_data[-1], batch_size=batch_size,
                   callbacks=[cb])
-        preds = model.predict(test_x)
+        preds = model.predict(test_x, batch_size=batch_size)
         preds = preds.argmax(axis=1)
         result = classification_report(test_y.argmax(axis=1), preds,
                                        output_dict=True)
         results.append(result)
+        t.stop()
 
     out_folder.mkdir(exist_ok=True, parents=True)
     with open(out_folder / f'{dataset_name}_{partition}.pickle', 'wb') as f:

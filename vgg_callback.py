@@ -6,9 +6,10 @@ from tensorflow.keras.callbacks import Callback
 
 
 class EvaluateCallback(Callback):
-    def __init__(self, val_data, out_dir):
+    def __init__(self, val_data, out_dir, batch_size):
         super(EvaluateCallback, self).__init__()
         self.val_data = val_data
+        self.batch_size = batch_size
         self.out_dir = Path(out_dir)
         self.out_dir.mkdir(exist_ok=True, parents=True)
         self.results = []
@@ -20,7 +21,9 @@ class EvaluateCallback(Callback):
             data_x, data_y = self.val_data[i]
             data_y = data_y.argmax(axis=1)
             name = self.datasets[i]
-            preds = self.model.predict(data_x).argmax(axis=1)
+            preds = self.model.predict(
+                data_x, batch_size=self.batch_size
+            ).argmax(axis=1)
             result[name] = classification_report(data_y, preds,
                                                  output_dict=True)
         return result
