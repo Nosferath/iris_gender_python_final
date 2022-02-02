@@ -125,9 +125,6 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         model = load_vgg_model_finetune(lr=lr, input_shape=input_shape)
     else:
         model = load_vgg_model_finetune(lr=lr, use_newfc2=False)
-    tb = TensorBoard(log_dir=f'{out_folder}/logs/{dataset_name}/{partition}/',
-                     write_graph=True, histogram_freq=0, write_images=True,
-                     update_freq='batch')
     print("VGG Feats and Classifying Test, Both Eyes")
     t = Timer(f"{dataset_name}, partition {partition}")
     if not use_val:
@@ -139,6 +136,11 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
                                                         stratify=test_y)
         val_data = (val_x, val_y)
     if not step_by_step:
+        tb = TensorBoard(
+            log_dir=f'{out_folder}/logs/{dataset_name}/{partition}/',
+            write_graph=True, histogram_freq=0, write_images=True,
+            update_freq='batch'
+        )
         t.start()
         model.fit(train_x, train_y, epochs=epochs, callbacks=[tb],
                   validation_data=val_data, batch_size=batch_size)
@@ -155,13 +157,13 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         result = eval_model(model, train, test, val)
         results.append(result)
         for _ in range(epochs):
-            model.fit(train_x, train_y, epochs=1, callbacks=[tb],
+            model.fit(train_x, train_y, epochs=1,
                       validation_data=val_data, batch_size=batch_size)
             result = eval_model(model, train, test, val)
             results.append(result)
-            prompt = input('Press <ENTER> to continue, or type stop to stop')
-            if prompt.lower() == 'stop':
-                break
+            # prompt = input('Press <ENTER> to continue, or type stop to stop')
+            # if prompt.lower() == 'stop':
+            #     break
 
     out_folder = Path(out_folder)
     out_folder.mkdir(exist_ok=True, parents=True)
