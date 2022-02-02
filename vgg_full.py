@@ -126,7 +126,8 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         w = int(dataset_name[:3])
         h = int(dataset_name[4:6])
         input_shape = (max(h, 32), w, 3)
-        model = load_vgg_model_finetune(lr=lr, input_shape=input_shape)
+        model = load_vgg_model_finetune(lr=lr, input_shape=input_shape,
+                                        use_dropout=True)
     else:
         model = load_vgg_model_finetune(lr=lr, use_newfc2=False)
     print("VGG Feats and Classifying Test, Both Eyes")
