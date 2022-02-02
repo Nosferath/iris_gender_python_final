@@ -111,13 +111,17 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
                                                     output_dict=True)
         return _results
 
-    from tensorflow.keras.callbacks import TensorBoard
+    out_folder = Path(out_folder)
     results = []
     train_x, train_y, test_x, test_y = partition_both_eyes(all_data, males_set,
                                                            females_set,
                                                            TEST_SIZE,
                                                            partition)
     if dataset_name.startswith('240') or dataset_name.startswith('480'):
+        use_peri = False
+    else:
+        use_peri = True
+    if not use_peri:
         # Change input shape to closest possible if dataset is normalized
         w = int(dataset_name[:3])
         h = int(dataset_name[4:6])
@@ -126,7 +130,6 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
     else:
         model = load_vgg_model_finetune(lr=lr, use_newfc2=False)
     print("VGG Feats and Classifying Test, Both Eyes")
-    t = Timer(f"{dataset_name}, partition {partition}")
     if not use_val:
         val_data = (test_x, test_y)
     else:
@@ -135,12 +138,14 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
                                                         test_size=0.5,
                                                         stratify=test_y)
         val_data = (val_x, val_y)
-    if not step_by_step:
+    if not step_by_step and not use_peri:
+        from tensorflow.keras.callbacks import TensorBoard
         tb = TensorBoard(
             log_dir=f'{out_folder}/logs/{dataset_name}/{partition}/',
             write_graph=True, histogram_freq=0, write_images=True,
             update_freq='batch'
         )
+        t = Timer(f"{dataset_name}, partition {partition}")
         t.start()
         model.fit(train_x, train_y, epochs=epochs, callbacks=[tb],
                   validation_data=val_data, batch_size=batch_size)
@@ -150,7 +155,7 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
                                        output_dict=True)
         results.append(result)
         t.stop()
-    else:
+    elif step_by_step and not use_peri:
         train = (train_x, train_y)
         test = (test_x, test_y)
         val = val_data if use_val else None
@@ -164,8 +169,25 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
             # prompt = input('Press <ENTER> to continue, or type stop to stop')
             # if prompt.lower() == 'stop':
             #     break
+    else:
+        from vgg_callback import EvaluateCallback
+        if use_val:
+            val_data = ((train_x, train_y), (test_x, test_y), val_data)
+        else:
+            val_data = ((train_x, train_y), (test_x, test_y))
+        cb = EvaluateCallback(val_data,
+                              out_folder / f'{dataset_name}_{partition}')
+        t = Timer(f"{dataset_name}, partition {partition}")
+        t.start()
+        model.fit(train_x, train_y, epochs=epochs,
+                  validation_data=val_data[-1], batch_size=batch_size,
+                  callbacks=[cb])
+        preds = model.predict(test_x)
+        preds = preds.argmax(axis=1)
+        result = classification_report(test_y.argmax(axis=1), preds,
+                                       output_dict=True)
+        results.append(result)
 
-    out_folder = Path(out_folder)
     out_folder.mkdir(exist_ok=True, parents=True)
     with open(out_folder / f'{dataset_name}_{partition}.pickle', 'wb') as f:
         pickle.dump(results, f)
