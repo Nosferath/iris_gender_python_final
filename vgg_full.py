@@ -94,6 +94,8 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
                                dataset_name: str, partition: int,
                                out_folder, epochs=20, use_val=False, lr=0.001,
                                batch_size=32, step_by_step=False):
+    from tensorflow.keras import backend as K
+
     def eval_model(mdl, _train, _test, _val):
         _results = {}
         for _name, _data in (('train', _train),
@@ -166,7 +168,8 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
     with open(out_folder / f'{dataset_name}_{partition}.pickle', 'wb') as f:
         pickle.dump(results, f)
 
-    del train_x, train_y, test_x, test_y
+    K.clear_session()
+    del train_x, train_y, test_x, test_y, model
 
 
 def perform_vgg_test_botheyes(dataset_name: str, partition: int,

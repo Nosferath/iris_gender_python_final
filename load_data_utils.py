@@ -155,7 +155,7 @@ def balance_partition(data_x, data_y):
     data_x = data_x[to_include, :]
     data_y = data_y[to_include]
     n_per_class = [(data_y == 0).size, (data_y == 1).size]
-    if n_per_class[0] != n_per_class[1]:
+    if n_per_class[0] != n_per_class[1]:  # Assertion. Should not happen.
         raise RuntimeError('Balance was not achieved')
     if one_hot:
         from vgg_utils import labels_to_onehot
