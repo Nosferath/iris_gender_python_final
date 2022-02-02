@@ -176,11 +176,11 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         else:
             val_data = ((train_x, train_y), (test_x, test_y))
         cb = EvaluateCallback(val_data,
-                              out_folder / f'{dataset_name}_{partition}')
+                              out_folder / f'{dataset_name}_{partition}',
+                              batch_size)
         t = Timer(f"{dataset_name}, partition {partition}")
         t.start()
-        model.fit(train_x, train_y, epochs=epochs,
-                  validation_data=val_data[-1], batch_size=batch_size,
+        model.fit(train_x, train_y, epochs=epochs, batch_size=batch_size,
                   callbacks=[cb])
         preds = model.predict(test_x, batch_size=batch_size)
         preds = preds.argmax(axis=1)
