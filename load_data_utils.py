@@ -130,11 +130,21 @@ def scale_data_by_row(data: np.array):
 def balance_partition(data_x, data_y):
     """Balances the partition, ensuring same number of samples
     per class. If unbalanced, removes the last examples until
-    balanced.
+    balanced. This function assumes two classes.
     """
     n_samples = data_x.shape[0]
-    n_per_class = [(data_y == 0).size, (data_y == 1).size]
+    if data_y.size == n_samples:  # Regular class labels
+        one_hot = False
+    else:  # One hot labels
+        one_hot = True
+        data_y = data_y.argmax(axis=1)
+
+    n_per_class = [np.count_nonzero(data_y == 0),
+                   np.count_nonzero(data_y == 1)]
     if n_per_class[0] == n_per_class[1]:
+        if one_hot:
+            from vgg_utils import labels_to_onehot
+            data_y = labels_to_onehot(data_y)
         return data_x, data_y
     highest = np.argmax(n_per_class)
     delta = abs(n_per_class[0] - n_per_class[1])
@@ -142,7 +152,15 @@ def balance_partition(data_x, data_y):
     to_remove = locations[-delta:]
     to_include = np.ones(n_samples, dtype=bool)
     to_include[to_remove] = False
-    return data_x[to_include, :], data_y[to_include]
+    data_x = data_x[to_include, :]
+    data_y = data_y[to_include]
+    n_per_class = [(data_y == 0).size, (data_y == 1).size]
+    if n_per_class[0] != n_per_class[1]:
+        raise RuntimeError('Balance was not achieved')
+    if one_hot:
+        from vgg_utils import labels_to_onehot
+        data_y = labels_to_onehot(data_y)
+    return data_x, data_y
 
 
 def partition_data(data, labels, test_size: float, partition: int):

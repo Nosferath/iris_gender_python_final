@@ -1,13 +1,13 @@
 from typing import Tuple
 
 import numpy as np
-from tensorflow.keras.applications.vgg16 import VGG16
-from tensorflow.keras.models import Model
-from tensorflow.keras import mixed_precision
 
 
-policy = mixed_precision.Policy('mixed_float16')
-mixed_precision.set_global_policy(policy)
+def set_precision_to_16_bits():
+    from tensorflow.keras import mixed_precision
+
+    policy = mixed_precision.Policy('mixed_float16')
+    mixed_precision.set_global_policy(policy)
 
 
 def load_vgg_model_finetune(lr=0.001, fc_size=2048, input_shape=(224, 224, 3),
@@ -16,8 +16,12 @@ def load_vgg_model_finetune(lr=0.001, fc_size=2048, input_shape=(224, 224, 3),
     the original conv layers, and adding new FC layers for training on
     iris.
     """
+    from tensorflow.keras.applications.vgg16 import VGG16
     from tensorflow.keras.layers import Flatten, Dense
+    from tensorflow.keras.models import Model
     from tensorflow.keras.optimizers import Adam
+    set_precision_to_16_bits()
+
     base_model = VGG16(include_top=False, weights='imagenet',
                        input_shape=input_shape)
     x = base_model.output
@@ -40,6 +44,10 @@ def load_vgg_model_features():
     """Loads the VGG-16 model up to the first FC layer, for
     feature extraction.
     """
+    from tensorflow.keras.applications.vgg16 import VGG16
+    from tensorflow.keras.models import Model
+    set_precision_to_16_bits()
+
     base_model = VGG16(weights='imagenet')
     layer = 'fc1'
     model = Model(inputs=base_model.input,
