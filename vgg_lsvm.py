@@ -65,8 +65,7 @@ def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
         else:
             raise ValueError('params_set option not recognized')
 
-        model = GridSearchCV(pipe, param_grid, cv=5, n_jobs=n_jobs,
-                             random_state=42)
+        model = GridSearchCV(pipe, param_grid, cv=5, n_jobs=n_jobs)
     model.fit(train_x, train_y)
     pred = model.predict(test_x)
     results = classification_report(test_y, pred, output_dict=True)
