@@ -51,6 +51,11 @@ def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
                           # np.linspace(1000, 5000, 3),
                           # 'model__C': np.linspace(0.125, 1.0, 8)}
                           'model__C': np.logspace(-7, -3, 5, base=2)}
+        elif params_set == 'norm4':
+            param_grid = {'model__max_iter': [25, 50, 100, 300],
+                          # np.linspace(1000, 5000, 3),
+                          # 'model__C': np.linspace(0.125, 1.0, 8)}
+                          'model__C': np.logspace(-11, -7, 5, base=2)}
         elif params_set == 'peri3':
             param_grid = {'model__max_iter': np.linspace(1000, 6000, 6),
                           'model__C': np.linspace(0.5, 2.0, 4)}
@@ -85,7 +90,7 @@ def _perform_vgg_feat_lsvm_test(data_type, data_params, dataset_name: str,
     if 'periocular' in data_type:
         params_set = 'peri3'
     else:
-        params_set = 'norm3'
+        params_set = 'norm4'
 
     # Perform parallel test
     subjobs = 1 if parallel else n_jobs
