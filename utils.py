@@ -133,7 +133,7 @@ def grid_plot(a: np.ndarray, b: np.ndarray, z: np.ndarray):
     for i in range(len(a)):
         for j in range(len(b)):
             ax.text(j, i, np.round(z[i, j], 2),
-                    ha='center', va='center', color='w')
+                    ha='center', va='center', color='black')
     fig.tight_layout()
     return fig, ax
 

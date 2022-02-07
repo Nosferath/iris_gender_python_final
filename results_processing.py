@@ -201,3 +201,48 @@ def generate_cv_grid_plot(dataset_name: str, results_folder: str,
     ax_std.set_xlabel(name_b)
     ax_std.set_title(f'{dataset_name}_{partition}, CV results, std')
     return fig, fig_std
+
+
+def review_vgg_step_by_step(dataset_name: str, results_folder, title,
+                            out_file, avg_eval=False):
+    from itertools import product
+    import matplotlib.pyplot as plt
+    font = {'weight': 'bold',
+            'size': 16}
+    plt.rc('font', **font)
+    # Load results
+    results_folder = Path(results_folder)
+    results_file = list(results_folder.glob(f'{dataset_name}_?.pickle'))[0]
+    with open(results_file, 'rb') as f:
+        results = pickle.load(f)
+    # Extract results
+    names = list(results[0].keys())
+    n_names = len(names)
+    accuracies = np.zeros((n_names, len(results)))
+    for i, j in product(range(n_names), range(len(results))):
+        cur_name = names[i]
+        cur_results = results[j][cur_name]
+        accuracies[i, j] = cur_results['accuracy'] * 100
+    # Plot results
+    fig, ax = plt.subplots()
+    x = np.arange(len(results))
+    if not avg_eval:
+        for i in range(n_names):
+            ax.plot(x, accuracies[i, :], label=names[i], linewidth=2)
+    else:
+        ax.plot(x, accuracies[0, :], label=names[0], linewidth=2)
+        ax.plot(x, accuracies[1:3, :].mean(axis=0), label='eval', linewidth=2)
+
+    ax.legend()
+    ax.set_xlabel('Epochs')
+    ax.set_ylabel('Accuracy [%]')
+    ax.set_title(title)
+    ax.set_ylim([48, 100])
+    plt.grid('on')
+    plt.tight_layout()
+    out_file = Path(out_file)
+    out_file.parent.mkdir(exist_ok=True, parents=True)
+    fig.savefig(out_file)
+    plt.show()
+    plt.clf()
+    plt.close()
