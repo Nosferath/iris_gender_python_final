@@ -91,10 +91,14 @@ def main_vgg_test():
 
 
 def _perform_vgg_test_botheyes(all_data, males_set, females_set,
-                               dataset_name: str, partition: int,
-                               out_folder, epochs=20, use_val=False, lr=0.001,
-                               batch_size=32, step_by_step=False):
+                               dataset_name: str, partition: int, params: dict,
+                               out_folder, step_by_step=False):
     from tensorflow.keras import backend as K
+    epochs = params['epochs']
+    use_val = params['use_val']
+    lr = params['learning_rate']
+    batch_size = params['batch_size']
+    architecture = params['architecture']
 
     def eval_model(mdl, _train, _test, _val):
         _results = {}
@@ -127,9 +131,9 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         h = int(dataset_name[4:6])
         input_shape = (max(h, 32), w, 3)
         model = load_vgg_model_finetune(lr=lr, input_shape=input_shape,
-                                        use_dropout=True)
+                                        architecture=architecture)
     else:
-        model = load_vgg_model_finetune(lr=lr, use_newfc2=False)
+        model = load_vgg_model_finetune(lr=lr, architecture=architecture)
     print("VGG Feats and Classifying Test, Both Eyes")
     if not use_val:
         val_data = (test_x, test_y)
@@ -198,10 +202,13 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
     del train_x, train_y, test_x, test_y, model
 
 
-def perform_vgg_test_botheyes(dataset_name: str, partition: int,
-                              out_folder='vgg_full_botheyes_results',
-                              epochs=21, use_val=False, lr=0.001,
-                              batch_size=32, step_by_step=False):
+def perform_vgg_test_botheyes(
+        dataset_name: str,
+        partition: int,
+        params: dict,
+        out_folder='vgg_full_botheyes_results',
+        step_by_step=False
+):
     t = Timer(f"Loading dataset {dataset_name}")
     t.start()
     all_data, males_set, females_set = load_dataset_both_eyes(dataset_name)
@@ -210,19 +217,15 @@ def perform_vgg_test_botheyes(dataset_name: str, partition: int,
     t.stop()
 
     _perform_vgg_test_botheyes(all_data, males_set, females_set, dataset_name,
-                               partition, out_folder, epochs, use_val, lr=lr,
-                               batch_size=batch_size,
+                               partition, params=params, out_folder=out_folder,
                                step_by_step=step_by_step)
     del all_data, males_set, females_set
 
 
 def perform_peri_vgg_test_botheyes(
         partition: int,
+        params: dict,
         out_folder='vgg_full_peri_botheyes_results',
-        epochs=20,
-        use_val=False,
-        lr=0.001,
-        batch_size=32,
         step_by_step=False
 ):
     eye = 'both_peri'
@@ -233,43 +236,35 @@ def perform_peri_vgg_test_botheyes(
     t.stop()
 
     _perform_vgg_test_botheyes(all_data, males_set, females_set, eye,
-                               partition, out_folder, epochs, use_val, lr=lr,
-                               batch_size=batch_size,
+                               partition, params=params, out_folder=out_folder,
                                step_by_step=step_by_step)
     del all_data
 
 
 def main_vgg_botheyes_test():
     import argparse
+    import json
     from constants import datasets_botheyes
 
     ap = argparse.ArgumentParser()
+    ap.add_argument('-pf', '--params_file', type=str,
+                    help='.json file with parameters')
     ap.add_argument('-d', '--d_idx', type=int,
                     help='Dataset index')
     ap.add_argument('-p', '--n_part', type=int,
                     help='Number of partition to test on')
-    ap.add_argument('-e', '--epochs', type=int, default=20,
-                    help='Number of epochs to train for')
     ap.add_argument('--use_peri', action='store_true',
                     help='Perform periocular test')
-    ap.add_argument('--use_val', action='store_true',
-                    help='Use a separate validation set')
-    ap.add_argument('-lr', '--learning_rate', type=float, default=0.0005,
-                    help='Learning rate for training')
-    ap.add_argument('-bs', '--batch_size', type=int, default=32,
-                    help='Batch size for training')
     ap.add_argument('-o', '--out_folder', type=str, default=None,
                     help='Folder where results and logs will be output')
     ap.add_argument('-sbs', '--step_by_step', action='store_true',
                     help='Supervise training step by step')
     args = ap.parse_args()
+    with open(args.params_file, 'r') as f:
+        params = json.load(f)
     d_idx = args.d_idx
     n_part = args.n_part
     use_peri = args.use_peri
-    epochs = args.epochs
-    use_val = args.use_val
-    lr = args.learning_rate
-    batch_size = args.batch_size
     out_folder = args.out_folder
     step_by_step = args.step_by_step
 
@@ -277,16 +272,14 @@ def main_vgg_botheyes_test():
         if out_folder is None:
             out_folder = 'vgg_full_botheyes_results'
         d = datasets_botheyes[d_idx]
-        perform_vgg_test_botheyes(d, n_part, out_folder=out_folder,
-                                  epochs=epochs, use_val=use_val,
-                                  lr=lr, batch_size=batch_size,
+        perform_vgg_test_botheyes(d, n_part, params=params,
+                                  out_folder=out_folder,
                                   step_by_step=step_by_step)
     else:
         if out_folder is None:
             out_folder = 'vgg_full_peri_botheyes_results'
-        perform_peri_vgg_test_botheyes(n_part, out_folder=out_folder,
-                                       epochs=epochs, use_val=use_val,
-                                       lr=lr, batch_size=batch_size,
+        perform_peri_vgg_test_botheyes(n_part, params=params,
+                                       out_folder=out_folder,
                                        step_by_step=step_by_step)
 
 

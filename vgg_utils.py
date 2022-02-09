@@ -10,33 +10,48 @@ def set_precision_to_16_bits():
     mixed_precision.set_global_policy(policy)
 
 
-def load_vgg_model_finetune(lr=0.001, fc_size=1024, input_shape=(224, 224, 3),
-                            use_newfc2=True, use_dropout=False):
+def get_vgg_fc_architecture(architecture, base_model_output):
+    from tensorflow.keras.layers import Flatten, Dense, Dropout
+    fc_sizes = {'test1': 2048, 'test2': 1024, 'test3': 1024, 'test4': 1024}
+    fc_size = fc_sizes[architecture]
+    if architecture == 'test1':
+        x = Flatten()(base_model_output)
+        x = Dense(fc_size, activation='relu')(x)
+        x = Dense(fc_size, activation='relu')(x)  # New FC2
+    elif architecture in ['test2', 'test3']:
+        x = Flatten()(base_model_output)
+        x = Dense(fc_size, activation='relu')(x)
+        x = Dropout(0.5)(x)
+        x = Dense(int(fc_size / 2), activation='relu')(x)
+        x = Dense(int(fc_size / 4), activation='relu')(x)
+    elif architecture == 'test4':
+        x = Flatten()(base_model_output)
+        x = Dense(fc_size, activation='relu')(x)
+        x = Dropout(0.5)(x)
+        x = Dense(int(fc_size / 2), activation='relu')(x)
+        x = Dropout(0.5)(x)
+        x = Dense(int(fc_size / 4), activation='relu')(x)
+    else:
+        raise ValueError(f'Unrecognized architecture option: {architecture}')
+    predictions = Dense(2, activation='softmax')(x)
+    return predictions
+
+
+def load_vgg_model_finetune(lr=0.001, input_shape=(224, 224, 3),
+                            architecture='test4'):
     """Loads the VGG-16 model without the original FC layers, freezing
     the original conv layers, and adding new FC layers for training on
     iris.
     """
     from tensorflow.keras.applications.vgg16 import VGG16
-    from tensorflow.keras.layers import Flatten, Dense, Dropout
     from tensorflow.keras.models import Model
     from tensorflow.keras.optimizers import Adam
     set_precision_to_16_bits()
 
     base_model = VGG16(include_top=False, weights='imagenet',
                        input_shape=input_shape)
-    x = base_model.output
-    x = Flatten()(x)
-    x = Dense(fc_size, activation='relu')(x)
-    if use_dropout:
-        x = Dropout(0.5)(x)
-    if use_newfc2:
-        x = Dense(int(fc_size / 2), activation='relu')(x)  # New FC2
-        if use_dropout:
-            x = Dropout(0.5)(x)
-        x = Dense(int(fc_size / 4), activation='relu')(x)
-
-    predictions = Dense(2, activation='softmax')(x)
-    model = Model(inputs=base_model.input, outputs=predictions)
+    outputs = get_vgg_fc_architecture(architecture, base_model.output)
+    model = Model(inputs=base_model.input, outputs=outputs)
     # Freeze original layers
     for layer in base_model.layers:
         layer.trainable = False
