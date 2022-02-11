@@ -260,7 +260,8 @@ def main_vgg_botheyes_test():
     ap.add_argument('-sbs', '--step_by_step', action='store_true',
                     help='Supervise training step by step')
     args = ap.parse_args()
-    with open(args.params_file, 'r') as f:
+    params_file = Path(args.params_file)
+    with open(params_file, 'r') as f:
         params = json.load(f)
     d_idx = args.d_idx
     n_part = args.n_part
@@ -268,16 +269,15 @@ def main_vgg_botheyes_test():
     out_folder = args.out_folder
     step_by_step = args.step_by_step
 
+    if out_folder is None:
+        out_folder = str(params_file.parent)
+
     if not use_peri:
-        if out_folder is None:
-            out_folder = 'vgg_full_botheyes_results'
         d = datasets_botheyes[d_idx]
         perform_vgg_test_botheyes(d, n_part, params=params,
                                   out_folder=out_folder,
                                   step_by_step=step_by_step)
     else:
-        if out_folder is None:
-            out_folder = 'vgg_full_peri_botheyes_results'
         perform_peri_vgg_test_botheyes(n_part, params=params,
                                        out_folder=out_folder,
                                        step_by_step=step_by_step)

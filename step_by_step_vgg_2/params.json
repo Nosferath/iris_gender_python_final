@@ -1,5 +1,5 @@
 {
-    "epochs": 32,
+    "epochs": 30,
     "use_val": true,
     "learning_rate": 0.0005,
     "batch_size": 32,
