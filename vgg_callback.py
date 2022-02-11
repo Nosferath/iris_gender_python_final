@@ -1,9 +1,11 @@
 from pathlib import Path
 import pickle
 
+import numpy as np
 from sklearn.metrics import classification_report
 from tensorflow.keras.callbacks import Callback
 from tensorflow import convert_to_tensor
+from tensorflow import float32 as tf_float32
 
 
 class EvaluateCallback(Callback):
@@ -22,9 +24,9 @@ class EvaluateCallback(Callback):
             data_x, data_y = self.val_data[i]
             data_y = data_y.argmax(axis=1)
             name = self.datasets[i]
-            preds = self.model.predict(
-                convert_to_tensor(data_x), batch_size=self.batch_size
-            ).argmax(axis=1)
+            preds = np.array(self.model.predict(
+                convert_to_tensor(data_x, dtype=tf_float32),
+                batch_size=self.batch_size)).argmax(axis=1)
             result[name] = classification_report(data_y, preds,
                                                  output_dict=True)
         return result

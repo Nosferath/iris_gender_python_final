@@ -1,6 +1,7 @@
 import pickle
 from pathlib import Path
 
+import numpy as np
 from sklearn.metrics import classification_report
 
 from constants import TEST_SIZE
@@ -16,13 +17,14 @@ def _perform_vgg_test(data, labels, dataset_name: str, partition: int,
                       out_folder):
     from tensorflow.keras.callbacks import TensorBoard
     from tensorflow import convert_to_tensor
+    from tensorflow import float32 as tf_float32
     results = []
     train_x, train_y, test_x, test_y = partition_data(
         data, labels, TEST_SIZE, partition
     )
-    train_x_t = convert_to_tensor(train_x)
-    train_y_t = convert_to_tensor(train_y)
-    test_x_t = convert_to_tensor(test_x)
+    train_x_t = convert_to_tensor(train_x, dtype=tf_float32)
+    train_y_t = convert_to_tensor(train_y, dtype=tf_float32)
+    test_x_t = convert_to_tensor(test_x, dtype=tf_float32)
     model = load_vgg_model_finetune()
     tb = TensorBoard(log_dir=f'vgg_logs/{dataset_name}/{partition}/',
                      write_graph=True, histogram_freq=0, write_images=True,
@@ -31,7 +33,7 @@ def _perform_vgg_test(data, labels, dataset_name: str, partition: int,
     t = Timer(f"{dataset_name}, partition {partition}")
     t.start()
     model.fit(train_x_t, train_y_t, epochs=20, callbacks=[tb])
-    preds = model.predict(test_x_t)
+    preds = np.array(model.predict(test_x_t))
     preds = preds.argmax(axis=1)
     result = classification_report(test_y.argmax(axis=1), preds,
                                    output_dict=True)
@@ -99,6 +101,7 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
                                out_folder, step_by_step=False):
     from tensorflow.keras import backend as K
     from tensorflow import convert_to_tensor
+    from tensorflow import float32 as tf_float32
     epochs = params['epochs']
     use_val = params['use_val']
     lr = params['learning_rate']
@@ -113,9 +116,10 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
             if _data is None:
                 continue
             _x, _y = _data
+            _x_t = convert_to_tensor(_x, dtype=tf_float32)
             _y = _y.argmax(axis=1)
-            _preds = mdl.predict(convert_to_tensor(_x),
-                                 batch_size=batch_size).argmax(axis=1)
+            _preds = np.array(mdl.predict(_x_t,
+                              batch_size=batch_size)).argmax(axis=1)
             print(f'{_name} results: \n', classification_report(_y, _preds))
             _results[_name] = classification_report(_y, _preds,
                                                     output_dict=True)
@@ -127,10 +131,10 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
                                                            females_set,
                                                            TEST_SIZE,
                                                            partition)
-    train_x_t = convert_to_tensor(train_x)
-    train_y_t = convert_to_tensor(train_y)
-    test_x_t = convert_to_tensor(test_x)
-    test_y_t = convert_to_tensor(test_y)
+    train_x_t = convert_to_tensor(train_x, dtype=tf_float32)
+    train_y_t = convert_to_tensor(train_y, dtype=tf_float32)
+    test_x_t = convert_to_tensor(test_x, dtype=tf_float32)
+    test_y_t = convert_to_tensor(test_y, dtype=tf_float32)
     if dataset_name.startswith('240') or dataset_name.startswith('480'):
         use_peri = False
     else:
@@ -152,10 +156,10 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         test_x, val_x, test_y, val_y = train_test_split(test_x, test_y,
                                                         test_size=0.5,
                                                         stratify=test_y)
-        test_x_t = convert_to_tensor(test_x)
-        test_y_t = convert_to_tensor(test_y)
-        val_x_t = convert_to_tensor(val_x)
-        val_y_t = convert_to_tensor(val_y)
+        test_x_t = convert_to_tensor(test_x, dtype=tf_float32)
+        test_y_t = convert_to_tensor(test_y, dtype=tf_float32)
+        val_x_t = convert_to_tensor(val_x, dtype=tf_float32)
+        val_y_t = convert_to_tensor(val_y, dtype=tf_float32)
         val_data = (val_x_t, val_y_t)
     if not step_by_step and not use_peri:
         from tensorflow.keras.callbacks import TensorBoard
@@ -168,7 +172,7 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         t.start()
         model.fit(train_x_t, train_y_t, epochs=epochs, callbacks=[tb],
                   validation_data=val_data, batch_size=batch_size)
-        preds = model.predict(test_x_t, batch_size=batch_size)
+        preds = np.array(model.predict(test_x_t, batch_size=batch_size))
         preds = preds.argmax(axis=1)
         result = classification_report(test_y.argmax(axis=1), preds,
                                        output_dict=True)
@@ -201,7 +205,7 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         t.start()
         model.fit(train_x_t, train_y_t, epochs=epochs, batch_size=batch_size,
                   callbacks=[cb])
-        preds = model.predict(test_x_t, batch_size=batch_size)
+        preds = np.array(model.predict(test_x_t, batch_size=batch_size))
         preds = preds.argmax(axis=1)
         result = classification_report(test_y.argmax(axis=1), preds,
                                        output_dict=True)
