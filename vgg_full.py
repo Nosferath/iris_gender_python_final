@@ -15,10 +15,14 @@ from vgg_utils import load_vgg_model_finetune, prepare_data_for_vgg, \
 def _perform_vgg_test(data, labels, dataset_name: str, partition: int,
                       out_folder):
     from tensorflow.keras.callbacks import TensorBoard
+    from tensorflow import convert_to_tensor
     results = []
     train_x, train_y, test_x, test_y = partition_data(
         data, labels, TEST_SIZE, partition
     )
+    train_x_t = convert_to_tensor(train_x)
+    train_y_t = convert_to_tensor(train_y)
+    test_x_t = convert_to_tensor(test_x)
     model = load_vgg_model_finetune()
     tb = TensorBoard(log_dir=f'vgg_logs/{dataset_name}/{partition}/',
                      write_graph=True, histogram_freq=0, write_images=True,
@@ -26,8 +30,8 @@ def _perform_vgg_test(data, labels, dataset_name: str, partition: int,
     print("VGG Feats and Classifying Test")
     t = Timer(f"{dataset_name}, partition {partition}")
     t.start()
-    model.fit(train_x, train_y, epochs=20, callbacks=[tb])
-    preds = model.predict(test_x)
+    model.fit(train_x_t, train_y_t, epochs=20, callbacks=[tb])
+    preds = model.predict(test_x_t)
     preds = preds.argmax(axis=1)
     result = classification_report(test_y.argmax(axis=1), preds,
                                    output_dict=True)
@@ -94,6 +98,7 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
                                dataset_name: str, partition: int, params: dict,
                                out_folder, step_by_step=False):
     from tensorflow.keras import backend as K
+    from tensorflow import convert_to_tensor
     epochs = params['epochs']
     use_val = params['use_val']
     lr = params['learning_rate']
@@ -109,7 +114,8 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
                 continue
             _x, _y = _data
             _y = _y.argmax(axis=1)
-            _preds = mdl.predict(_x, batch_size=batch_size).argmax(axis=1)
+            _preds = mdl.predict(convert_to_tensor(_x),
+                                 batch_size=batch_size).argmax(axis=1)
             print(f'{_name} results: \n', classification_report(_y, _preds))
             _results[_name] = classification_report(_y, _preds,
                                                     output_dict=True)
@@ -121,6 +127,10 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
                                                            females_set,
                                                            TEST_SIZE,
                                                            partition)
+    train_x_t = convert_to_tensor(train_x)
+    train_y_t = convert_to_tensor(train_y)
+    test_x_t = convert_to_tensor(test_x)
+    test_y_t = convert_to_tensor(test_y)
     if dataset_name.startswith('240') or dataset_name.startswith('480'):
         use_peri = False
     else:
@@ -136,13 +146,17 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         model = load_vgg_model_finetune(lr=lr, architecture=architecture)
     print("VGG Feats and Classifying Test, Both Eyes")
     if not use_val:
-        val_data = (test_x, test_y)
+        val_data = (test_x_t, test_y_t)
     else:
         from sklearn.model_selection import train_test_split
         test_x, val_x, test_y, val_y = train_test_split(test_x, test_y,
                                                         test_size=0.5,
                                                         stratify=test_y)
-        val_data = (val_x, val_y)
+        test_x_t = convert_to_tensor(test_x)
+        test_y_t = convert_to_tensor(test_y)
+        val_x_t = convert_to_tensor(val_x)
+        val_y_t = convert_to_tensor(val_y)
+        val_data = (val_x_t, val_y_t)
     if not step_by_step and not use_peri:
         from tensorflow.keras.callbacks import TensorBoard
         tb = TensorBoard(
@@ -152,9 +166,9 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         )
         t = Timer(f"{dataset_name}, partition {partition}")
         t.start()
-        model.fit(train_x, train_y, epochs=epochs, callbacks=[tb],
+        model.fit(train_x_t, train_y_t, epochs=epochs, callbacks=[tb],
                   validation_data=val_data, batch_size=batch_size)
-        preds = model.predict(test_x, batch_size=batch_size)
+        preds = model.predict(test_x_t, batch_size=batch_size)
         preds = preds.argmax(axis=1)
         result = classification_report(test_y.argmax(axis=1), preds,
                                        output_dict=True)
@@ -167,7 +181,7 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         result = eval_model(model, train, test, val)
         results.append(result)
         for _ in range(epochs):
-            model.fit(train_x, train_y, epochs=1,
+            model.fit(train_x_t, train_y_t, epochs=1,
                       validation_data=val_data, batch_size=batch_size)
             result = eval_model(model, train, test, val)
             results.append(result)
@@ -185,9 +199,9 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
                               batch_size)
         t = Timer(f"{dataset_name}, partition {partition}")
         t.start()
-        model.fit(train_x, train_y, epochs=epochs, batch_size=batch_size,
+        model.fit(train_x_t, train_y_t, epochs=epochs, batch_size=batch_size,
                   callbacks=[cb])
-        preds = model.predict(test_x, batch_size=batch_size)
+        preds = model.predict(test_x_t, batch_size=batch_size)
         preds = preds.argmax(axis=1)
         result = classification_report(test_y.argmax(axis=1), preds,
                                        output_dict=True)

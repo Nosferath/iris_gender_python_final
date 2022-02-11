@@ -57,8 +57,7 @@ def load_vgg_model_finetune(lr=0.001, input_shape=(224, 224, 3),
         layer.trainable = False
 
     opt = Adam(learning_rate=lr)
-    model.compile(optimizer=opt, loss='categorical_crossentropy',
-                  run_eagerly=True)
+    model.compile(optimizer=opt, loss='categorical_crossentropy')
     return model
 
 

@@ -3,6 +3,7 @@ import pickle
 
 from sklearn.metrics import classification_report
 from tensorflow.keras.callbacks import Callback
+from tensorflow import convert_to_tensor
 
 
 class EvaluateCallback(Callback):
@@ -22,7 +23,7 @@ class EvaluateCallback(Callback):
             data_y = data_y.argmax(axis=1)
             name = self.datasets[i]
             preds = self.model.predict(
-                data_x, batch_size=self.batch_size
+                convert_to_tensor(data_x), batch_size=self.batch_size
             ).argmax(axis=1)
             result[name] = classification_report(data_y, preds,
                                                  output_dict=True)
