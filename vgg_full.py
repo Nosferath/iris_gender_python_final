@@ -117,7 +117,7 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
                 continue
             _x, _y = _data
             _x_t = convert_to_tensor(_x, dtype=tf_float32)
-            _y = _y.argmax(axis=1)
+            _y = np.array(_y).argmax(axis=1)
             _preds = np.array(mdl.predict(_x_t,
                               batch_size=batch_size)).argmax(axis=1)
             print(f'{_name} results: \n', classification_report(_y, _preds))
