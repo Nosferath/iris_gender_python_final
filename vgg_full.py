@@ -152,8 +152,8 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         )
         t = Timer(f"{dataset_name}, partition {partition}")
         t.start()
-        model.train_on_batch(train_x, train_y, epochs=epochs, callbacks=[tb],
-                             validation_data=val_data, batch_size=batch_size)
+        model.fit(train_x, train_y, epochs=epochs, callbacks=[tb],
+                  validation_data=val_data, batch_size=batch_size)
         preds = model.predict(test_x, batch_size=batch_size)
         preds = preds.argmax(axis=1)
         result = classification_report(test_y.argmax(axis=1), preds,
@@ -167,9 +167,8 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         result = eval_model(model, train, test, val)
         results.append(result)
         for _ in range(epochs):
-            model.train_on_batch(train_x, train_y, epochs=1,
-                                 validation_data=val_data,
-                                 batch_size=batch_size)
+            model.fit(train_x, train_y, epochs=1,
+                      validation_data=val_data, batch_size=batch_size)
             result = eval_model(model, train, test, val)
             results.append(result)
             # prompt = input('Press <ENTER> to continue, or type stop to stop')
@@ -186,8 +185,8 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
                               batch_size)
         t = Timer(f"{dataset_name}, partition {partition}")
         t.start()
-        model.train_on_batch(train_x, train_y, epochs=epochs,
-                             batch_size=batch_size, callbacks=[cb])
+        model.fit(train_x, train_y, epochs=epochs, batch_size=batch_size,
+                  callbacks=[cb])
         preds = model.predict(test_x, batch_size=batch_size)
         preds = preds.argmax(axis=1)
         result = classification_report(test_y.argmax(axis=1), preds,
