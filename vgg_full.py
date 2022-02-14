@@ -179,8 +179,8 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         results.append(result)
         t.stop()
     elif step_by_step and not use_peri:
-        train = (train_x, train_y)
-        test = (test_x, test_y)
+        train = (train_x_t, train_y_t)
+        test = (test_x_t, test_y_t)
         val = val_data if use_val else None
         result = eval_model(model, train, test, val)
         results.append(result)
@@ -195,9 +195,9 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
     else:
         from vgg_callback import EvaluateCallback
         if use_val:
-            val_data = ((train_x, train_y), (test_x, test_y), val_data)
+            val_data = ((train_x_t, train_y_t), (test_x_t, test_y_t), val_data)
         else:
-            val_data = ((train_x, train_y), (test_x, test_y))
+            val_data = ((train_x_t, train_y_t), (test_x_t, test_y_t))
         cb = EvaluateCallback(val_data,
                               out_folder / f'{dataset_name}_{partition}',
                               batch_size)

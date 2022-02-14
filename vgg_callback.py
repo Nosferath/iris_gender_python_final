@@ -22,7 +22,7 @@ class EvaluateCallback(Callback):
         result = {}
         for i in range(len(self.val_data)):
             data_x, data_y = self.val_data[i]
-            data_y = data_y.argmax(axis=1)
+            data_y = np.array(data_y).argmax(axis=1)
             name = self.datasets[i]
             preds = np.array(self.model.predict(
                 convert_to_tensor(data_x, dtype=tf_float32),
