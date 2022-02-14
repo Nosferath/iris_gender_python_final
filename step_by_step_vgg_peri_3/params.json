@@ -1,0 +1,8 @@
+{
+    "epochs": 100,
+    "use_val": true,
+    "learning_rate": 0.0001,
+    "batch_size": 32,
+    "architecture": "test4",
+	"_comment": "Peri data was re-prepared and scaled (vs test 2)."
+}
