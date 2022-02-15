@@ -6,7 +6,7 @@ run_vgg_full(){
         # for d in $(seq 0 3); do
             # python ./vgg_full.py -pf step_by_step_vgg_4_longer2/params.json -d "$d" -p "$nPart" -sbs
         # done
-        python ./vgg_full.py -pf step_by_step_vgg_peri_2/params.json -d 0 -p "$nPart" -sbs --use_peri
+        python ./vgg_full.py -pf step_by_step_vgg_peri_3/params.json -d 0 -p "$nPart" -sbs --use_peri
     done
 
 }
