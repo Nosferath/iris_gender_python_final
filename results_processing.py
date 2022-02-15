@@ -204,7 +204,7 @@ def generate_cv_grid_plot(dataset_name: str, results_folder: str,
 
 
 def review_vgg_step_by_step(dataset_name: str, results_folder, title,
-                            out_file, avg_eval=False):
+                            out_file, avg_eval=False, peri_mode=False):
     from itertools import product
     import matplotlib.pyplot as plt
     font = {'weight': 'bold',
@@ -212,7 +212,11 @@ def review_vgg_step_by_step(dataset_name: str, results_folder, title,
     plt.rc('font', **font)
     # Load results
     results_folder = Path(results_folder)
-    results_file = list(results_folder.glob(f'{dataset_name}_?.pickle'))[0]
+    if not peri_mode:
+        results_file = list(results_folder.glob(f'{dataset_name}_?.pickle'))[0]
+    else:
+        results_file = list(results_folder.glob(
+            f'{dataset_name}_?/callback_results.pickle'))[0]
     with open(results_file, 'rb') as f:
         results = pickle.load(f)
     # Extract results
