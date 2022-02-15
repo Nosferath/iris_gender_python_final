@@ -1,0 +1,8 @@
+{
+    "epochs": 100,
+    "use_val": true,
+    "learning_rate": 0.0001,
+    "batch_size": 32,
+    "architecture": "test1",
+	"_comment": "Testing whether the architecture is giving me problems"
+}
