@@ -193,8 +193,8 @@ def load_periocular_botheyes_vgg():
     return _load_periocular_botheyes_vgg('both_vgg')
 
 
-def load_periocular_botheyes_pre_vgg():
-    return _load_periocular_botheyes_vgg('both_pre_vgg')
+def load_periocular_botheyes_pre_vgg(subtype=""):
+    return _load_periocular_botheyes_vgg(f'both_pre_vgg{subtype}')
 
 
 def load_data(data_type: str, **kwargs):

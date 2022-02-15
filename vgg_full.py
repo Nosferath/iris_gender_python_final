@@ -144,10 +144,15 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         w = int(dataset_name[:3])
         h = int(dataset_name[4:6])
         input_shape = (max(h, 32), w, 3)
-        model = load_vgg_model_finetune(lr=lr, input_shape=input_shape,
-                                        architecture=architecture)
     else:
-        model = load_vgg_model_finetune(lr=lr, architecture=architecture)
+        if dataset_name.endswith('half'):
+            input_shape = (112, 112, 3)
+        elif dataset_name.endswith('quart'):
+            input_shape = (66, 66, 3)
+        else:
+            input_shape = (224, 224, 3)
+    model = load_vgg_model_finetune(lr=lr, input_shape=input_shape,
+                                    architecture=architecture)
     print("VGG Feats and Classifying Test, Both Eyes")
     if not use_val:
         val_data = (test_x_t, test_y_t)
@@ -244,12 +249,23 @@ def perform_peri_vgg_test_botheyes(
         partition: int,
         params: dict,
         out_folder='vgg_full_peri_botheyes_results',
-        step_by_step=False
+        step_by_step=False,
+        use_half=False,
+        use_quarter=False
 ):
-    eye = 'both_peri'
+    if use_half and use_quarter:
+        raise ValueError('Only one option (half or quarter) can be used')
+    elif use_half:
+        subtype = '_half'
+    elif use_quarter:
+        subtype = '_quart'
+    else:
+        subtype = ''
+    eye = f'both_peri{subtype}'
     t = Timer(f"Loading dataset periocular pre-VGG {eye}")
     t.start()
-    all_data, males_set, females_set = load_periocular_botheyes_pre_vgg()
+    all_data, males_set, females_set = \
+        load_periocular_botheyes_pre_vgg(subtype)
     all_data = labels_to_onehot_botheyes(all_data)
     t.stop()
 
@@ -271,8 +287,13 @@ def main_vgg_botheyes_test():
                     help='Dataset index')
     ap.add_argument('-p', '--n_part', type=int,
                     help='Number of partition to test on')
-    ap.add_argument('--use_peri', action='store_true',
+    ex = ap.add_mutually_exclusive_group(required=False)
+    ex.add_argument('--use_peri', action='store_true',
                     help='Perform periocular test')
+    ex.add_argument('--use_half', action='store_true',
+                    help='Use periocular data, half the normal size')
+    ex.add_argument('--use_quart', action='store_true',
+                    help='Use periocular data, half the normal size')
     ap.add_argument('-o', '--out_folder', type=str, default=None,
                     help='Folder where results and logs will be output')
     ap.add_argument('-sbs', '--step_by_step', action='store_true',
@@ -284,6 +305,10 @@ def main_vgg_botheyes_test():
     d_idx = args.d_idx
     n_part = args.n_part
     use_peri = args.use_peri
+    use_half = args.use_half
+    use_quarter = args.use_quart
+    if any((use_quarter, use_half)):
+        use_peri = True
     out_folder = args.out_folder
     step_by_step = args.step_by_step
 
@@ -298,7 +323,9 @@ def main_vgg_botheyes_test():
     else:
         perform_peri_vgg_test_botheyes(n_part, params=params,
                                        out_folder=out_folder,
-                                       step_by_step=step_by_step)
+                                       step_by_step=step_by_step,
+                                       use_half=use_half,
+                                       use_quarter=use_quarter)
 
 
 if __name__ == "__main__":
