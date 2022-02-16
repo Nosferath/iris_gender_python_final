@@ -8,7 +8,8 @@ def generate_vgg_full_params(
         learning_rate: float,
         batch_size: int,
         architecture: str,
-        out_file
+        out_file,
+        comment: str = ""
 ):
     """Generates a .JSON file with the paramters for full-vgg tests.
     Other parameters such as dataset index, partition, and use_peri
@@ -19,7 +20,8 @@ def generate_vgg_full_params(
         'use_val': use_val,
         'learning_rate': learning_rate,
         'batch_size': batch_size,
-        'architecture': architecture
+        'architecture': architecture,
+        '_comment': comment
     }
     out_file = Path(out_file)
     out_file.parent.mkdir(exist_ok=True, parents=True)
