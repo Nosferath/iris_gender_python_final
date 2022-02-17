@@ -176,10 +176,12 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         callbacks = [tb]
         t = Timer(f"{dataset_name}, partition {partition}")
         t.start()
-        if use_val:
-            from tensorflow.keras.callbacks import EarlyStopping
-            early_stopping = EarlyStopping(patience=50, monitor='val_categorical_accuracy')
-            callbacks.append(early_stopping)
+        # if use_val:
+        #     from tensorflow.keras.callbacks import EarlyStopping
+        #     early_stopping = EarlyStopping(
+        #         patience=50, monitor='val_categorical_accuracy'
+        #     )
+        #     callbacks.append(early_stopping)
         model.fit(train_x_t, train_y_t, epochs=epochs, callbacks=callbacks,
                   validation_data=val_data, batch_size=batch_size)
         preds = np.array(model.predict(test_x_t, batch_size=batch_size))
