@@ -64,8 +64,7 @@ def load_vgg_model_finetune(lr=0.001, input_shape=(224, 224, 3),
         layer.trainable = False
 
     opt = Adam(learning_rate=lr)
-    model.compile(optimizer=opt, loss='categorical_crossentropy',
-                  metrics=categorical_accuracy)
+    model.compile(optimizer=opt, loss='categorical_crossentropy')
     return model
 
 
@@ -91,7 +90,7 @@ def _prepare_data_for_vgg(data_x: np.array, orig_shape: Tuple[int, int],
     from tensorflow.keras.applications.vgg16 import preprocess_input
 
     if data_x.max() == 1:
-        data_x = (data_x * 255).astype('uint8')
+        data_x = data_x * 255
     if scale_data:
         from load_data_utils import scale_data_by_row
         data_x = (scale_data_by_row(data_x) * 255).astype('uint8')
