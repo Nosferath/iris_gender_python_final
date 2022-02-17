@@ -50,6 +50,7 @@ def load_vgg_model_finetune(lr=0.001, input_shape=(224, 224, 3),
     iris.
     """
     from tensorflow.keras.applications.vgg16 import VGG16
+    from tensorflow.keras.metrics import categorical_accuracy
     from tensorflow.keras.models import Model
     from tensorflow.keras.optimizers import Adam
     set_precision_to_16_bits()
@@ -63,7 +64,8 @@ def load_vgg_model_finetune(lr=0.001, input_shape=(224, 224, 3),
         layer.trainable = False
 
     opt = Adam(learning_rate=lr)
-    model.compile(optimizer=opt, loss='categorical_crossentropy')
+    model.compile(optimizer=opt, loss='categorical_crossentropy',
+                  metrics=categorical_accuracy)
     return model
 
 
@@ -82,12 +84,14 @@ def load_vgg_model_features():
     return model
 
 
-def _prepare_data_for_vgg(data_x: np.ndarray, orig_shape: Tuple[int, int],
+def _prepare_data_for_vgg(data_x: np.array, orig_shape: Tuple[int, int],
                           scale_data=False, img_shapes=(224, 224, 3)):
     from skimage.color import gray2rgb
     from skimage.transform import resize
     from tensorflow.keras.applications.vgg16 import preprocess_input
 
+    if data_x.max() == 1:
+        data_x = (data_x * 255).astype('uint8')
     if scale_data:
         from load_data_utils import scale_data_by_row
         data_x = (scale_data_by_row(data_x) * 255).astype('uint8')
@@ -113,8 +117,6 @@ def prepare_data_for_vgg(data_x: np.array, preserve_shape=False):
     from utils import find_shape
 
     orig_shape = find_shape(n_features=data_x.shape[1])
-    if data_x.max() == 1:
-        data_x = data_x * 255
     if preserve_shape:
         img_shapes = (max(orig_shape[0], 32), orig_shape[1], 3)
     else:

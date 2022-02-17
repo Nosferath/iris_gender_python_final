@@ -178,7 +178,7 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         t.start()
         if use_val:
             from tensorflow.keras.callbacks import EarlyStopping
-            early_stopping = EarlyStopping(patience=20)
+            early_stopping = EarlyStopping(patience=20, monitor='val_accuracy')
             callbacks.append(early_stopping)
         model.fit(train_x_t, train_y_t, epochs=epochs, callbacks=callbacks,
                   validation_data=val_data, batch_size=batch_size)
