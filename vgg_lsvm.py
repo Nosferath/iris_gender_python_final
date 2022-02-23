@@ -62,6 +62,9 @@ def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
         elif params_set == 'peri4':
             param_grid = {'model__max_iter': np.linspace(3000, 8000, 6),
                           'model__C': np.linspace(0.5, 3.0, 6)}
+        elif params_set == 'perifix':
+            param_grid = {'model__max_iter': [5, 10, 15, 20, 25],
+                          'model__C': np.logspace(-8, -6, 5, base=2)}
         else:
             raise ValueError('params_set option not recognized')
 
@@ -90,7 +93,7 @@ def _perform_vgg_feat_lsvm_test(data_type, data_params, dataset_name: str,
     data = load_data(data_type, **data_params)
     t.stop()
     if 'periocular' in data_type:
-        params_set = 'norm4'
+        params_set = 'perifix'
     else:
         params_set = 'norm4'
 
