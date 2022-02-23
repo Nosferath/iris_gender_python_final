@@ -1,0 +1,8 @@
+{
+    "epochs": 100,
+    "use_val": true,
+    "learning_rate": 0.0001,
+    "batch_size": 32,
+    "architecture": "test4",
+    "_comment": "Peri fixed, full version of sbs peri fix 2. Early stop 20 epoch val_loss"
+}

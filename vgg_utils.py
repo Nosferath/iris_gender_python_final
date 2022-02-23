@@ -25,7 +25,7 @@ def get_vgg_fc_architecture(architecture, base_model_output):
         x = Dropout(0.5)(x)
         x = Dense(int(fc_size / 2), activation='relu')(x)
         x = Dense(int(fc_size / 4), activation='relu')(x)
-    elif architecture == 'test4':
+    elif architecture in ['test4', 'peri2']:
         x = Flatten()(base_model_output)
         x = Dense(fc_size, activation='relu')(x)
         x = Dropout(0.5)(x)

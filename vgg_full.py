@@ -167,7 +167,7 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         val_x_t = convert_to_tensor(val_x, dtype=tf_float32)
         val_y_t = convert_to_tensor(val_y, dtype=tf_float32)
         val_data = (val_x_t, val_y_t)
-    if not step_by_step and not use_peri:
+    if not step_by_step:
         from tensorflow.keras.callbacks import TensorBoard
         tb = TensorBoard(
             log_dir=f'{out_folder}/logs/{dataset_name}/{partition}/',
@@ -177,12 +177,12 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         callbacks = [tb]
         t = Timer(f"{dataset_name}, partition {partition}")
         t.start()
-        # if use_val:
-        #     from tensorflow.keras.callbacks import EarlyStopping
-        #     early_stopping = EarlyStopping(
-        #         patience=50, monitor='val_categorical_accuracy'
-        #     )
-        #     callbacks.append(early_stopping)
+        if use_val:
+            from tensorflow.keras.callbacks import EarlyStopping
+            early_stopping = EarlyStopping(
+                patience=20, monitor='val_loss'
+            )
+            callbacks.append(early_stopping)
         model.fit(train_x_t, train_y_t, epochs=epochs, callbacks=callbacks,
                   validation_data=val_data, batch_size=batch_size)
         preds = np.array(model.predict(test_x_t, batch_size=batch_size))
