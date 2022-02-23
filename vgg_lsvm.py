@@ -90,7 +90,7 @@ def _perform_vgg_feat_lsvm_test(data_type, data_params, dataset_name: str,
     data = load_data(data_type, **data_params)
     t.stop()
     if 'periocular' in data_type:
-        params_set = 'peri4'
+        params_set = 'norm3'
     else:
         params_set = 'norm4'
 
