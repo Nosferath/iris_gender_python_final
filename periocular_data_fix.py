@@ -14,6 +14,11 @@ from vgg_utils import labels_to_onehot
 # After scaling, they become float64
 
 def generate_data():
+    """Used to generate the periocular _fix dataset. As opposed to the
+    previous periocular data, this one does not go through unnecesary
+    scaling and dtype changing. Additionally, we used bilinear interpol-
+    ation instead of bicubic.
+    """
     out_size = (224, 224, 3)
     all_data, males_set, females_set = load_peri_dataset_both_eyes(True)
     for eye in all_data:

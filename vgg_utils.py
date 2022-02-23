@@ -93,14 +93,14 @@ def _prepare_data_for_vgg(data_x: np.array, orig_shape: Tuple[int, int],
         data_x = data_x * 255
     if scale_data:
         from load_data_utils import scale_data_by_row
-        data_x = (scale_data_by_row(data_x) * 255).astype('uint8')
+        data_x = (scale_data_by_row(data_x) * 255)
     data_x = gray2rgb(data_x.reshape((-1, *orig_shape)))
     out_data_x = np.zeros((data_x.shape[0], *img_shapes))
     for i in range(data_x.shape[0]):
         cur_img = data_x[i]
         if orig_shape != img_shapes[:2]:
             cur_img = resize(
-                cur_img, output_shape=img_shapes[:2], mode='edge', order=3
+                cur_img, output_shape=img_shapes[:2], mode='edge', order=1
             )
         out_data_x[i, :, :, :] = cur_img
 

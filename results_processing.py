@@ -56,10 +56,10 @@ def generate_boxplots(results_folder: str, out_file, title: str):
     return results
 
 
-def generate_table_from_df(input_df: pd.DataFrame, annot_df: pd.DataFrame,
-                           out_folder: str, out_name: str,
-                           figsize: Tuple[float] = (18, 6),
-                           display: bool = False):
+def generate_table_from_df(
+        input_df: pd.DataFrame, annot_df: pd.DataFrame, out_folder: str,
+        out_name: str, figsize: Tuple[float] = (18, 6), display: bool = False
+):
     """Generates and saves a table, generated from two dataframes. The
     first one contains the numeric results (for coloring the cells) and
     the second one contains the annotations (for cell texts).
@@ -205,6 +205,7 @@ def generate_cv_grid_plot(dataset_name: str, results_folder: str,
 
 def review_vgg_step_by_step(dataset_name: str, results_folder, title,
                             out_file, avg_eval=False, peri_mode=False):
+    """Generates a training curve plot from the step-by-step results"""
     from itertools import product
     import matplotlib.pyplot as plt
     font = {'weight': 'bold',
