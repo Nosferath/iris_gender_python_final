@@ -73,7 +73,7 @@ def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
                           'model__C': np.linspace(2**(-7.333333), 2**(-6.444444), 10)}
         elif params_set == 'perifix4':
             param_grid = {'model__max_iter': [1, 2, 3, 4, 5, 7, 10, 12, 15, 17, 20, 21, 22, 23, 24, 25],
-                          'model__C': np.logspace(-6.888888, -6.444444, 10)}
+                          'model__C': np.logspace(-7.5, -6.5, 10)}
         else:
             raise ValueError('params_set option not recognized')
 
