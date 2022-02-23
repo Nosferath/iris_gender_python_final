@@ -17,6 +17,7 @@ data_peri/left_pre_vgg.npz
 data_peri/right_pre_vgg.npz
 data_peri/both_pre_vgg.npz
 data_peri/_old_both_pre_vgg.npz
+data_peri/_pre_fix_both_vgg.npz
 vgg_feat_lsvm_results_prelim/
 experiments/vgg_lsvm/results_pre_param_selection/
 *.swp

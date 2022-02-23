@@ -8,7 +8,8 @@ from tensorflow.keras.applications.vgg16 import preprocess_input
 
 from constants import PERIOCULAR_SHAPE
 from load_data import load_peri_dataset_both_eyes
-from vgg_utils import labels_to_onehot
+from vgg_utils import labels_to_onehot, load_periocular_botheyes_pre_vgg, \
+    load_vgg_model_features
 
 # Peri images start as uint8
 # After scaling, they become float64
@@ -46,6 +47,29 @@ def generate_data():
         males_set=males_set,
         females_set=females_set
     )
+
+
+def fix_vgg_feats_peri():
+    """Fix the periocular data used for vgg+lsvm. The data is processed
+    by the VGG to extract features, and the labels are returned to
+    normal encoding instead of one-hot.
+    """
+    all_data, males_set, females_set = load_periocular_botheyes_pre_vgg('_fix')
+    model = load_vgg_model_features()
+    for eye in all_data:
+        data_x = all_data[eye][0]
+        all_data[eye][0] = model.predict(data_x)
+        # Remove one-hot encoding
+        data_y = all_data[eye][1]
+        all_data[eye][1] = data_y.argmax(axis=1)
+    
+    np.savez_compressed(
+        'data_peri/both_vgg.npz',
+        all_data=all_data,
+        males_set=males_set,
+        females_set=females_set
+    )
+
 
 
 def review_fix_results(
