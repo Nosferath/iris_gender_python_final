@@ -22,3 +22,4 @@ experiments/vgg_lsvm/results_pre_param_selection/
 *.swp
 /data_peri/both_pre_vgg_half.npz
 /data_peri/both_pre_vgg_quart.npz
+/data_peri/both_pre_vgg_fix.npz
