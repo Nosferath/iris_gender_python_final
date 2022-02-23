@@ -1,0 +1,8 @@
+{
+    "epochs": 10,
+    "use_val": true,
+    "learning_rate": 0.0001,
+    "batch_size": 32,
+    "architecture": "test1",
+    "_comment": "Fixing peri, reloaded and processed without uint8"
+}

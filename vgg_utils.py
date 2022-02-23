@@ -13,7 +13,7 @@ def set_precision_to_16_bits():
 def get_vgg_fc_architecture(architecture, base_model_output):
     from tensorflow.keras.layers import Flatten, Dense, Dropout
     fc_sizes = {'test1': 2048, 'test2': 1024, 'test3': 1024, 'test4': 1024,
-                'peri1': 4096}
+                'peri1': 4096, 'peri2': 4096}
     fc_size = fc_sizes[architecture]
     if architecture == 'test1':
         x = Flatten()(base_model_output)

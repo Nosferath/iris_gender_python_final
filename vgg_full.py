@@ -1,5 +1,6 @@
 import pickle
 from pathlib import Path
+from matplotlib import use
 
 import numpy as np
 from sklearn.metrics import classification_report
@@ -258,7 +259,8 @@ def perform_peri_vgg_test_botheyes(
         out_folder='vgg_full_peri_botheyes_results',
         step_by_step=False,
         use_half=False,
-        use_quarter=False
+        use_quarter=False,
+        use_fix=False
 ):
     if use_half and use_quarter:
         raise ValueError('Only one option (half or quarter) can be used')
@@ -266,6 +268,8 @@ def perform_peri_vgg_test_botheyes(
         subtype = '_half'
     elif use_quarter:
         subtype = '_quart'
+    elif use_fix:
+        subtype = '_fix'
     else:
         subtype = ''
     eye = f'both_peri{subtype}'
@@ -273,7 +277,8 @@ def perform_peri_vgg_test_botheyes(
     t.start()
     all_data, males_set, females_set = \
         load_periocular_botheyes_pre_vgg(subtype)
-    all_data = labels_to_onehot_botheyes(all_data)
+    if subtype != '_fix':
+        all_data = labels_to_onehot_botheyes(all_data)
     t.stop()
 
     _perform_vgg_test_botheyes(all_data, males_set, females_set, eye,
@@ -301,6 +306,8 @@ def main_vgg_botheyes_test():
                     help='Use periocular data, half the normal size')
     ex.add_argument('--use_quart', action='store_true',
                     help='Use periocular data, half the normal size')
+    ex.add_argument('--use_fix', action='store_true',
+                    help='Use periocular data, fixed')
     ap.add_argument('-o', '--out_folder', type=str, default=None,
                     help='Folder where results and logs will be output')
     ap.add_argument('-sbs', '--step_by_step', action='store_true',
@@ -314,7 +321,8 @@ def main_vgg_botheyes_test():
     use_peri = args.use_peri
     use_half = args.use_half
     use_quarter = args.use_quart
-    if any((use_quarter, use_half)):
+    use_fix = args.use_fix
+    if any((use_quarter, use_half, use_fix)):
         use_peri = True
     out_folder = args.out_folder
     step_by_step = args.step_by_step
@@ -332,7 +340,8 @@ def main_vgg_botheyes_test():
                                        out_folder=out_folder,
                                        step_by_step=step_by_step,
                                        use_half=use_half,
-                                       use_quarter=use_quarter)
+                                       use_quarter=use_quarter,
+                                       use_fix=use_fix)
 
 
 if __name__ == "__main__":
