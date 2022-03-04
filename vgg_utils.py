@@ -223,7 +223,7 @@ def load_data(data_type: str, **kwargs):
         del feat_model
     elif data_type == 'iris_botheyes_vgg_feats':
         # from load_data import load_dataset_both_eyes
-        # dataset_name = kwargs['dataset_name']
+        dataset_name = kwargs['dataset_name']
         # all_data, males_set, females_set = load_dataset_both_eyes(dataset_name)
         # feat_model = load_vgg_model_features()
         # all_data = prepare_botheyes_for_vgg(all_data)
@@ -234,7 +234,7 @@ def load_data(data_type: str, **kwargs):
             dataset_name
         )
         data = (all_data, males_set, females_set)
-        del feat_model
+        # del feat_model
     elif data_type == 'periocular_botheyes_vgg_feats':
         all_data, males_set, females_set = load_periocular_botheyes_vgg()
         data = (all_data, males_set, females_set)
