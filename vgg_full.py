@@ -246,7 +246,7 @@ def perform_vgg_test_botheyes(
     # all_data, males_set, females_set = load_dataset_both_eyes(dataset_name)
     # all_data = prepare_botheyes_for_vgg(all_data, preserve_shape=True)
     # all_data = labels_to_onehot_botheyes(all_data)
-    all_data, males_set, female_set = load_normalized_botheyes_pre_vgg(
+    all_data, males_set, females_set = load_normalized_botheyes_pre_vgg(
         dataset_name
     )
     t.stop()
