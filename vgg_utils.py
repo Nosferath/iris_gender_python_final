@@ -180,9 +180,10 @@ def load_periocular_pre_vgg(eye: str):
     return load_peri_dataset_from_npz(f'{eye}_pre_vgg')
 
 
-def _load_periocular_botheyes_vgg(filename):
-    from constants import ROOT_PERI_FOLDER
-    loaded = np.load(ROOT_PERI_FOLDER + f'/{filename}.npz', allow_pickle=True)
+def _load_botheyes_vgg(filename: str, use_peri: bool):
+    from constants import ROOT_PERI_FOLDER, ROOT_DATA_FOLDER
+    root_folder = ROOT_PERI_FOLDER if use_peri else ROOT_DATA_FOLDER
+    loaded = np.load(root_folder + f'/{filename}.npz', allow_pickle=True)
     all_data = loaded['all_data'].item()
     males_set = loaded['males_set'].item()
     females_set = loaded['females_set'].item()
@@ -191,11 +192,19 @@ def _load_periocular_botheyes_vgg(filename):
 
 def load_periocular_botheyes_vgg():
     """Dataset already processed using VGG. For LSVM."""
-    return _load_periocular_botheyes_vgg('both_vgg')
+    return _load_botheyes_vgg('both_vgg', use_peri=True)
 
 
 def load_periocular_botheyes_pre_vgg(subtype=""):
-    return _load_periocular_botheyes_vgg(f'both_pre_vgg{subtype}')
+    return _load_botheyes_vgg(f'both_pre_vgg{subtype}', use_peri=True)
+
+
+def load_normalized_botheyes_vgg(dataset_name):
+    return _load_botheyes_vgg(f'{dataset_name}_vgg', use_peri=False)
+
+
+def load_normalized_botheyes_pre_vgg(dataset_name):
+    return _load_botheyes_vgg(f'{dataset_name}_pre_vgg', use_peri=False)
 
 
 def load_data(data_type: str, **kwargs):
@@ -213,14 +222,17 @@ def load_data(data_type: str, **kwargs):
         data = (data, labels)
         del feat_model
     elif data_type == 'iris_botheyes_vgg_feats':
-        from load_data import load_dataset_both_eyes
-        dataset_name = kwargs['dataset_name']
-        all_data, males_set, females_set = load_dataset_both_eyes(dataset_name)
-        feat_model = load_vgg_model_features()
-        all_data = prepare_botheyes_for_vgg(all_data)
-        for eye in all_data:
-            cur_x = all_data[eye][0]
-            all_data[eye][0] = feat_model.predict(cur_x)
+        # from load_data import load_dataset_both_eyes
+        # dataset_name = kwargs['dataset_name']
+        # all_data, males_set, females_set = load_dataset_both_eyes(dataset_name)
+        # feat_model = load_vgg_model_features()
+        # all_data = prepare_botheyes_for_vgg(all_data)
+        # for eye in all_data:
+        #     cur_x = all_data[eye][0]
+        #     all_data[eye][0] = feat_model.predict(cur_x)
+        all_data, males_set, females_set = load_normalized_botheyes_vgg(
+            dataset_name
+        )
         data = (all_data, males_set, females_set)
         del feat_model
     elif data_type == 'periocular_botheyes_vgg_feats':

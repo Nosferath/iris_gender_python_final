@@ -11,7 +11,8 @@ from load_data_utils import partition_data, partition_both_eyes
 from utils import Timer
 from vgg_utils import load_vgg_model_finetune, prepare_data_for_vgg, \
     labels_to_onehot, load_periocular_pre_vgg, prepare_botheyes_for_vgg, \
-    labels_to_onehot_botheyes, load_periocular_botheyes_pre_vgg
+    labels_to_onehot_botheyes, load_periocular_botheyes_pre_vgg, \
+    load_normalized_botheyes_pre_vgg
 
 
 def _perform_vgg_test(data, labels, dataset_name: str, partition: int,
@@ -242,9 +243,12 @@ def perform_vgg_test_botheyes(
 ):
     t = Timer(f"Loading dataset {dataset_name}")
     t.start()
-    all_data, males_set, females_set = load_dataset_both_eyes(dataset_name)
-    all_data = prepare_botheyes_for_vgg(all_data, preserve_shape=True)
-    all_data = labels_to_onehot_botheyes(all_data)
+    # all_data, males_set, females_set = load_dataset_both_eyes(dataset_name)
+    # all_data = prepare_botheyes_for_vgg(all_data, preserve_shape=True)
+    # all_data = labels_to_onehot_botheyes(all_data)
+    all_data, males_set, female_set = load_normalized_botheyes_pre_vgg(
+        dataset_name
+    )
     t.stop()
 
     _perform_vgg_test_botheyes(all_data, males_set, females_set, dataset_name,

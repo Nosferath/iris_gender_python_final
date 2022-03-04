@@ -24,3 +24,7 @@ experiments/vgg_lsvm/results_pre_param_selection/
 /data_peri/both_pre_vgg_half.npz
 /data_peri/both_pre_vgg_quart.npz
 /data_peri/both_pre_vgg_fix.npz
+data/240x40_pre_vgg.npz
+data/240x40_fixed_pre_vgg.npz
+data/240x20_pre_vgg.npz
+data/240x20_fixed_pre_vgg.npz
