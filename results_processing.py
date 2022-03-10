@@ -161,7 +161,7 @@ def merge_vgg_full_results(results_folder):
 
 
 def generate_cv_grid_plot(dataset_name: str, results_folder: str,
-                          partition: int):
+                          partition: int, text_color='black'):
     """Generates visualizations of the cross-validation results for the
     chosen dataset.
     """
@@ -191,7 +191,8 @@ def generate_cv_grid_plot(dataset_name: str, results_folder: str,
             results_grid[a, b] = results[i]
             std_grid[a, b] = results_std[i]
     # Generate results plot
-    fig, ax = grid_plot(list_a, list_b, results_grid * 100)
+    fig, ax = grid_plot(list_a, list_b, results_grid * 100,
+                        text_color=text_color)
     ax.set_ylabel(name_a)
     ax.set_xlabel(name_b)
     ax.set_title(f'{dataset_name}_{partition}, CV results')

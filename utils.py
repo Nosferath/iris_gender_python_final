@@ -117,7 +117,7 @@ def fix_folders(root_folder):
             move(p, root_folder / f / p.name)
 
 
-def grid_plot(a: np.ndarray, b: np.ndarray, z: np.ndarray):
+def grid_plot(a: np.ndarray, b: np.ndarray, z: np.ndarray, text_color='black'):
     """Generates a grid plot from the inputs."""
     import matplotlib.pyplot as plt
     assert len(a) == z.shape[0]
@@ -133,7 +133,7 @@ def grid_plot(a: np.ndarray, b: np.ndarray, z: np.ndarray):
     for i in range(len(a)):
         for j in range(len(b)):
             ax.text(j, i, np.round(z[i, j], 2),
-                    ha='center', va='center', color='black')
+                    ha='center', va='center', color=text_color)
     fig.tight_layout()
     return fig, ax
 
