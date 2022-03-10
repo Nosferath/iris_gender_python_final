@@ -74,9 +74,9 @@ def load_dataset_from_npz(dataset_name: str):
     data = loaded['data']
     labels = loaded['labels']
     masks = loaded['masks']
-    image_paths = loaded['image_paths']
-    image_paths = [p.name for p in image_paths]
-    return data, labels, masks, image_paths
+    image_names = loaded['image_paths']
+    image_names = [p.name for p in image_names]
+    return data, labels, masks, image_names
 
 
 def load_iris_dataset(dataset_name: str, partition: Union[int, None],
@@ -166,13 +166,21 @@ def load_peri_dataset_from_npz(eye: str):
                      allow_pickle=True)
     data = loaded['data']
     labels = loaded['labels']
-    image_paths = loaded['image_paths']
-    image_paths = [p.name for p in image_paths]
-    return data, labels, image_paths
+    names = [p.name for p in loaded['image_paths']]
+
+    return data, labels, names
 
 
 def _load_dataset_both_eyes(dataset_name: str, use_peri: bool,
                             apply_masks=True, scale_data=True):
+    """Base function for loading both normalized and periocular datasets
+    
+    Initially the data is loaded from the .npz files of each eye, and
+    then IDs are extracted for each gender. The IDs are stored in the
+    males_set and females_set variables. They are used for partitioning
+    in the load_data_utils.partition_both_eyes function, ensuring the
+    eyes of the same subject always stay in the same partition.
+    """
     eyes = ('left', 'right')
     if dataset_name.startswith('left') or dataset_name.startswith('right'):
         dataset_name = '_'.join(dataset_name.split('_')[1:])
@@ -183,16 +191,16 @@ def _load_dataset_both_eyes(dataset_name: str, use_peri: bool,
     for eye in eyes:
         cur_dataset = eye + '_' + dataset_name
         if use_peri:
-            data, labels, paths = load_peri_dataset_from_npz(eye)
+            data, labels, names = load_peri_dataset_from_npz(eye)
             masks = []
         else:
-            data, labels, masks, paths = load_dataset_from_npz(cur_dataset)
+            data, labels, masks, names = load_dataset_from_npz(cur_dataset)
             if apply_masks:
                 data = apply_masks_to_data(data, masks)
         if scale_data:
             data = scale_data_by_row(data)
-        all_data[eye] = [data, labels, masks, paths]
-        ids = np.array([p.split('d')[0] for p in paths])
+        all_data[eye] = [data, labels, masks, names]
+        ids = np.array([p.split('d')[0] for p in names])
         males_set.update(set(ids[labels == 0]))
         females_set.update(set(ids[labels == 1]))
     return all_data, males_set, females_set

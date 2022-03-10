@@ -252,3 +252,81 @@ def review_vgg_step_by_step(dataset_name: str, results_folder, title,
     plt.show()
     plt.clf()
     plt.close()
+
+
+def visualize_pairs(pairs, data_x, data_m, out_folder: str,
+                    to_visualize: list = None, spp_mat=None):
+    """Visualize mask pairs by generating an RGB image displaying the
+    masks before and after pairing, using different colors for each one.
+
+    Parameters
+    ----------
+    pairs : np.array
+        Array containing the pairs, as returned by SPPMat.generate_pairs
+    data_x, data_m : np.array
+        Arrays containing the iris data and original masks respectively
+    to_visualize : list of ints, optional
+        List containing the indexes of the pairs to be visualized.
+        If None, 5 pairs are selected at random.
+    spp_mat : np.array
+        (sub)SPP mat array, used for displaying score in name
+    """
+    from PIL import Image
+    from utils import find_shape
+    if to_visualize is None:
+        to_visualize = np.random.randint(pairs.shape[1], size=5)
+    # Initialize out folder
+    out_folder = Path(out_folder)
+    out_folder.mkdir(exist_ok=True, parents=True)
+    # Obtain original shape of data
+    orig_shape = find_shape(n_features=data_x.shape[1])
+    # Scale data and turn to uint8
+    if data_x.max() == 1:
+        data_x *= 255
+    data_x = data_x.astype('uint8')
+
+    def retrieve_reshape_rgb(array, index, to_rgb=False):
+        """Retrieves the iris or mask, and reshapes to its original
+        shape. If to_rgb, the array is turned to RGB (3 channels).
+        """
+        out_array = array[index, :].reshape(orig_shape)
+        if to_rgb:
+            return np.tile(out_array[..., np.newaxis], (1, 1, 3))
+        return out_array
+
+    for i, pair_idx in enumerate(to_visualize):
+        cur_pair = pairs[:, pair_idx]
+        # Reshape current iris into RGB rectangular images
+        iris_a = retrieve_reshape_rgb(data_x, cur_pair[0], to_rgb=True)
+        iris_b = retrieve_reshape_rgb(data_x, cur_pair[1], to_rgb=True)
+
+        # Generate visualization of original masks
+        mask_a = retrieve_reshape_rgb(data_m, cur_pair[0])
+        mask_b = retrieve_reshape_rgb(data_m, cur_pair[1])
+        iris_a_pre = iris_a.copy()
+        iris_a_pre[mask_a == 1] = [255, 0, 255]  # Magenta
+        iris_b_pre = iris_b.copy()
+        iris_b_pre[mask_b == 1] = [255, 0, 255]  # Magenta
+
+        # Generate visualization of paired masks
+        # - mask_ab_x is the union of the masks minus mask x
+        mask_ab_a = mask_b.copy()
+        mask_ab_a[mask_a == 1] = 0
+        iris_a_post = iris_a_pre.copy()
+        iris_a_post[mask_ab_a == 1] = [0, 255, 0]  # Green
+        mask_ab_b = mask_a.copy()
+        mask_ab_b[mask_b == 1] = 0
+        iris_b_post = iris_b_pre.copy()
+        iris_b_post[mask_ab_b == 1] = [0, 255, 0]  # Green
+
+        # Store as images
+        images = [iris_a_pre, iris_a_post, iris_b_pre, iris_b_post]
+        names = ['iris_a_pre', 'iris_a_post', 'iris_b_pre', 'iris_b_post']
+        for img, name in zip(images, names):
+            img = Image.fromarray(img)
+            if spp_mat is None:
+                out_name = f'{pair_idx}_{name}.png'
+            else:
+                cur_spp = spp_mat[cur_pair[0], cur_pair[1]]
+                out_name = f'{cur_spp*100:0.0f}_{pair_idx}_{name}.png'
+            img.save(out_folder / out_name)
