@@ -255,7 +255,7 @@ def review_vgg_step_by_step(dataset_name: str, results_folder, title,
 
 
 def visualize_pairs(pairs, data_x, data_m, out_folder: str,
-                    to_visualize: list = None, spp_mat=None):
+                    to_visualize: list = None, pair_scores=None):
     """Visualize mask pairs by generating an RGB image displaying the
     masks before and after pairing, using different colors for each one.
 
@@ -268,8 +268,8 @@ def visualize_pairs(pairs, data_x, data_m, out_folder: str,
     to_visualize : list of ints, optional
         List containing the indexes of the pairs to be visualized.
         If None, 5 pairs are selected at random.
-    spp_mat : np.array
-        (sub)SPP mat array, used for displaying score in name
+    pair_scores : np.array
+        SPP score of each pair
     """
     from PIL import Image
     from utils import find_shape
@@ -294,7 +294,7 @@ def visualize_pairs(pairs, data_x, data_m, out_folder: str,
             return np.tile(out_array[..., np.newaxis], (1, 1, 3))
         return out_array
 
-    for i, pair_idx in enumerate(to_visualize):
+    for pair_idx in to_visualize:
         cur_pair = pairs[:, pair_idx]
         # Reshape current iris into RGB rectangular images
         iris_a = retrieve_reshape_rgb(data_x, cur_pair[0], to_rgb=True)
@@ -319,14 +319,16 @@ def visualize_pairs(pairs, data_x, data_m, out_folder: str,
         iris_b_post = iris_b_pre.copy()
         iris_b_post[mask_ab_b == 1] = [0, 255, 0]  # Green
 
-        # Store as images
+        names = ['iris_a_pre', 'iris_a_post', 'iris_b_pre', 'iris_b_post']
         images = [iris_a_pre, iris_a_post, iris_b_pre, iris_b_post]
         names = ['iris_a_pre', 'iris_a_post', 'iris_b_pre', 'iris_b_post']
         for img, name in zip(images, names):
             img = Image.fromarray(img)
-            if spp_mat is None:
+            if pair_scores is None:
                 out_name = f'{pair_idx}_{name}.png'
             else:
-                cur_spp = spp_mat[cur_pair[0], cur_pair[1]]
-                out_name = f'{cur_spp*100:0.0f}_{pair_idx}_{name}.png'
+                cur_score = pair_scores[pair_idx] * 100
+                out_name = f'{cur_score:0.0f}_{pair_idx}_{name}.png'
             img.save(out_folder / out_name)
+
+

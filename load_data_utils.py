@@ -306,13 +306,14 @@ def partition_both_eyes(all_data: dict, males_set: set, females_set: set,
     # be done separately from the regular post-partition processing.
     if apply_pairs:
         # Obtain SPP Mat
-        from mask_pairs import SPPMat
-        spp_mat = SPPMat(dataset_name)
-        spp_mat.calculate_spp_matrix(
-            np.hstack([a[1] for a in all_data.values()]),
-            np.vstack([a[2] for a in all_data.values()]),
-            np.hstack([np.array(a[3]) for a in all_data.values()])
-        )
+        # from mask_pairs import SPPMat
+        from mask_pairs import generate_pairs, apply_pairs
+        # spp_mat = SPPMat(dataset_name)
+        # spp_mat.calculate_spp_matrix(
+        #     np.hstack([a[1] for a in all_data.values()]),  # labels
+        #     np.vstack([a[2] for a in all_data.values()]),  # masks
+        #     np.hstack([np.array(a[3]) for a in all_data.values()])  # names
+        # )
         # Pre-pair scaling
         train_x, train_y, train_m, train_n = balance_partition(
             train_x, train_y, train_m, train_n
@@ -321,23 +322,23 @@ def partition_both_eyes(all_data: dict, males_set: set, females_set: set,
             test_x, test_y, test_m, test_n
         )
         # Pair generation
-        train_pairs = spp_mat.generate_pairs(img_names=train_n)
-        test_pairs = spp_mat.generate_pairs(img_names=test_n)
+        train_pairs, train_values = generate_pairs(train_y, train_m)
+        # test_pairs, test_values = spp_mat.generate_pairs(img_names=test_n)
         # Generate visualizations  # DEBUG # TODO remove
         from results_processing import visualize_pairs
-        train_sub_spp_mat = spp_mat.get_sub_spp_mat(train_n)
-        test_sub_spp_mat = spp_mat.get_sub_spp_mat(test_n)
+        # train_sub_spp_mat = spp_mat.get_ordered_sub_spp_mat(train_n, train_m)
+        # test_sub_spp_mat = spp_mat.get_ordered_sub_spp_mat(test_n, test_m)
         visualization_folder = 'experiments/mask_pairs/visualizations'
         visualize_pairs(train_pairs, train_x, train_m,
-                        visualization_folder + f'/{dataset_name}/train',
+                        visualization_folder + f'/{dataset_name}',
                         to_visualize=list(range(train_pairs.shape[1])),
-                        spp_mat=train_sub_spp_mat)
-        visualize_pairs(test_pairs, test_x, test_m,
-                        visualization_folder + f'/{dataset_name}/test',
-                        to_visualize=list(range(test_pairs.shape[1])),
-                        spp_mat=test_sub_spp_mat)
+                        pair_scores=train_values)
+        # visualize_pairs(test_pairs, test_x, test_m,
+        #                 visualization_folder + f'/{dataset_name}/test',
+        #                 to_visualize=list(range(test_pairs.shape[1])),
+        #                 spp_mat=test_sub_spp_mat)
         # Apply pairs (includes scaling)
-        train_x = spp_mat.apply_pairs(train_pairs, train_x, train_m)
+        train_x = apply_pairs(train_pairs, train_x, train_m)
         test_x = spp_mat.apply_pairs(test_pairs, test_x, test_m)
         # Permute partitions
         train_x, train_y, test_x, test_y = permute_partitions(
