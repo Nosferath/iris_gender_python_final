@@ -220,20 +220,18 @@ def permute_partitions(train_x, train_y, test_x, test_y, rng):
     return train_x, train_y, test_x, test_y
 
 
-def perform_post_partition_tasks_both_eyes(
+def post_partition_processing_both_eyes(
     train_x,
     train_y,
     test_x,
     test_y,
     rng
 ):
-    """Perform partition tasks after splitting using IDs. Used for
-    applying mask pairs in between tasks.
-    """
+    """Perform partition tasks after splitting using IDs."""
     # Balance partitions
     train_x, train_y = balance_partition(train_x, train_y, raise_error=True)
     test_x, test_y = balance_partition(test_x, test_y, raise_error=True)
-    # Permutate partitions
+    # Permute partitions
     train_x, train_y, test_x, test_y = permute_partitions(
         train_x, train_y, test_x, test_y, rng
     )
@@ -241,9 +239,37 @@ def perform_post_partition_tasks_both_eyes(
     return train_x, train_y, test_x, test_y
 
 
+def post_partition_processing_pairs_both_eyes(
+    train_data: dict, test_data: dict, rng, generate_visualizations=True,
+    dataset_name=""
+):
+    from mask_pairs import generate_pairs, apply_pairs
+    # Balance partitions
+    train_x, train_y, train_m, train_n = balance_partition(**train_data)
+    test_x, test_y, test_m, test_n = balance_partition(**test_data)
+    # Pair generation
+    train_pairs, train_values = generate_pairs(train_y, train_m)
+    # Generate visualizations  # DEBUG # TODO remove
+    if generate_visualizations:
+        from results_processing import save_pairs_visualizations
+        visualization_folder = 'experiments/mask_pairs/visualizations_refactor'
+        save_pairs_visualizations(train_pairs, train_x, train_m,
+                        visualization_folder + f'/{dataset_name}',
+                        to_visualize=list(range(train_pairs.shape[1])),
+                        pair_scores=train_values)
+    # Apply pairs (includes scaling)
+    train_x = apply_pairs(train_pairs, train_x, train_m)
+    # Permute partitions
+    train_x, train_y, test_x, test_y = permute_partitions(
+        train_x, train_y, test_x, test_y, rng
+    )  
+    return train_x, train_y, test_x, test_y
+    
+
+
 def partition_both_eyes(all_data: dict, males_set: set, females_set: set,
                         test_size: float, partition: int, apply_pairs=False,
-                        dataset_name=None):
+                        dataset_name=None, post_tasks=True):
     """Partition the data from both eyes ensuring both eyes of the same
     subject stay in the same partition. This is done by splitting the
     subject IDs into train and test randomly (males and females separa-
@@ -274,24 +300,16 @@ def partition_both_eyes(all_data: dict, males_set: set, females_set: set,
     train_images = {v: [] for v in elements}
     test_images = {v: [] for v in elements}
     for eye in eyes:
-        # data, labels, masks, paths = all_data[eye]
         cur_data = all_data[eye]
         ids = np.array([p.split('d')[0] for p in cur_data[3]])
         for i in range(len(ids)):
             if ids[i] in test_ids:
                 for elem_idx, elem in enumerate(elements):
                     test_images[elem].append(cur_data[elem_idx][i])
-                # test_images['data'].append(data[i, :])
-                # test_images['labels'].append(labels[i])
-                # test_images['masks'].append(masks[i])
-                # test_images['names'].append(paths[i])
             else:
                 for elem_idx, elem in enumerate(elements):
                     train_images[elem].append(cur_data[elem_idx][i])
-                # train_images['data'].append(data[i, :])
-                # train_images['labels'].append(labels[i])
-                # train_images['masks'].append(masks[i])
-                # train_images['names'].append(paths[i])
+
     train_x = np.array(train_images['data'])
     train_y = np.array(train_images['labels'])
     train_m = np.array(train_images['masks'])
@@ -301,52 +319,29 @@ def partition_both_eyes(all_data: dict, males_set: set, females_set: set,
     test_m = np.array(test_images['masks'])
     test_n = np.array(test_images['names'])
 
-    # Apply mask pairs
-    # This has to happen between scaling and permuting, thus, needs to
-    # be done separately from the regular post-partition processing.
     if apply_pairs:
-        # Obtain SPP Mat
-        # from mask_pairs import SPPMat
-        from mask_pairs import generate_pairs, apply_pairs
-        # spp_mat = SPPMat(dataset_name)
-        # spp_mat.calculate_spp_matrix(
-        #     np.hstack([a[1] for a in all_data.values()]),  # labels
-        #     np.vstack([a[2] for a in all_data.values()]),  # masks
-        #     np.hstack([np.array(a[3]) for a in all_data.values()])  # names
-        # )
-        # Pre-pair scaling
-        train_x, train_y, train_m, train_n = balance_partition(
-            train_x, train_y, train_m, train_n
-        )
-        test_x, test_y, test_m, test_n = balance_partition(
-            test_x, test_y, test_m, test_n
-        )
-        # Pair generation
-        train_pairs, train_values = generate_pairs(train_y, train_m)
-        # test_pairs, test_values = spp_mat.generate_pairs(img_names=test_n)
-        # Generate visualizations  # DEBUG # TODO remove
-        from results_processing import visualize_pairs
-        # train_sub_spp_mat = spp_mat.get_ordered_sub_spp_mat(train_n, train_m)
-        # test_sub_spp_mat = spp_mat.get_ordered_sub_spp_mat(test_n, test_m)
-        visualization_folder = 'experiments/mask_pairs/visualizations'
-        visualize_pairs(train_pairs, train_x, train_m,
-                        visualization_folder + f'/{dataset_name}',
-                        to_visualize=list(range(train_pairs.shape[1])),
-                        pair_scores=train_values)
-        # visualize_pairs(test_pairs, test_x, test_m,
-        #                 visualization_folder + f'/{dataset_name}/test',
-        #                 to_visualize=list(range(test_pairs.shape[1])),
-        #                 spp_mat=test_sub_spp_mat)
-        # Apply pairs (includes scaling)
-        train_x = apply_pairs(train_pairs, train_x, train_m)
-        test_x = spp_mat.apply_pairs(test_pairs, test_x, test_m)
-        # Permute partitions
-        train_x, train_y, test_x, test_y = permute_partitions(
-            train_x, train_y, test_x, test_y, rng
-        )
+        # This has to happen between scaling and permuting, thus, needs to
+        # be done separately from the regular post-partition processing.
+        train_data = {
+            "data_x": train_x,
+            "data_y": train_y,
+            "data_m": train_m,
+            "data_n": train_n
+        } 
+        test_data = {
+            "data_x": test_x,
+            "data_y": test_y,
+            "data_m": test_m,
+            "data_n": test_n
+        } 
+        train_x, train_y, test_x, test_y = \
+            post_partition_processing_pairs_both_eyes(
+                train_data, test_data, rng, dataset_name=dataset_name
+            )
+        
     else:
         # Perform post-partition tasks (balancing and permuting)
-        train_x, train_y, test_x, test_y = perform_post_partition_tasks_both_eyes(
+        train_x, train_y, test_x, test_y = post_partition_processing_both_eyes(
             train_x, train_y, test_x, test_y, rng
         )
 

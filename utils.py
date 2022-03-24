@@ -28,7 +28,10 @@ def find_dataset_shape(dataset_name: str):
     """Finds the dataset shape from its name. Output format is
     (rows, cols).
     """
-    shape = dataset_name.split('_')[1]
+    if dataset_name.startswith(('left', 'right')):
+        shape = dataset_name.split('_')[1]
+    else:
+        shape = dataset_name.split('_')[0]
     shape = tuple(int(i) for i in shape.split('x')[::-1])
     return shape
 

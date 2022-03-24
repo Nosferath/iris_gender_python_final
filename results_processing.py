@@ -6,6 +6,8 @@ from typing import Tuple, List, Union
 import numpy as np
 import pandas as pd
 
+from utils import find_shape
+
 
 def load_accuracies_from_results(results_folder: Union[str, Path]):
     """Loads accuracies from .pickle images, returns them in a dictionary
@@ -254,8 +256,48 @@ def review_vgg_step_by_step(dataset_name: str, results_folder, title,
     plt.close()
 
 
-def visualize_pairs(pairs, data_x, data_m, out_folder: str,
-                    to_visualize: list = None, pair_scores=None):
+def generate_pair_visualization(iris_a, mask_a, iris_b, mask_b):
+    orig_shape = find_shape(len(iris_a))
+
+    def retrieve_reshape_rgb(iris, to_rgb=False):
+        """Retrieves the iris or mask, and reshapes to its original
+        shape. If to_rgb, the array is turned to RGB (3 channels).
+        """
+        out_array = iris.reshape(orig_shape)
+        if to_rgb:
+            return np.tile(out_array[..., np.newaxis], (1, 1, 3))
+        return out_array
+
+    # Reshape current iris into RGB rectangular images
+    iris_a = retrieve_reshape_rgb(iris_a, to_rgb=True)
+    iris_b = retrieve_reshape_rgb(iris_b, to_rgb=True)
+
+    # Generate visualization of original masks
+    mask_a = retrieve_reshape_rgb(mask_a)
+    mask_b = retrieve_reshape_rgb(mask_b)
+    iris_a_pre = iris_a.copy()
+    iris_a_pre[mask_a == 1] = [255, 0, 255]  # Magenta
+    iris_b_pre = iris_b.copy()
+    iris_b_pre[mask_b == 1] = [255, 0, 255]  # Magenta
+
+    # Generate visualization of paired masks
+    # - mask_ab_x is the union of the masks minus mask x
+    mask_ab_a = mask_b.copy()
+    mask_ab_a[mask_a == 1] = 0
+    iris_a_post = iris_a_pre.copy()
+    iris_a_post[mask_ab_a == 1] = [0, 255, 0]  # Green
+    mask_ab_b = mask_a.copy()
+    mask_ab_b[mask_b == 1] = 0
+    iris_b_post = iris_b_pre.copy()
+    iris_b_post[mask_ab_b == 1] = [0, 255, 0]  # Green
+
+    images = [iris_a_pre, iris_a_post, iris_b_pre, iris_b_post]
+
+    return images
+    
+    
+def save_pairs_visualizations(pairs, data_x, data_m, out_folder: str,
+                                 to_visualize: list = None, pair_scores=None):
     """Visualize mask pairs by generating an RGB image displaying the
     masks before and after pairing, using different colors for each one.
 
@@ -272,7 +314,6 @@ def visualize_pairs(pairs, data_x, data_m, out_folder: str,
         SPP score of each pair
     """
     from PIL import Image
-    from utils import find_shape
     if to_visualize is None:
         to_visualize = np.random.randint(pairs.shape[1], size=5)
     # Initialize out folder
@@ -295,32 +336,13 @@ def visualize_pairs(pairs, data_x, data_m, out_folder: str,
         return out_array
 
     for pair_idx in to_visualize:
-        cur_pair = pairs[:, pair_idx]
-        # Reshape current iris into RGB rectangular images
-        iris_a = retrieve_reshape_rgb(data_x, cur_pair[0], to_rgb=True)
-        iris_b = retrieve_reshape_rgb(data_x, cur_pair[1], to_rgb=True)
+        [idx_a, idx_b] = pairs[:, pair_idx]
+        iris_a = data_x[idx_a, :]
+        mask_a = data_m[idx_a, :]
+        iris_b = data_x[idx_b, :]
+        mask_b = data_m[idx_b, :]
 
-        # Generate visualization of original masks
-        mask_a = retrieve_reshape_rgb(data_m, cur_pair[0])
-        mask_b = retrieve_reshape_rgb(data_m, cur_pair[1])
-        iris_a_pre = iris_a.copy()
-        iris_a_pre[mask_a == 1] = [255, 0, 255]  # Magenta
-        iris_b_pre = iris_b.copy()
-        iris_b_pre[mask_b == 1] = [255, 0, 255]  # Magenta
-
-        # Generate visualization of paired masks
-        # - mask_ab_x is the union of the masks minus mask x
-        mask_ab_a = mask_b.copy()
-        mask_ab_a[mask_a == 1] = 0
-        iris_a_post = iris_a_pre.copy()
-        iris_a_post[mask_ab_a == 1] = [0, 255, 0]  # Green
-        mask_ab_b = mask_a.copy()
-        mask_ab_b[mask_b == 1] = 0
-        iris_b_post = iris_b_pre.copy()
-        iris_b_post[mask_ab_b == 1] = [0, 255, 0]  # Green
-
-        names = ['iris_a_pre', 'iris_a_post', 'iris_b_pre', 'iris_b_post']
-        images = [iris_a_pre, iris_a_post, iris_b_pre, iris_b_post]
+        images = generate_pair_visualization(iris_a, mask_a, iris_b, mask_b)
         names = ['iris_a_pre', 'iris_a_post', 'iris_b_pre', 'iris_b_post']
         for img, name in zip(images, names):
             img = Image.fromarray(img)
