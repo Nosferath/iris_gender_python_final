@@ -240,7 +240,7 @@ def post_partition_processing_both_eyes(
 
 
 def post_partition_processing_pairs_both_eyes(
-    train_data: dict, test_data: dict, rng, generate_visualizations=True,
+    train_data: dict, test_data: dict, rng, generate_visualizations=False,
     dataset_name=""
 ):
     from mask_pairs import generate_pairs, apply_pairs
@@ -249,10 +249,10 @@ def post_partition_processing_pairs_both_eyes(
     test_x, test_y, test_m, test_n = balance_partition(**test_data)
     # Pair generation
     train_pairs, train_values = generate_pairs(train_y, train_m)
-    # Generate visualizations  # DEBUG # TODO remove
+    # Generate visualizations
     if generate_visualizations:
         from results_processing import save_pairs_visualizations
-        visualization_folder = 'experiments/mask_pairs/visualizations_refactor'
+        visualization_folder = 'experiments/mask_pairs/visualizations/'
         save_pairs_visualizations(train_pairs, train_x, train_m,
                         visualization_folder + f'/{dataset_name}',
                         to_visualize=list(range(train_pairs.shape[1])),
@@ -264,7 +264,6 @@ def post_partition_processing_pairs_both_eyes(
         train_x, train_y, test_x, test_y, rng
     )  
     return train_x, train_y, test_x, test_y
-    
 
 
 def partition_both_eyes(all_data: dict, males_set: set, females_set: set,

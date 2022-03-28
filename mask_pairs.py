@@ -110,4 +110,3 @@ def apply_pairs(pairs, data_x, data_m):
         data_x /= 255
 
     return data_x
-
