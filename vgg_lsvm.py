@@ -70,6 +70,17 @@ def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
             all_data, males_set, females_set, TEST_SIZE, partition,
             use_mask_pairs
         )
+        if use_mask_pairs:
+            from vgg_utils import prepare_data_for_vgg, load_vgg_model_features
+            t = Timer('Processing data into VGG feats')
+            t.start()
+            feats_model = load_vgg_model_features()
+            train_x = prepare_data_for_vgg(train_x)
+            train_x = feats_model.predict(train_x)
+            test_x = prepare_data_for_vgg(test_x)
+            test_x = feats_model.predict(test_x)
+            t.stop()
+            del feats_model
     else:
         data_x, labels = data
         train_x, train_y, test_x, test_y = partition_data(
@@ -103,6 +114,8 @@ def _perform_vgg_feat_lsvm_test(data_type, data_params, dataset_name: str,
                                 n_iters: int, both_eyes_mode: bool,
                                 parallel=True, use_mask_pairs=False):
     """Performs VGG feat lsvm test."""
+    if parallel and use_mask_pairs:
+        raise ValueError('Parallel is incompatible with use_mask_pairs')
     # Load data
     if both_eyes_mode:
         msg = 'VGG Features, LSVM Test, both eyes dataset'
@@ -175,6 +188,8 @@ def perform_vgg_feat_lsvm_test_botheyes(
         parallel=True, use_mask_pairs=False
 ):
     data_type = 'iris_botheyes_vgg_feats'
+    if use_mask_pairs:
+        data_type += '_pairs'
     data_params = {'dataset_name': dataset_name}
     _perform_vgg_feat_lsvm_test(data_type, data_params, dataset_name,
                                 n_partitions, n_jobs, out_folder, n_iters,

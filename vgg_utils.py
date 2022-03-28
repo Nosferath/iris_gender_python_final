@@ -235,6 +235,15 @@ def load_data(data_type: str, **kwargs):
         )
         data = (all_data, males_set, females_set)
         # del feat_model
+    elif data_type == 'iris_botheyes_vgg_feats_pairs':
+        # Data must be loaded raw from here, and become VGG feats after
+        # partitioning
+        from load_data import load_dataset_both_eyes
+        dataset_name = kwargs['dataset_name']
+        all_data, males_set, females_set = load_dataset_both_eyes(
+            dataset_name, scale_data=False
+        )
+        data = (all_data, males_set, females_set)
     elif data_type == 'periocular_botheyes_vgg_feats':
         all_data, males_set, females_set = load_periocular_botheyes_vgg()
         data = (all_data, males_set, females_set)

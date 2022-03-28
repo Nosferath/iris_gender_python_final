@@ -107,6 +107,6 @@ def apply_pairs(pairs, data_x, data_m):
     data_x = apply_masks_to_data(data_x, data_m)
     if rescale:
         assert data_x.max() == 255, "apply masks does not scale to 0-255"
-        data_x /= 255
+        data_x = data_x / 255
 
     return data_x
