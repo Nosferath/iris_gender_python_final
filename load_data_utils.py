@@ -241,7 +241,7 @@ def post_partition_processing_both_eyes(
 
 def post_partition_processing_pairs_both_eyes(
     train_data: dict, test_data: dict, rng, generate_visualizations=False,
-    dataset_name=""
+    dataset_name="no_dataset"
 ):
     from mask_pairs import generate_pairs, apply_pairs
     # Balance partitions
@@ -276,9 +276,6 @@ def partition_both_eyes(all_data: dict, males_set: set, females_set: set,
 
     If apply_pairs is true, mask pairs are generated and applied.
     """
-    assert not apply_pairs or (apply_pairs and dataset_name is not None), \
-        "Dataset name must be provided in order to apply pairs"
-
     rng = np.random.default_rng(partition)
     eyes = ('left', 'right')
 

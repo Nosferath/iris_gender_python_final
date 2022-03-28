@@ -16,8 +16,48 @@ from utils import Timer
 from vgg_utils import load_data
 
 
+def get_model_params(params_set='norm4'):
+    params = {
+        'norm3': {
+            'model__max_iter': [50, 100, 300, 500, 1000],
+            # np.linspace(1000, 5000, 3),
+            # 'model__C': np.linspace(0.125, 1.0, 8)}
+            'model__C': np.logspace(-7, -3, 5, base=2)},
+        'norm4': {
+            'model__max_iter': [25, 50, 100, 300],
+            # np.linspace(1000, 5000, 3),
+            # 'model__C': np.linspace(0.125, 1.0, 8)}
+            'model__C': np.logspace(-11, -7, 5, base=2)},
+        'peri3': {
+            'model__max_iter': np.linspace(1000, 6000, 6),
+            'model__C': np.linspace(0.5, 2.0, 4)},
+        'peri4': {
+            'model__max_iter': np.linspace(3000, 8000, 6),
+            'model__C': np.linspace(0.5, 3.0, 6)},
+        'perifix': {
+            'model__max_iter': [5, 10, 15, 20, 25],
+            'model__C': np.logspace(-8, -6, 5, base=2)},
+        'perifix2':  {
+            # Folder is peri_fix_4
+            'model__max_iter': [5, 7, 10, 12, 15, 17, 20, 22, 25],
+            'model__C': np.logspace(-8, -6, 10, base=2)},
+        'perifix3': {
+            'model__max_iter': [1, 2, 3, 4, 5, 7, 10, 12,
+                                15, 17, 20, 22, 25],
+            'model__C': np.logspace(-7.333333, -6.444444, 10, base=2)},
+        'perifix4': {
+            'model__max_iter': [3, 4, 5, 7, 10, 12, 15, 17,
+                                20, 22, 25, 27, 30],
+            'model__C': np.logspace(-7.8, -6.2, 10, base=2)}
+    }
+    if params_set not in params:
+        raise ValueError('params_set option not recognized')
+    return params[params_set]
+
+
 def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
-                         both_eyes_mode: bool, params_set='norm3', n_jobs=1):
+                         both_eyes_mode: bool, params_set='norm4', n_jobs=1,
+                         use_mask_pairs=False):
     """Parallelizable function that performs the VGG-feat Linear-SVM
     test. If GridSearch is desired, n_iters should be None.
 
@@ -27,7 +67,8 @@ def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
     if both_eyes_mode:
         all_data, males_set, females_set = data
         train_x, train_y, test_x, test_y = partition_both_eyes(
-            all_data, males_set, females_set, TEST_SIZE, partition
+            all_data, males_set, females_set, TEST_SIZE, partition,
+            use_mask_pairs
         )
     else:
         data_x, labels = data
@@ -46,37 +87,7 @@ def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
             ('scaler', MinMaxScaler()),
             ('model', LinearSVC(random_state=42))
         ])
-        if params_set == 'norm3':
-            param_grid = {'model__max_iter': [50, 100, 300, 500, 1000],
-                          # np.linspace(1000, 5000, 3),
-                          # 'model__C': np.linspace(0.125, 1.0, 8)}
-                          'model__C': np.logspace(-7, -3, 5, base=2)}
-        elif params_set == 'norm4':
-            param_grid = {'model__max_iter': [25, 50, 100, 300],
-                          # np.linspace(1000, 5000, 3),
-                          # 'model__C': np.linspace(0.125, 1.0, 8)}
-                          'model__C': np.logspace(-11, -7, 5, base=2)}
-        elif params_set == 'peri3':
-            param_grid = {'model__max_iter': np.linspace(1000, 6000, 6),
-                          'model__C': np.linspace(0.5, 2.0, 4)}
-        elif params_set == 'peri4':
-            param_grid = {'model__max_iter': np.linspace(3000, 8000, 6),
-                          'model__C': np.linspace(0.5, 3.0, 6)}
-        elif params_set == 'perifix':
-            param_grid = {'model__max_iter': [5, 10, 15, 20, 25],
-                          'model__C': np.logspace(-8, -6, 5, base=2)}
-        elif params_set == 'perifix2':  # Folder is peri_fix_4
-            param_grid = {'model__max_iter': [5, 7, 10, 12, 15, 17, 20, 22, 25],
-                          'model__C': np.logspace(-8, -6, 10, base=2)}
-        elif params_set == 'perifix3':
-            param_grid = {'model__max_iter': [1, 2, 3, 4, 5, 7, 10, 12, 15, 17, 20, 22, 25],
-                          'model__C': np.logspace(-7.333333, -6.444444, 10, base=2)}
-        elif params_set == 'perifix4':
-            param_grid = {'model__max_iter': [3, 4, 5, 7, 10, 12, 15, 17, 20, 22, 25, 27, 30],
-                          'model__C': np.logspace(-7.8, -6.2, 10, base=2)}
-        else:
-            raise ValueError('params_set option not recognized')
-
+        param_grid = get_model_params(params_set)
         model = GridSearchCV(pipe, param_grid, cv=5, n_jobs=n_jobs)
     model.fit(train_x, train_y)
     pred = model.predict(test_x)
@@ -90,7 +101,7 @@ def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
 def _perform_vgg_feat_lsvm_test(data_type, data_params, dataset_name: str,
                                 n_partitions: int, n_jobs: int, out_folder,
                                 n_iters: int, both_eyes_mode: bool,
-                                parallel=True):
+                                parallel=True, use_mask_pairs=False):
     """Performs VGG feat lsvm test."""
     # Load data
     if both_eyes_mode:
@@ -108,7 +119,8 @@ def _perform_vgg_feat_lsvm_test(data_type, data_params, dataset_name: str,
 
     # Perform parallel test
     subjobs = 1 if parallel else n_jobs
-    args = [(data, i, n_iters, both_eyes_mode, params_set, subjobs)
+    args = [(data, i, n_iters, both_eyes_mode, params_set, subjobs,
+             use_mask_pairs)
             for i in range(n_partitions)]
     print(msg)
     if parallel:
@@ -160,13 +172,14 @@ def perform_peri_vgg_feat_lsvm_test(eye: str, n_partitions: int, n_jobs: int,
 def perform_vgg_feat_lsvm_test_botheyes(
         dataset_name: str, n_partitions: int, n_jobs: int,
         out_folder='vgg_feat_lsvm_botheyes_results', n_iters: int = 10000,
-        parallel=True
+        parallel=True, use_mask_pairs=False
 ):
     data_type = 'iris_botheyes_vgg_feats'
     data_params = {'dataset_name': dataset_name}
     _perform_vgg_feat_lsvm_test(data_type, data_params, dataset_name,
                                 n_partitions, n_jobs, out_folder, n_iters,
-                                both_eyes_mode=True, parallel=parallel)
+                                both_eyes_mode=True, parallel=parallel,
+                                use_mask_pairs=use_mask_pairs)
 
 
 def perform_vgg_feat_lsvm_test_botheyes_peri(
@@ -201,6 +214,9 @@ def main_vgg_feat_lsvm_test():
     ap.add_argument('--no_parallel', action='store_true',
                     help='Do not parallelize from outside, use GridSearchCV '
                          'n_jobs instead.')
+    ap.add_argument('--use_pairs', action='store_true',
+                    help='Use mask pairs. Only compatible with both eyes '
+                    'and normalized.')
     args = ap.parse_args()
     n_jobs = args.n_jobs
     n_parts = args.n_parts
@@ -209,6 +225,10 @@ def main_vgg_feat_lsvm_test():
     use_peri = args.use_peri
     out_folder = args.out_folder
     no_parallel = args.no_parallel
+    use_mask_pairs = args.use_pairs
+    if use_mask_pairs and use_peri or use_mask_pairs and not use_botheyes:
+        print('--use_pairs is only compatible with both eyes normalized')
+        exit(1)
     if n_iters is None:
         folder_suffix = ''
     else:
@@ -239,10 +259,13 @@ def main_vgg_feat_lsvm_test():
             if out_folder is None:
                 out_folder = f'vgg_feat_lsvm_botheyes_results{folder_suffix}'
             for d in datasets_botheyes:
-                perform_vgg_feat_lsvm_test_botheyes(d, n_parts, n_jobs,
-                                                    out_folder=out_folder,
-                                                    n_iters=n_iters,
-                                                    parallel=not no_parallel)
+                perform_vgg_feat_lsvm_test_botheyes(
+                    d, n_parts, n_jobs,
+                    out_folder=out_folder,
+                    n_iters=n_iters,
+                    parallel=not no_parallel,
+                    use_mask_pairs=use_mask_pairs
+                )
         else:
             if out_folder is None:
                 out_folder = f'vgg_feat_lsvm_botheyes_peri_results' \
