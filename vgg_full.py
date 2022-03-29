@@ -100,7 +100,8 @@ def main_vgg_test():
 
 def _perform_vgg_test_botheyes(all_data, males_set, females_set,
                                dataset_name: str, partition: int, params: dict,
-                               out_folder, step_by_step=False):
+                               out_folder, step_by_step=False,
+                               use_mask_pairs=False):
     from tensorflow.keras import backend as K
     from tensorflow import convert_to_tensor
     from tensorflow import float32 as tf_float32
@@ -129,10 +130,14 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
 
     out_folder = Path(out_folder)
     results = []
-    train_x, train_y, test_x, test_y = partition_both_eyes(all_data, males_set,
-                                                           females_set,
-                                                           TEST_SIZE,
-                                                           partition)
+    train_x, train_y, test_x, test_y = partition_both_eyes(
+        all_data, males_set, females_set,
+        TEST_SIZE,
+        partition,
+        apply_pairs=use_mask_pairs
+    )
+    if use_mask_pairs:
+        all_data = prepare_botheyes_for_vgg(all_data, preserve_shape=True)
     train_x_t = convert_to_tensor(train_x, dtype=tf_float32)
     train_y_t = convert_to_tensor(train_y, dtype=tf_float32)
     test_x_t = convert_to_tensor(test_x, dtype=tf_float32)
@@ -239,21 +244,28 @@ def perform_vgg_test_botheyes(
         partition: int,
         params: dict,
         out_folder='vgg_full_botheyes_results',
-        step_by_step=False
+        step_by_step=False,
+        use_mask_pairs=False
 ):
     t = Timer(f"Loading dataset {dataset_name}")
     t.start()
     # all_data, males_set, females_set = load_dataset_both_eyes(dataset_name)
     # all_data = prepare_botheyes_for_vgg(all_data, preserve_shape=True)
     # all_data = labels_to_onehot_botheyes(all_data)
-    all_data, males_set, females_set = load_normalized_botheyes_pre_vgg(
-        dataset_name
-    )
+    if use_mask_pairs:
+        all_data, males_set, females_set = load_dataset_both_eyes(
+            dataset_name, scale_data=False
+        )
+    else:
+        all_data, males_set, females_set = load_normalized_botheyes_pre_vgg(
+            dataset_name
+        )
     t.stop()
 
     _perform_vgg_test_botheyes(all_data, males_set, females_set, dataset_name,
                                partition, params=params, out_folder=out_folder,
-                               step_by_step=step_by_step)
+                               step_by_step=step_by_step,
+                               use_mask_pairs=use_mask_pairs)
     del all_data, males_set, females_set
 
 
@@ -316,6 +328,9 @@ def main_vgg_botheyes_test():
                     help='Folder where results and logs will be output')
     ap.add_argument('-sbs', '--step_by_step', action='store_true',
                     help='Supervise training step by step')
+    ap.add_argument('--use_pairs', action='store_true',
+                    help='Use mask pairs. Only compatible with both eyes '
+                    'and normalized.')
     args = ap.parse_args()
     params_file = Path(args.params_file)
     with open(params_file, 'r') as f:
@@ -326,8 +341,12 @@ def main_vgg_botheyes_test():
     use_half = args.use_half
     use_quarter = args.use_quart
     use_fix = args.use_fix
+    use_mask_pairs = args.use_pairs
     if any((use_quarter, use_half, use_fix)):
         use_peri = True
+    if use_mask_pairs and use_peri:
+        print('--use_pairs is only compatible with both eyes normalized')
+        exit(1)
     out_folder = args.out_folder
     step_by_step = args.step_by_step
 
@@ -338,7 +357,8 @@ def main_vgg_botheyes_test():
         d = datasets_botheyes[d_idx]
         perform_vgg_test_botheyes(d, n_part, params=params,
                                   out_folder=out_folder,
-                                  step_by_step=step_by_step)
+                                  step_by_step=step_by_step,
+                                  use_mask_pairs=use_mask_pairs)
     else:
         perform_peri_vgg_test_botheyes(n_part, params=params,
                                        out_folder=out_folder,

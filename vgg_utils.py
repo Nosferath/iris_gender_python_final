@@ -200,6 +200,8 @@ def load_periocular_botheyes_pre_vgg(subtype=""):
 
 
 def load_normalized_botheyes_vgg(dataset_name):
+    """Loads normalized both-eyes dataset pre-processed using
+    prepare_both_eyes_for_vgg"""
     return _load_botheyes_vgg(f'{dataset_name}_vgg', use_peri=False)
 
 
