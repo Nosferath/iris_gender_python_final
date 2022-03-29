@@ -72,6 +72,7 @@ def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
         )
         if use_mask_pairs:
             from vgg_utils import prepare_data_for_vgg, load_vgg_model_features
+            import tensorflow.keras.backend as K
             t = Timer('Processing data into VGG feats')
             t.start()
             feats_model = load_vgg_model_features()
@@ -80,6 +81,7 @@ def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
             test_x = prepare_data_for_vgg(test_x)
             test_x = feats_model.predict(test_x)
             t.stop()
+            K.clear_session()
             del feats_model
     else:
         data_x, labels = data
@@ -105,7 +107,7 @@ def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
     results = classification_report(test_y, pred, output_dict=True)
     results['cv_results'] = model.cv_results_
 
-    del train_x, train_y, test_x, test_y
+    del train_x, train_y, test_x, test_y, model
     return results
 
 
@@ -114,6 +116,8 @@ def _perform_vgg_feat_lsvm_test(data_type, data_params, dataset_name: str,
                                 n_iters: int, both_eyes_mode: bool,
                                 parallel=True, use_mask_pairs=False):
     """Performs VGG feat lsvm test."""
+    out_folder = Path(out_folder)
+    out_folder.mkdir(exist_ok=True, parents=True)
     if parallel and use_mask_pairs:
         raise ValueError('Parallel is incompatible with use_mask_pairs')
     # Load data
@@ -150,11 +154,12 @@ def _perform_vgg_feat_lsvm_test(data_type, data_params, dataset_name: str,
         for arg in args:
             result = vgg_feat_lsvm_parall(*arg)
             results.append(result)
+
+            with open(out_folder / f'{dataset_name}.pickle', 'wb') as f:
+                pickle.dump(results, f)
         t.stop()
 
     # Store results
-    out_folder = Path(out_folder)
-    out_folder.mkdir(exist_ok=True, parents=True)
     with open(out_folder / f'{dataset_name}.pickle', 'wb') as f:
         pickle.dump(results, f)
     del args, data
@@ -273,7 +278,7 @@ def main_vgg_feat_lsvm_test():
         if not use_peri:
             if out_folder is None:
                 out_folder = f'vgg_feat_lsvm_botheyes_results{folder_suffix}'
-            for d in datasets_botheyes:
+            for d in datasets_botheyes[1:]:  # DEBUG, REMOVE SLICE
                 perform_vgg_feat_lsvm_test_botheyes(
                     d, n_parts, n_jobs,
                     out_folder=out_folder,
