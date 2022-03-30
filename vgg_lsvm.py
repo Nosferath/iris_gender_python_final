@@ -278,7 +278,7 @@ def main_vgg_feat_lsvm_test():
         if not use_peri:
             if out_folder is None:
                 out_folder = f'vgg_feat_lsvm_botheyes_results{folder_suffix}'
-            for d in datasets_botheyes[1:]:  # DEBUG, REMOVE SLICE
+            for d in datasets_botheyes:
                 perform_vgg_feat_lsvm_test_botheyes(
                     d, n_parts, n_jobs,
                     out_folder=out_folder,
