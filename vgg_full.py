@@ -137,7 +137,10 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         apply_pairs=use_mask_pairs
     )
     if use_mask_pairs:
-        all_data = prepare_botheyes_for_vgg(all_data, preserve_shape=True)
+        train_x = prepare_data_for_vgg(train_x, preserve_shape=True)
+        test_x = prepare_data_for_vgg(test_x, preserve_shape=True)
+        train_y = labels_to_onehot(train_y)
+        test_y = labels_to_onehot(test_y)
     train_x_t = convert_to_tensor(train_x, dtype=tf_float32)
     train_y_t = convert_to_tensor(train_y, dtype=tf_float32)
     test_x_t = convert_to_tensor(test_x, dtype=tf_float32)
