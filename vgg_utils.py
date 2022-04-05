@@ -86,7 +86,8 @@ def load_vgg_model_features():
 def _prepare_data_for_vgg(data_x: np.array, orig_shape: Tuple[int, int],
                           scale_data=False, img_shapes=(224, 224, 3)):
     from skimage.color import gray2rgb
-    from skimage.transform import resize
+    # from skimage.transform import resize
+    import cv2
     from tensorflow.keras.applications.vgg16 import preprocess_input
 
     if data_x.max() == 1:
@@ -95,13 +96,16 @@ def _prepare_data_for_vgg(data_x: np.array, orig_shape: Tuple[int, int],
         from load_data_utils import scale_data_by_row
         data_x = (scale_data_by_row(data_x) * 255)
     data_x = gray2rgb(data_x.reshape((-1, *orig_shape)))
-    out_data_x = np.zeros((data_x.shape[0], *img_shapes))
+    out_data_x = np.zeros((data_x.shape[0], *img_shapes), dtype=data_x.dtype)
+    output_shape = img_shapes[:2][::-1]
     for i in range(data_x.shape[0]):
         cur_img = data_x[i]
         if orig_shape != img_shapes[:2]:
-            cur_img = resize(
-                cur_img, output_shape=img_shapes[:2], mode='edge', order=1
-            )
+            # cur_img = resize(
+            #     cur_img, output_shape=img_shapes[:2], mode='edge', order=1
+            # )
+            cur_img = cv2.resize(cur_img, output_shape,
+                                 interpolation=cv2.INTER_LINEAR)
         out_data_x[i, :, :, :] = cur_img
 
     out_data_x = preprocess_input(out_data_x)

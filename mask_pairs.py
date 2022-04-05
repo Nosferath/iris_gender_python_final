@@ -39,7 +39,8 @@ def calculate_spp_matrix(female_masks, male_masks, scoring_fn=absolute_growth):
     return spp_mat
 
 
-def generate_pairs(data_y, data_m, threshold=0.1, maximize=False):
+def generate_pairs(data_y, data_m, threshold=0.1, maximize=False,
+                   spp_mat=None):
     """Generates pairs using the stored SPP Matrix. Only the images
     in img_names will be used. This is done by checking on the
     male_img_names and female_img_names attributes of the SPPMat.
@@ -48,10 +49,11 @@ def generate_pairs(data_y, data_m, threshold=0.1, maximize=False):
     female_idxs = np.where(data_y == FEMALES_LABEL)[0]
     male_masks = data_m[data_y == MALES_LABEL, :]
     male_idxs = np.where(data_y == MALES_LABEL)[0]
-    t = Timer('Spp mat calculation')
-    t.start()
-    spp_mat = calculate_spp_matrix(female_masks, male_masks)
-    t.stop()
+    if spp_mat is None:
+        t = Timer('Spp mat calculation')
+        t.start()
+        spp_mat = calculate_spp_matrix(female_masks, male_masks)
+        t.stop()
     spp_mat_compensated = spp_mat.copy()
 
     if spp_mat.shape[0] != spp_mat.shape[1]:

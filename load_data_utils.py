@@ -240,19 +240,20 @@ def post_partition_processing_both_eyes(
 
 
 def post_partition_processing_pairs_both_eyes(
-    train_data: dict, test_data: dict, rng, generate_visualizations=False,
-    dataset_name="no_dataset"
+    train_data: dict, test_data: dict, rng, pairs_threshold=0.1,
+    generate_visualizations=False, dataset_name="no_dataset"
 ):
     from mask_pairs import generate_pairs, apply_pairs
     # Balance partitions
     train_x, train_y, train_m, train_n = balance_partition(**train_data)
     test_x, test_y, test_m, test_n = balance_partition(**test_data)
     # Pair generation
-    train_pairs, train_values = generate_pairs(train_y, train_m)
+    train_pairs, train_values = generate_pairs(train_y, train_m,
+                                               threshold=pairs_threshold)
     # Generate visualizations
     if generate_visualizations:
         from results_processing import save_pairs_visualizations
-        visualization_folder = 'experiments/mask_pairs/visualizations/'
+        visualization_folder = 'experiments/mask_pairs/visualizations_stacked/'
         save_pairs_visualizations(train_pairs, train_x, train_m,
                         visualization_folder + f'/{dataset_name}',
                         to_visualize=list(range(train_pairs.shape[1])),
@@ -268,13 +269,16 @@ def post_partition_processing_pairs_both_eyes(
 
 def partition_both_eyes(all_data: dict, males_set: set, females_set: set,
                         test_size: float, partition: int, apply_pairs=False,
-                        dataset_name=None, post_tasks=True):
+                        pairs_threshold=0.1, dataset_name=None,
+                        get_all_data_pairs=False):
     """Partition the data from both eyes ensuring both eyes of the same
     subject stay in the same partition. This is done by splitting the
     subject IDs into train and test randomly (males and females separa-
     tely to ensure balanced partitions)
 
     If apply_pairs is true, mask pairs are generated and applied.
+    
+    get_all_data_pairs was added for testing mask pairs.
     """
     rng = np.random.default_rng(partition)
     eyes = ('left', 'right')
@@ -330,9 +334,12 @@ def partition_both_eyes(all_data: dict, males_set: set, females_set: set,
             "data_m": test_m,
             "data_n": test_n
         } 
+        if get_all_data_pairs:
+            return train_data, test_data
         train_x, train_y, test_x, test_y = \
             post_partition_processing_pairs_both_eyes(
-                train_data, test_data, rng, dataset_name=dataset_name
+                train_data, test_data, rng, dataset_name=dataset_name,
+                pairs_threshold=pairs_threshold
             )
         
     else:

@@ -101,7 +101,8 @@ def main_vgg_test():
 def _perform_vgg_test_botheyes(all_data, males_set, females_set,
                                dataset_name: str, partition: int, params: dict,
                                out_folder, step_by_step=False,
-                               use_mask_pairs=False):
+                               use_mask_pairs=False,
+                               pairs_threshold=0.1):
     from tensorflow.keras import backend as K
     from tensorflow import convert_to_tensor
     from tensorflow import float32 as tf_float32
@@ -134,7 +135,8 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         all_data, males_set, females_set,
         TEST_SIZE,
         partition,
-        apply_pairs=use_mask_pairs
+        apply_pairs=use_mask_pairs,
+        pairs_threshold=pairs_threshold
     )
     if use_mask_pairs:
         train_x = prepare_data_for_vgg(train_x, preserve_shape=True)
@@ -248,7 +250,8 @@ def perform_vgg_test_botheyes(
         params: dict,
         out_folder='vgg_full_botheyes_results',
         step_by_step=False,
-        use_mask_pairs=False
+        use_mask_pairs=False,
+        pairs_threshold=0.1
 ):
     t = Timer(f"Loading dataset {dataset_name}")
     t.start()
@@ -268,7 +271,8 @@ def perform_vgg_test_botheyes(
     _perform_vgg_test_botheyes(all_data, males_set, females_set, dataset_name,
                                partition, params=params, out_folder=out_folder,
                                step_by_step=step_by_step,
-                               use_mask_pairs=use_mask_pairs)
+                               use_mask_pairs=use_mask_pairs,
+                               pairs_threshold=pairs_threshold)
     del all_data, males_set, females_set
 
 
@@ -334,6 +338,8 @@ def main_vgg_botheyes_test():
     ap.add_argument('--use_pairs', action='store_true',
                     help='Use mask pairs. Only compatible with both eyes '
                     'and normalized.')
+    ap.add_argument('-t', '--threshold', type=float, default=0.1,
+                    help='Threshold for restricting pairs')
     args = ap.parse_args()
     params_file = Path(args.params_file)
     with open(params_file, 'r') as f:
@@ -345,6 +351,7 @@ def main_vgg_botheyes_test():
     use_quarter = args.use_quart
     use_fix = args.use_fix
     use_mask_pairs = args.use_pairs
+    pairs_threshold = args.threshold
     if any((use_quarter, use_half, use_fix)):
         use_peri = True
     if use_mask_pairs and use_peri:
@@ -361,7 +368,8 @@ def main_vgg_botheyes_test():
         perform_vgg_test_botheyes(d, n_part, params=params,
                                   out_folder=out_folder,
                                   step_by_step=step_by_step,
-                                  use_mask_pairs=use_mask_pairs)
+                                  use_mask_pairs=use_mask_pairs,
+                                  pairs_threshold=pairs_threshold)
     else:
         perform_peri_vgg_test_botheyes(n_part, params=params,
                                        out_folder=out_folder,

@@ -319,6 +319,7 @@ def save_pairs_visualizations(pairs, data_x, data_m, out_folder: str,
     # Initialize out folder
     out_folder = Path(out_folder)
     out_folder.mkdir(exist_ok=True, parents=True)
+    
     # Obtain original shape of data
     orig_shape = find_shape(n_features=data_x.shape[1])
     # Scale data and turn to uint8
@@ -344,13 +345,73 @@ def save_pairs_visualizations(pairs, data_x, data_m, out_folder: str,
 
         images = generate_pair_visualization(iris_a, mask_a, iris_b, mask_b)
         names = ['iris_a_pre', 'iris_a_post', 'iris_b_pre', 'iris_b_post']
-        for img, name in zip(images, names):
-            img = Image.fromarray(img)
-            if pair_scores is None:
-                out_name = f'{pair_idx}_{name}.png'
-            else:
-                cur_score = pair_scores[pair_idx] * 100
-                out_name = f'{cur_score:0.0f}_{pair_idx}_{name}.png'
-            img.save(out_folder / out_name)
 
+        # for img, name in zip(images, names):
+        #     img = Image.fromarray(img)
+        #     if pair_scores is None:
+        #         out_name = f'{pair_idx}_{name}.png'
+        #     else:
+        #         cur_score = pair_scores[pair_idx] * 100
+        #         out_name = f'{cur_score:0.0f}_{pair_idx}_{name}.png'
+        #     img.save(out_folder / out_name)
+
+        images = np.vstack(images)
+        img = Image.fromarray(images)
+        if pair_scores is None:
+            out_name = f'{pair_idx}.png'
+        else:
+            cur_score = pair_scores[pair_idx] * 1000
+            out_name = f'{cur_score:0.0f}_{pair_idx}.png'
+        img.save(out_folder / out_name)
+
+
+def analize_pairs(pair_scores, bad_score=0.1, delta=0.01):
+    def calculate_histogram():
+        """This version treats bin edges opposite of numpy: first bin
+        includes both edges, and from the second bin on it excludes the
+        left edge and includes the right edge. This is done to ensure
+        that pairs strictly over bad_score are not grouped with pairs
+        that are exactly the bad_score (which is not bad)."""
+        _bins = np.arange(bad_score, bad_score + delta, delta)
+        _bins = np.hstack([_bins, [1]])
+        n_bins = len(_bins)
+        _hist = []
+        for i in range(n_bins - 1):
+            """
+            [0,  0.01]
+            ]0.01 0.02]
+            ...
+            ]0.09 0.1]
+            ]0.1  1.0]  # Bad pairs
+            """
+            if i == 0:
+                lower = _bins[i] <= pair_scores
+            else:
+                lower = _bins[i] < pair_scores
+            upper = pair_scores <= _bins[i+1]
+            _hist.append(np.sum(lower & upper))
+        return _hist, _bins
+    
+    # Obtain histogram
+    histogram, bins = calculate_histogram()
+
+    # Sum of good pairs scores
+    good_scores_idx = pair_scores <= bad_score
+    good_scores = pair_scores[good_scores_idx]
+    sum_good_scores = np.sum(good_scores)
+    n_good_scores = np.sum(good_scores_idx)
+
+    avg_good_score = sum_good_scores / n_good_scores
+    
+    # Count of bad pairs
+    n_bad_pairs = histogram[-1]
+
+    to_return = {
+        'histogram': histogram,
+        'bins': bins,
+        'avg_good_score': avg_good_score,
+        'n_bad_pairs': n_bad_pairs
+    }
+
+    return to_return
 
