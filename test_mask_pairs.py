@@ -70,6 +70,35 @@ for d in datasets_botheyes:
     ax1.figure.legend(loc='lower right', markerscale=0.5, fontsize='x-small')
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig(out_folder / f'{d}.png')
+    # plt.savefig(out_folder / f'{d}.png')
     plt.clf()
-    
+
+    # Generate histograms
+    hist_folder = out_folder / 'histograms'
+    hist_folder.mkdir(exist_ok=True, parents=True)
+    for threshold, cur_analysis in analysis.items():
+        # TODO refactor to results_processing                
+        hist = np.array(cur_analysis['histogram'])
+        hist = 100 * hist / np.sum(hist)
+        print(hist)
+        bins = cur_analysis['bins']
+        print(bins)
+        x = np.array(bins[:-1])
+        print(x)
+        x = 100*(x + (x[0] + x[1]) / 2)
+        delta = (x[0] + x[1]) / 2
+        ticks = x - delta/2
+        print(x)
+        labels = [f'{v:.1f}' for v in ticks]
+        bar_colors = [colors[0]] * (len(hist) - 1)
+        bar_colors.append(colors[1])
+        ax = plt.bar(x, hist, width=delta * 0.9, color=bar_colors,
+                     edgecolor='black', linewidth=2)
+        plt.xticks(ticks[::2], labels[::2])
+        plt.grid(True, axis='y')
+        plt.ylabel('% of pairs')
+        plt.xlabel('% of growth')
+        plt.title(f'Pairs distrib., {d}, thresh.={threshold * 100:.1f}')
+        plt.tight_layout()
+        plt.show()
+        exit(0)

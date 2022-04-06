@@ -372,7 +372,7 @@ def analize_pairs(pair_scores, bad_score=0.1, delta=0.01):
         left edge and includes the right edge. This is done to ensure
         that pairs strictly over bad_score are not grouped with pairs
         that are exactly the bad_score (which is not bad)."""
-        _bins = np.arange(bad_score, bad_score + delta, delta)
+        _bins = np.arange(0, bad_score + delta, delta)
         _bins = np.hstack([_bins, [1]])
         n_bins = len(_bins)
         _hist = []

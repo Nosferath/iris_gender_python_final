@@ -194,3 +194,19 @@ def move_mod_v2():
             out_name = file.stem + suf
             move(file, cur_out / out_name)
         cur_folder.unlink()
+
+
+def get_hash(object, label=""):
+    """Gets the hash of object. Useful for ensuring it's always the same
+    object. This is done by iterating over it, turning its elements to
+    strings and concatenating them. If the object is not iterable, put
+    in a list or iterable. It must be convertible to string.
+    """
+    import hashlib
+    h = hashlib.sha256()
+    to_hash = "".join([str(v) for v in object])
+    to_hash = to_hash.encode()
+    h.update(to_hash)
+    hashed = h.hexdigest()
+    print(label, hashed)
+    return hashed

@@ -280,7 +280,7 @@ def partition_both_eyes(all_data: dict, males_set: set, females_set: set,
     
     get_all_data_pairs was added for testing mask pairs.
     """
-    rng = np.random.default_rng(partition)
+    rng = np.random.default_rng(seed=partition)
     eyes = ('left', 'right')
 
     # Split IDs into train and test
@@ -294,6 +294,7 @@ def partition_both_eyes(all_data: dict, males_set: set, females_set: set,
     test_females = rng.choice(
         females, np.int(test_size * n_females), replace=False
     )
+    
     test_ids = np.hstack([test_males, test_females])
     # Split data into partitions
     elements = ('data', 'labels', 'masks', 'names')
