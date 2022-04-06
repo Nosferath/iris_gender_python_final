@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -10,13 +9,13 @@ from constants import datasets_botheyes, FEMALES_LABEL, MALES_LABEL
 from load_data_utils import partition_both_eyes, balance_partition
 from load_data import load_dataset_both_eyes
 from mask_pairs import generate_pairs, calculate_spp_matrix
-from results_processing import analize_pairs
+from results_processing import analize_pairs, plot_pairs_histogram
 
 BAD_SCORE = 0.1
 
 partition = 1
 
-out_folder = Path('experiments/mask_pairs/analysis')
+out_folder = Path('experiments/mask_pairs/analysis/bad_is_thresh')
 out_folder.mkdir(exist_ok=True, parents=True)
 
 for d in datasets_botheyes:
@@ -28,18 +27,19 @@ for d in datasets_botheyes:
     train_x, train_y, train_m, train_n = balance_partition(**train_data)
     spp_mat = calculate_spp_matrix(train_m[train_y == FEMALES_LABEL, :],
                                    train_m[train_y == MALES_LABEL, :])
-    
+
     analysis = {}
-    thresholds = list(np.arange(0.05, 0.151, 0.005))
+    thresholds = list(np.arange(0.03, 0.151, 0.005))
+    # thresholds = list(np.arange(0.05, 0.151, 0.005))
     for threshold in thresholds:
         train_pairs, pair_scores = generate_pairs(train_y, train_m,
                                                   threshold=threshold,
                                                   spp_mat=spp_mat)
-        cur_analysis = analize_pairs(pair_scores, bad_score=BAD_SCORE)
+        cur_analysis = analize_pairs(pair_scores, bad_score=threshold)
         analysis[threshold] = cur_analysis
-    
-    avg_good_scores = [a['avg_good_score'] for a in analysis.values()]    
-    n_bad_pairs = [a['n_bad_pairs'] for a in analysis.values()]    
+
+    avg_good_scores = [a['avg_good_score'] for a in analysis.values()]
+    n_bad_pairs = [a['n_bad_pairs'] for a in analysis.values()]
 
     df = pd.DataFrame({
         'threshold': thresholds,
@@ -70,35 +70,14 @@ for d in datasets_botheyes:
     ax1.figure.legend(loc='lower right', markerscale=0.5, fontsize='x-small')
     plt.grid(True)
     plt.tight_layout()
-    # plt.savefig(out_folder / f'{d}.png')
+    plt.savefig(out_folder / f'{d}.png')
     plt.clf()
 
     # Generate histograms
-    hist_folder = out_folder / 'histograms'
-    hist_folder.mkdir(exist_ok=True, parents=True)
-    for threshold, cur_analysis in analysis.items():
-        # TODO refactor to results_processing                
-        hist = np.array(cur_analysis['histogram'])
-        hist = 100 * hist / np.sum(hist)
-        print(hist)
-        bins = cur_analysis['bins']
-        print(bins)
-        x = np.array(bins[:-1])
-        print(x)
-        x = 100*(x + (x[0] + x[1]) / 2)
-        delta = (x[0] + x[1]) / 2
-        ticks = x - delta/2
-        print(x)
-        labels = [f'{v:.1f}' for v in ticks]
-        bar_colors = [colors[0]] * (len(hist) - 1)
-        bar_colors.append(colors[1])
-        ax = plt.bar(x, hist, width=delta * 0.9, color=bar_colors,
-                     edgecolor='black', linewidth=2)
-        plt.xticks(ticks[::2], labels[::2])
-        plt.grid(True, axis='y')
-        plt.ylabel('% of pairs')
-        plt.xlabel('% of growth')
-        plt.title(f'Pairs distrib., {d}, thresh.={threshold * 100:.1f}')
-        plt.tight_layout()
-        plt.show()
-        exit(0)
+    # hist_folder = out_folder / 'histograms'
+    # hist_folder.mkdir(exist_ok=True, parents=True)
+    # for threshold, cur_analysis in analysis.items():
+    #     hist = np.array(cur_analysis['histogram'])
+    #     hist = 100 * hist / np.sum(hist)
+    #     bins = cur_analysis['bins']
+    #     plot_pairs_histogram(hist, bins, hist_folder, d, threshold)

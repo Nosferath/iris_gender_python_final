@@ -1,10 +1,9 @@
 from itertools import product
-from pathlib import Path
 
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
-from constants import FEMALES_LABEL, MALES_LABEL, SPP_FOLDER
+from constants import FEMALES_LABEL, MALES_LABEL
 from load_data_utils import apply_masks_to_data
 from utils import Timer
 

@@ -68,7 +68,7 @@ def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
         all_data, males_set, females_set = data
         train_x, train_y, test_x, test_y = partition_both_eyes(
             all_data, males_set, females_set, TEST_SIZE, partition,
-            use_mask_pairsm, pairs_threshold=pairs_threshold
+            use_mask_pairs, pairs_threshold=pairs_threshold
         )
         if use_mask_pairs:
             from vgg_utils import prepare_data_for_vgg, load_vgg_model_features

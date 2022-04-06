@@ -415,3 +415,31 @@ def analize_pairs(pair_scores, bad_score=0.1, delta=0.01):
 
     return to_return
 
+
+def plot_pairs_histogram(hist, bins, out_folder, dataset, threshold):
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+
+    out_folder = Path(out_folder)
+    out_folder.mkdir(exist_ok=True, parents=True)
+
+    with sns.plotting_context('talk'):
+        colors = sns.color_palette()[:2]
+
+        x = np.array(bins[:-1])
+        x = 100*(x + (x[0] + x[1]) / 2)
+        delta = (x[0] + x[1]) / 2
+        ticks = x - delta/2
+        labels = [f'{v:.1f}' for v in ticks]
+        bar_colors = [colors[0]] * (len(hist) - 1)
+        bar_colors.append(colors[1])
+        plt.bar(x, hist, width=delta * 0.9, color=bar_colors,
+                edgecolor='black', linewidth=2)
+        plt.xticks(ticks[::2], labels[::2])
+        plt.grid(True, axis='y')
+        plt.ylabel('% of pairs')
+        plt.xlabel('% of growth')
+        plt.title(f'Pairs distrib., {dataset}, thresh.={threshold * 100:.1f}')
+        plt.tight_layout()
+        plt.savefig(out_folder / f'{dataset}_{threshold*100:.1f}.png')
+        plt.clf()
