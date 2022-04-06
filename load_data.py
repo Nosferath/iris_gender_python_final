@@ -203,6 +203,10 @@ def _load_dataset_both_eyes(dataset_name: str, use_peri: bool,
         ids = np.array([p.split('d')[0] for p in names])
         males_set.update(set(ids[labels == 0]))
         females_set.update(set(ids[labels == 1]))
+    males_set = list(males_set)
+    males_set.sort()
+    females_set = list(females_set)
+    females_set.sort()
     return all_data, males_set, females_set
 
 
