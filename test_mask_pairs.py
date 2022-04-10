@@ -1,15 +1,13 @@
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-import seaborn as sns
 
 from constants import datasets_botheyes, FEMALES_LABEL, MALES_LABEL
 from load_data_utils import partition_both_eyes, balance_partition
 from load_data import load_dataset_both_eyes
 from mask_pairs import generate_pairs, calculate_spp_matrix
-from results_processing import analize_pairs, plot_pairs_histogram
+from results_processing import analize_pairs, plot_pairs_histogram, \
+    plot_pairs_analysis
 
 BAD_SCORE = 0.1
 
@@ -41,37 +39,8 @@ for d in datasets_botheyes:
     avg_good_scores = [a['avg_good_score'] for a in analysis.values()]
     n_bad_pairs = [a['n_bad_pairs'] for a in analysis.values()]
 
-    df = pd.DataFrame({
-        'threshold': thresholds,
-        'avg_good_score': np.array(avg_good_scores) * 100,
-        'n_bad_pairs': n_bad_pairs
-    })
-    df_melt = pd.melt(
-        df,
-        id_vars=['threshold'],
-        value_vars=['avg_good_score', 'n_bad_pairs'],
-        var_name='metric',
-        value_name='value'
-    )
-    sns.set_context('talk')
-    colors = sns.color_palette()[:2]
-    ax1 = df.plot(
-        x='threshold', y='avg_good_score', color=colors[0], legend=False
-    )
-    ax1.set_ylabel('Avg. growth [%]')
-    ax1.yaxis.label.set_color(colors[0])
-    ax2 = plt.twinx()
-    df.plot(
-        x='threshold', y='n_bad_pairs', color=colors[1], legend=False, ax=ax2
-    )
-    ax2.set_ylabel('N. of bad pairs')
-    ax2.yaxis.label.set_color(colors[1])
-    plt.title(f'Pairs analysis, {d}')
-    ax1.figure.legend(loc='lower right', markerscale=0.5, fontsize='x-small')
-    plt.grid(True)
-    plt.tight_layout()
-    plt.savefig(out_folder / f'{d}.png')
-    plt.clf()
+    plot_pairs_analysis(thresholds, avg_good_scores,
+                        n_bad_pairs, out_folder, d)
 
     # Generate histograms
     hist_folder = out_folder / 'histograms'
@@ -79,4 +48,4 @@ for d in datasets_botheyes:
     for threshold, cur_analysis in analysis.items():
         hist = np.array(cur_analysis['histogram'])
         bins = cur_analysis['bins']
-        plot_pairs_histogram(hist, bins, hist_folder, d, threshold)
+        plot_pairs_histogram(hist, bins, hist_folder, d, threshold, max_y=50)

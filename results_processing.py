@@ -294,10 +294,10 @@ def generate_pair_visualization(iris_a, mask_a, iris_b, mask_b):
     images = [iris_a_pre, iris_a_post, iris_b_pre, iris_b_post]
 
     return images
-    
-    
+
+
 def save_pairs_visualizations(pairs, data_x, data_m, out_folder: str,
-                                 to_visualize: list = None, pair_scores=None):
+                              to_visualize: list = None, pair_scores=None):
     """Visualize mask pairs by generating an RGB image displaying the
     masks before and after pairing, using different colors for each one.
 
@@ -319,7 +319,7 @@ def save_pairs_visualizations(pairs, data_x, data_m, out_folder: str,
     # Initialize out folder
     out_folder = Path(out_folder)
     out_folder.mkdir(exist_ok=True, parents=True)
-    
+
     # Obtain original shape of data
     orig_shape = find_shape(n_features=data_x.shape[1])
     # Scale data and turn to uint8
@@ -344,7 +344,7 @@ def save_pairs_visualizations(pairs, data_x, data_m, out_folder: str,
         mask_b = data_m[idx_b, :]
 
         images = generate_pair_visualization(iris_a, mask_a, iris_b, mask_b)
-        names = ['iris_a_pre', 'iris_a_post', 'iris_b_pre', 'iris_b_post']
+        # names = ['iris_a_pre', 'iris_a_post', 'iris_b_pre', 'iris_b_post']
 
         # for img, name in zip(images, names):
         #     img = Image.fromarray(img)
@@ -391,7 +391,7 @@ def analize_pairs(pair_scores, bad_score=0.1, delta=0.01):
             upper = pair_scores <= _bins[i+1]
             _hist.append(np.sum(lower & upper))
         return _hist, _bins
-    
+
     # Obtain histogram
     histogram, bins = calculate_histogram()
 
@@ -402,7 +402,7 @@ def analize_pairs(pair_scores, bad_score=0.1, delta=0.01):
     n_good_scores = np.sum(good_scores_idx)
 
     avg_good_score = sum_good_scores / n_good_scores
-    
+
     # Count of bad pairs
     n_bad_pairs = histogram[-1]
 
@@ -416,7 +416,8 @@ def analize_pairs(pair_scores, bad_score=0.1, delta=0.01):
     return to_return
 
 
-def plot_pairs_histogram(hist, bins, out_folder, dataset, threshold):
+def plot_pairs_histogram(hist, bins, out_folder, dataset, threshold,
+                         max_y=None):
     import matplotlib.pyplot as plt
     import seaborn as sns
 
@@ -441,7 +442,60 @@ def plot_pairs_histogram(hist, bins, out_folder, dataset, threshold):
         plt.grid(True, axis='y')
         plt.ylabel('% of pairs')
         plt.xlabel('% of growth')
+        if max_y is not None:
+            plt.ylim([0, max_y])
         plt.title(f'Pairs distrib., {dataset}, thresh.={threshold * 100:.1f}')
         plt.tight_layout()
         plt.savefig(out_folder / f'{dataset}_{threshold*100:.1f}.png')
         plt.clf()
+
+
+def plot_pairs_analysis(thresholds, avg_good_scores, n_bad_pairs, out_folder,
+                        dataset_name):
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    out_folder = Path(out_folder)
+    out_folder.mkdir(exist_ok=True, parents=True)
+    df = pd.DataFrame({
+        'threshold': thresholds,
+        'avg_good_score': np.array(avg_good_scores) * 100,
+        'n_bad_pairs': n_bad_pairs
+    })
+    with sns.plotting_context('talk'):
+        colors = sns.color_palette()[:2]
+        ax1 = df.plot(
+            x='threshold', y='avg_good_score', color=colors[0], legend=False
+        )
+        ax1.set_ylabel('Avg. growth [%]')
+        ax1.yaxis.label.set_color(colors[0])
+        ax2 = plt.twinx()
+        df.plot(
+            x='threshold', y='n_bad_pairs', color=colors[1], legend=False,
+            ax=ax2
+        )
+        ax2.set_ylabel('N. of bad pairs')
+        ax2.yaxis.label.set_color(colors[1])
+        plt.title(f'Pairs analysis, {dataset_name}')
+        ax1.figure.legend(loc='lower right', markerscale=0.5,
+                          fontsize='x-small')
+        plt.grid(True)
+        plt.tight_layout()
+        plt.savefig(out_folder / f'{dataset_name}.png')
+        plt.clf()
+
+
+def plot_pairs_thresh_results(results_folder):
+    results = {}
+    results_folder = Path(results_folder)
+    for threshold_folder in results_folder.glob('*/'):
+        threshold = threshold_folder.name
+        for results_file in threshold_folder.glob('*.pickle'):
+            dataset = results_file.stem
+            cur_results = np.load(results_file, allow_pickle=True)
+            cur_results = [r['accuracy'] for r in cur_results]
+            if dataset not in results:
+                results[dataset] = {threshold: cur_results}
+            else:
+                results[dataset][threshold] = cur_results
+    return results 
+        
