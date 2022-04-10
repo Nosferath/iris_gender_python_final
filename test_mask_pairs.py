@@ -15,7 +15,7 @@ BAD_SCORE = 0.1
 
 partition = 1
 
-out_folder = Path('experiments/mask_pairs/analysis/bad_is_thresh')
+out_folder = Path('experiments/mask_pairs/analysis')
 out_folder.mkdir(exist_ok=True, parents=True)
 
 for d in datasets_botheyes:
@@ -35,7 +35,7 @@ for d in datasets_botheyes:
         train_pairs, pair_scores = generate_pairs(train_y, train_m,
                                                   threshold=threshold,
                                                   spp_mat=spp_mat)
-        cur_analysis = analize_pairs(pair_scores, bad_score=threshold)
+        cur_analysis = analize_pairs(pair_scores, bad_score=BAD_SCORE)
         analysis[threshold] = cur_analysis
 
     avg_good_scores = [a['avg_good_score'] for a in analysis.values()]
@@ -74,10 +74,9 @@ for d in datasets_botheyes:
     plt.clf()
 
     # Generate histograms
-    # hist_folder = out_folder / 'histograms'
-    # hist_folder.mkdir(exist_ok=True, parents=True)
-    # for threshold, cur_analysis in analysis.items():
-    #     hist = np.array(cur_analysis['histogram'])
-    #     hist = 100 * hist / np.sum(hist)
-    #     bins = cur_analysis['bins']
-    #     plot_pairs_histogram(hist, bins, hist_folder, d, threshold)
+    hist_folder = out_folder / 'histograms'
+    hist_folder.mkdir(exist_ok=True, parents=True)
+    for threshold, cur_analysis in analysis.items():
+        hist = np.array(cur_analysis['histogram'])
+        bins = cur_analysis['bins']
+        plot_pairs_histogram(hist, bins, hist_folder, d, threshold)

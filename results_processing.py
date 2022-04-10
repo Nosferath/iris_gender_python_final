@@ -426,15 +426,17 @@ def plot_pairs_histogram(hist, bins, out_folder, dataset, threshold):
     with sns.plotting_context('talk'):
         colors = sns.color_palette()[:2]
 
+        norm_hist = 100 * hist / np.sum(hist)
         x = np.array(bins[:-1])
         x = 100*(x + (x[0] + x[1]) / 2)
         delta = (x[0] + x[1]) / 2
         ticks = x - delta/2
         labels = [f'{v:.1f}' for v in ticks]
-        bar_colors = [colors[0]] * (len(hist) - 1)
+        bar_colors = [colors[0]] * (len(norm_hist) - 1)
         bar_colors.append(colors[1])
-        plt.bar(x, hist, width=delta * 0.9, color=bar_colors,
-                edgecolor='black', linewidth=2)
+        ax = plt.bar(x, norm_hist, width=delta * 0.9, color=bar_colors,
+                     edgecolor='black', linewidth=2)
+        plt.bar_label(ax, hist)
         plt.xticks(ticks[::2], labels[::2])
         plt.grid(True, axis='y')
         plt.ylabel('% of pairs')
