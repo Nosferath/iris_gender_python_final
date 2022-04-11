@@ -111,3 +111,25 @@ def apply_pairs(pairs, data_x, data_m):
         data_x = data_x / 255
 
     return data_x
+
+
+def remove_pairs(train_x, train_y, pairs, pair_values, threshold=0.1):
+    """Removes all pairs with scores strictly above the threshold."""
+    good_pairs_idx_bool = pair_values <= threshold
+    good_pairs_idx = pairs[:, good_pairs_idx_bool].flatten()
+    good_pairs_idx.sort()
+    train_x = train_x[good_pairs_idx, :]
+    train_y = train_y[good_pairs_idx]
+
+    return train_x, train_y
+
+
+def _test_remove_pairs():
+    train_x = np.arange(10)
+    train_x = np.tile(train_x[..., np.newaxis], (1, 20))
+    train_y = np.repeat([0, 1], 5)
+    pairs = np.array([range(5), range(9, 4, -1)])
+    pair_values = np.arange(0.08, 0.13, 0.01)[::-1]
+    train_x, train_y = remove_pairs(train_x, train_y, pairs, pair_values)
+    assert (train_x[:, 0] == [2, 3, 4, 5, 6, 7]).all(), \
+        "remove_pairs not working as intended"
