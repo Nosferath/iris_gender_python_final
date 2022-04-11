@@ -263,6 +263,7 @@ def post_partition_processing_pairs_both_eyes(
     # Apply pairs (includes scaling)
     train_x = apply_pairs(train_pairs, train_x, train_m)
     if remove_bad_pairs:
+        print('[INFO] Removing bad pairs')
         train_x, train_y = remove_pairs(
             train_x, train_y, train_pairs, train_values, threshold=0.09)
     # Permute partitions

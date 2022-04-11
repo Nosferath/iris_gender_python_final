@@ -484,7 +484,12 @@ def plot_pairs_analysis(thresholds, avg_good_scores, n_bad_pairs, out_folder,
         plt.clf()
 
 
-def plot_pairs_thresh_results(results_folder):
+def plot_pairs_thresh_results(
+        results_folder, out_file,
+        title='VGG+LSVM results using pairs, variable threshold'):
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+
     results = {}
     results_folder = Path(results_folder)
     for threshold_folder in results_folder.glob('*/'):
@@ -497,5 +502,26 @@ def plot_pairs_thresh_results(results_folder):
                 results[dataset] = {threshold: cur_results}
             else:
                 results[dataset][threshold] = cur_results
-    return results 
-        
+    df = pd.DataFrame(results)
+    df['threshold'] = df.index.map(lambda x: float(x))
+    df = df.melt(id_vars=['threshold'], value_vars=df.columns[:-1],
+                 var_name='dataset', value_name='accuracy')
+    df = df.explode('accuracy', ignore_index=True)
+    df.dataset = df.dataset.astype('category')
+    df.accuracy = df.accuracy.astype('float64')
+
+    with sns.axes_style('whitegrid', rc={'xtick.bottom': True,
+                                         'ytick.left': True}), \
+            sns.plotting_context('notebook', font_scale=1.2):
+        ax = sns.lmplot(data=df, x='threshold', y='accuracy', hue='dataset',
+                        col='dataset', x_estimator=np.mean, col_wrap=2,
+                        height=4, aspect=1.4)
+        ax.fig.subplots_adjust(top=0.9)
+        ax.fig.suptitle(title)
+        plt.tight_layout()
+        out_file = Path(out_file)
+        out_file.parent.mkdir(exist_ok=True, parents=True)
+        plt.savefig(out_file)
+        plt.clf()
+
+    return results
