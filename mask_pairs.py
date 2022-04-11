@@ -34,7 +34,7 @@ def calculate_spp_matrix(female_masks, male_masks, scoring_fn=absolute_growth):
         cur_f = female_masks[f_idx, :]
         cur_m = male_masks[m_idx, :]
         spp_mat[f_idx, m_idx] = scoring_fn(cur_f, cur_m)
-    
+
     return spp_mat
 
 
