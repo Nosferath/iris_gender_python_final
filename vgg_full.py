@@ -351,7 +351,7 @@ def main_vgg_botheyes_test():
     use_quarter = args.use_quart
     use_fix = args.use_fix
     use_mask_pairs = args.use_pairs
-    pairs_threshold = args.threshold
+clasificadas clasificadas     pairs_threshold = args.threshold
     if any((use_quarter, use_half, use_fix)):
         use_peri = True
     if use_mask_pairs and use_peri:

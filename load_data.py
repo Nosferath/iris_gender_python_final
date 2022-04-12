@@ -174,7 +174,7 @@ def load_peri_dataset_from_npz(eye: str):
 def _load_dataset_both_eyes(dataset_name: str, use_peri: bool,
                             apply_masks=True, scale_data=True):
     """Base function for loading both normalized and periocular datasets
-    
+
     Initially the data is loaded from the .npz files of each eye, and
     then IDs are extracted for each gender. The IDs are stored in the
     males_set and females_set variables. They are used for partitioning
