@@ -75,13 +75,16 @@ def vgg_feat_lsvm_parall(data, partition: int, n_iters: Union[int, None],
         if use_mask_pairs:
             from vgg_utils import prepare_data_for_vgg, load_vgg_model_features
             import tensorflow.keras.backend as K
+            from tensorflow import convert_to_tensor
             t = Timer('Processing data into VGG feats')
             t.start()
             feats_model = load_vgg_model_features()
             train_x = prepare_data_for_vgg(train_x)
-            train_x = feats_model.predict(train_x)
+            train_x = convert_to_tensor(train_x)
+            train_x = np.array(feats_model.predict(train_x))
             test_x = prepare_data_for_vgg(test_x)
-            test_x = feats_model.predict(test_x)
+            test_x = convert_to_tensor(test_x)
+            test_x = np.array(feats_model.predict(test_x))
             t.stop()
             K.clear_session()
             del feats_model
@@ -287,10 +290,35 @@ def main_vgg_feat_lsvm_test():
 
     else:
         from constants import datasets_botheyes
+
+        def check_skip(_dataset):
+            not_skip = {
+                0.085: ['240x20', '240x40'],
+                0.100: ['240x40'],
+                0.120: ['240x40'],
+                0.125: ['240x40'],
+                0.130: ['240x40'],
+                0.135: ['240x20', '240x40'],
+                0.140: ['240x20', '240x40'],
+                0.145: ['240x20_fixed', '240x40_fixed',
+                        '240x20', '240x40'],
+                0.150: ['240x20_fixed', '240x40_fixed',
+                        '240x20', '240x40']
+            }
+            if float(pairs_threshold) not in not_skip:
+                return True
+            if _dataset in not_skip[float(pairs_threshold)]:
+                return False
+            return True
+
         if not use_peri:
             if out_folder is None:
                 out_folder = f'vgg_feat_lsvm_botheyes_results{folder_suffix}'
             for d in datasets_botheyes:
+                if check_skip(d):
+                    print(f'Skipping already found results: threshold '
+                          f'{pairs_threshold} with {d}')
+                    continue
                 perform_vgg_feat_lsvm_test_botheyes(
                     d, n_parts, n_jobs,
                     out_folder=out_folder,

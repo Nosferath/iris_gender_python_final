@@ -50,7 +50,6 @@ def load_vgg_model_finetune(lr=0.001, input_shape=(224, 224, 3),
     iris.
     """
     from tensorflow.keras.applications.vgg16 import VGG16
-    from tensorflow.keras.metrics import categorical_accuracy
     from tensorflow.keras.models import Model
     from tensorflow.keras.optimizers import Adam
     set_precision_to_16_bits()

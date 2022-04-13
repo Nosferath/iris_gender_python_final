@@ -524,4 +524,4 @@ def plot_pairs_thresh_results(
         plt.savefig(out_file)
         plt.clf()
 
-    return results
+    return results, df
