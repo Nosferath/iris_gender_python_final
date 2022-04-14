@@ -486,7 +486,8 @@ def plot_pairs_analysis(thresholds, avg_good_scores, n_bad_pairs, out_folder,
 
 def plot_pairs_thresh_results(
         results_folder, out_file,
-        title='VGG+LSVM results using pairs, variable threshold'):
+        title='VGG+LSVM results using pairs, variable threshold',
+        ylim=(0.53, 0.64)):
     import matplotlib.pyplot as plt
     import seaborn as sns
 
@@ -512,12 +513,13 @@ def plot_pairs_thresh_results(
 
     with sns.axes_style('whitegrid', rc={'xtick.bottom': True,
                                          'ytick.left': True}), \
-            sns.plotting_context('notebook', font_scale=1.2):
+            sns.plotting_context('notebook', font_scale=1.4):
         ax = sns.lmplot(data=df, x='threshold', y='accuracy', hue='dataset',
                         col='dataset', x_estimator=np.mean, col_wrap=2,
                         height=4, aspect=1.4)
         ax.fig.subplots_adjust(top=0.9)
         ax.fig.suptitle(title)
+        plt.ylim(ylim)
         plt.tight_layout()
         out_file = Path(out_file)
         out_file.parent.mkdir(exist_ok=True, parents=True)
