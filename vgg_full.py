@@ -1,6 +1,5 @@
 import pickle
 from pathlib import Path
-from matplotlib import use
 
 import numpy as np
 from sklearn.metrics import classification_report
