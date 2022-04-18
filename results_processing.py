@@ -320,21 +320,10 @@ def save_pairs_visualizations(pairs, data_x, data_m, out_folder: str,
     out_folder = Path(out_folder)
     out_folder.mkdir(exist_ok=True, parents=True)
 
-    # Obtain original shape of data
-    orig_shape = find_shape(n_features=data_x.shape[1])
     # Scale data and turn to uint8
     if data_x.max() == 1:
         data_x *= 255
     data_x = data_x.astype('uint8')
-
-    def retrieve_reshape_rgb(array, index, to_rgb=False):
-        """Retrieves the iris or mask, and reshapes to its original
-        shape. If to_rgb, the array is turned to RGB (3 channels).
-        """
-        out_array = array[index, :].reshape(orig_shape)
-        if to_rgb:
-            return np.tile(out_array[..., np.newaxis], (1, 1, 3))
-        return out_array
 
     for pair_idx in to_visualize:
         [idx_a, idx_b] = pairs[:, pair_idx]
@@ -345,15 +334,6 @@ def save_pairs_visualizations(pairs, data_x, data_m, out_folder: str,
 
         images = generate_pair_visualization(iris_a, mask_a, iris_b, mask_b)
         # names = ['iris_a_pre', 'iris_a_post', 'iris_b_pre', 'iris_b_post']
-
-        # for img, name in zip(images, names):
-        #     img = Image.fromarray(img)
-        #     if pair_scores is None:
-        #         out_name = f'{pair_idx}_{name}.png'
-        #     else:
-        #         cur_score = pair_scores[pair_idx] * 100
-        #         out_name = f'{cur_score:0.0f}_{pair_idx}_{name}.png'
-        #     img.save(out_folder / out_name)
 
         images = np.vstack(images)
         img = Image.fromarray(images)
@@ -484,13 +464,14 @@ def plot_pairs_analysis(thresholds, avg_good_scores, n_bad_pairs, out_folder,
         plt.clf()
 
 
-def plot_pairs_thresh_results(
-        results_folder, out_file,
-        title='VGG+LSVM results using pairs, variable threshold',
-        ylim=(0.53, 0.64)):
-    import matplotlib.pyplot as plt
-    import seaborn as sns
+def process_pairs_thresh_results_to_df(results_folder):
+    """Process the results inside the folder into a DataFrame, with
+    columns for the dataset, threshold and accuracy.
 
+    The folder is expected to contain more folders, each with a
+    threshold set as name. Within each folder should be the .pickle
+    files with the results for each dataset.
+    """
     results = {}
     results_folder = Path(results_folder)
     for threshold_folder in results_folder.glob('*/'):
@@ -510,6 +491,17 @@ def plot_pairs_thresh_results(
     df = df.explode('accuracy', ignore_index=True)
     df.dataset = df.dataset.astype('category')
     df.accuracy = df.accuracy.astype('float64')
+    return df
+
+
+def plot_pairs_thresh_results(
+        results_folder, out_file,
+        title='VGG+LSVM results using pairs, variable threshold',
+        ylim=(0.53, 0.64)):
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+
+    df = process_pairs_thresh_results_to_df(results_folder)
 
     with sns.axes_style('whitegrid', rc={'xtick.bottom': True,
                                          'ytick.left': True}), \
@@ -526,4 +518,132 @@ def plot_pairs_thresh_results(
         plt.savefig(out_file)
         plt.clf()
 
-    return results, df
+    return df
+
+
+def anova_test(
+        folders_list: list, diff_var_name: str, diff_var_list: list,
+        out_folder, crit_a='fixed', crit_b=None, name_a='Fixed masks',
+        name_b='Pair deletion thresh.', boxplot_title=None):
+    """Performs a two-way ANOVA test on the results of each folder.
+    Folders should contain the same type of results. The name of the
+    variable that differentiates should be set, and the value of this
+    variable should be indicated in a list.
+    """
+    from itertools import product
+    from bioinfokit.analys import stat as bioinfokit_stat
+    import matplotlib.pyplot as plt
+    from matplotlib.ticker import MaxNLocator
+    import seaborn as sns
+    import scipy.stats
+    import statsmodels.api as sm
+    from statsmodels.formula.api import ols
+
+    crit_b = diff_var_name if crit_b is None else crit_b
+
+    dfs_list = []
+    for i, f in enumerate(folders_list):
+        cur_df = process_pairs_thresh_results_to_df(f)
+        cur_df[diff_var_name] = diff_var_list[i]
+        dfs_list.append(cur_df)
+
+    df = pd.concat(dfs_list, ignore_index=True)
+    df['fixed'] = df.dataset.apply(lambda x: x.endswith('fixed'))
+
+    out_folder = Path(out_folder)
+    out_folder.mkdir(exist_ok=True, parents=True)
+
+    # Test whether samples follow normal distribution with Q-Q plot
+    crit_a_values = df[crit_a].unique()
+    crit_b_values = df[crit_b].unique()
+    for c_a, c_b in product(crit_a_values, crit_b_values):
+        condition = (df[crit_a] == c_a) & (df[crit_b] == c_b)
+        fig, ax = plt.subplots()
+        scipy.stats.probplot(df[condition]['accuracy'], dist='norm', plot=ax)
+        ax.set_title(f'Probability plot - {name_a}: {c_a}, {name_b}: {c_b}',
+                     fontsize=15)
+        ax.xaxis.label.set_size(15)
+        ax.yaxis.label.set_size(15)
+        fig.tight_layout()
+        fig.savefig(out_folder / f'qq_a{str(c_a)}_b{str(c_b)}.png')
+        plt.close()
+
+    # Test whether samples follow normal distribution with Shapiro-Wilk
+    res = bioinfokit_stat()
+    model_str = f'accuracy ~ C({crit_a}) + C({crit_b}) + ' \
+                f'C({crit_a}):C({crit_b})'
+    res.tukey_hsd(
+        df=df, res_var='accuracy', xfac_var=[crit_a, crit_b],
+        anova_model=model_str
+    )
+    _, pvalue = scipy.stats.shapiro(res.anova_model_out.resid)
+    if pvalue <= 0.01:
+        print(f'Shapiro-Wilk test p-value is less or equal than 0.01 '
+              f'({pvalue:.2f})\nCondition is NOT satisfied.')
+    else:
+        print(f'Shapiro-Wilk test p-value is greater than 0.01 ({pvalue:.2f})'
+              f'\nCondition is satisfied.')
+
+    # Plot distribution of data using histograms
+    for c_a in crit_a_values:
+        cur_df = df[df[crit_a] == c_a]
+        # min_val = np.floor(cur_df.result.min()*100)/100
+        # max_val = np.ceil(cur_df.result.max()*100)/100
+        min_val = 0.49
+        max_val = 0.67
+        with sns.plotting_context('talk'):
+            ax = sns.histplot(data=cur_df, x='accuracy', hue=crit_b,
+                              binwidth=0.01, binrange=(min_val, max_val))
+            ax.grid(True, linewidth=0.5, alpha=0.5)
+            ax.set_title(f'Distribution of results - {name_a}={c_a}',
+                         fontsize=17)
+            ax.set_xlabel('Accuracy')
+            ax.set_ylim((0, 20))
+            ax.set_xlim((0.49, 0.68))
+            ax.set_xticks(np.arange(0.49, 0.67, 0.03))
+            ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+            ax.xaxis.label.set_size(15)
+            ax.yaxis.label.set_size(15)
+            ax.tick_params(labelsize=15)
+            plt.tight_layout()
+            legend = ax.get_legend()
+            handles = legend.legendHandles
+            legend.remove()
+            ax.legend(handles, crit_b_values, title=name_b)
+            plt.savefig(out_folder / f'hist_a{c_a}.png')
+            plt.close()
+
+    # Test homogeneity of variance assumption
+    ratio = df.groupby([crit_a, crit_b]).std().max().values[0]
+    ratio /= df.groupby([crit_a, crit_b]).std().min().values[0]
+    if ratio < 2:
+        print(f'Ratio between groups is less than 2 ({ratio:.2f})\n'
+              f'Condition is satisfied.')
+    else:
+        print(f'Ratio between groups is greater or equal than 2 ({ratio:.2f})'
+              f'\nCondition is NOT satisfied.')
+
+    # Perform two-way ANOVA
+    model = ols(model_str, data=df).fit()
+    print(sm.stats.anova_lm(model, typ=2))
+    # Generate box-plots
+    with plt.style.context('seaborn-whitegrid'):
+        with sns.plotting_context('talk'):
+            ax = sns.boxplot(x=crit_a, y='accuracy',
+                             hue=crit_b, data=df, notch=True)
+            ax.set_xlabel(name_a)
+            ax.set_ylabel('Accuracy')
+            # ax.xaxis.label.set_size(15)
+            # ax.yaxis.label.set_size(15)
+            # ax.tick_params(labelsize=15)
+            # ax.legend(title=name_b, fontsize='medium',
+            #           bbox_to_anchor=(1.05, 1),
+            #           loc=2, borderaxespad=0.)
+            # ax.set_title(boxplot_title, fontsize=17)
+            ax.legend([], [], frameon=False)
+            ax.set_title(boxplot_title)
+            plt.tight_layout()
+            plt.savefig(out_folder / 'box_plot.png')
+            plt.close()
+
+    return df
