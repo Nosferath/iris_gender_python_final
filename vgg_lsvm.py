@@ -292,24 +292,25 @@ def main_vgg_feat_lsvm_test():
         from constants import datasets_botheyes
 
         def check_skip(_dataset):
-            not_skip = {
-                0.085: ['240x20', '240x40'],
-                0.100: ['240x40'],
-                0.120: ['240x40'],
-                0.125: ['240x40'],
-                0.130: ['240x40'],
-                0.135: ['240x20', '240x40'],
-                0.140: ['240x20', '240x40'],
-                0.145: ['240x20_fixed', '240x40_fixed',
-                        '240x20', '240x40'],
-                0.150: ['240x20_fixed', '240x40_fixed',
-                        '240x20', '240x40']
-            }
-            if float(pairs_threshold) not in not_skip:
-                return True
-            if _dataset in not_skip[float(pairs_threshold)]:
-                return False
-            return True
+            # not_skip = {
+            #     0.085: ['240x20', '240x40'],
+            #     0.100: ['240x40'],
+            #     0.120: ['240x40'],
+            #     0.125: ['240x40'],
+            #     0.130: ['240x40'],
+            #     0.135: ['240x20', '240x40'],
+            #     0.140: ['240x20', '240x40'],
+            #     0.145: ['240x20_fixed', '240x40_fixed',
+            #             '240x20', '240x40'],
+            #     0.150: ['240x20_fixed', '240x40_fixed',
+            #             '240x20', '240x40']
+            # }
+            # if float(pairs_threshold) not in not_skip:
+            #     return True
+            # if _dataset in not_skip[float(pairs_threshold)]:
+            #     return False
+            # return True
+            return False
 
         if not use_peri:
             if out_folder is None:
