@@ -1,0 +1,8 @@
+{
+    "epochs": 100,
+    "use_val": true,
+    "learning_rate": 0.0001,
+    "batch_size": 32,
+    "architecture": "test4",
+	"_comment": "Second vgg full test with pairs, step by step. Based on Normalized postfix full, with early stopping val_loss 20 epochs. Trying to fix scaling issue by using cv2."
+}

@@ -1,0 +1,1 @@
+This test is similar to vgg_lsvm_pairs_thresh_removebad_09. Mask pairs are used, penalizing over the threshold which corresponds with the folder name. However, the worst pairs are removed. In removebad_07, pairs with growth > 7% are removed.

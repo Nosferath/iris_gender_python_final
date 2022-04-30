@@ -28,9 +28,32 @@ def find_dataset_shape(dataset_name: str):
     """Finds the dataset shape from its name. Output format is
     (rows, cols).
     """
-    shape = dataset_name.split('_')[1]
+    if dataset_name.startswith(('left', 'right')):
+        shape = dataset_name.split('_')[1]
+    else:
+        shape = dataset_name.split('_')[0]
     shape = tuple(int(i) for i in shape.split('x')[::-1])
     return shape
+
+
+def find_n_features(datase_name: str):
+    """Finds the number of features from datatset name."""
+    shape = find_dataset_shape(datase_name)
+    return shape[0]*shape[1]
+
+
+def find_shape(n_features: int = None, dataset_name: str = None):
+    if n_features is None and dataset_name is None \
+            or n_features is not None and dataset_name is not None:
+        raise ValueError(
+            'You must set EITHER n_features or dataset_name'
+        )
+    if n_features is None:
+        dataset_name: str
+        return find_dataset_shape(dataset_name)
+
+    shapes = {4800: (20, 240), 9600: (40, 240), 38400: (80, 480)}
+    return shapes[n_features]
 
 
 def process_ndiris(root_folder, csv_path, dest_folder):
@@ -59,7 +82,7 @@ def process_ndiris(root_folder, csv_path, dest_folder):
     df = pd.read_csv(csv_path)
     df = df[df['sensor'] != 'resize']
     # df['eye'] = df['eye'].apply(lambda x: str(x).lower())
-    # Move files
+    # Move images
     root_folder = Path(root_folder)
     assert root_folder.exists()
     for f in folders:
@@ -97,7 +120,7 @@ def fix_folders(root_folder):
             move(p, root_folder / f / p.name)
 
 
-def grid_plot(a: np.ndarray, b: np.ndarray, z: np.ndarray):
+def grid_plot(a: np.ndarray, b: np.ndarray, z: np.ndarray, text_color='black'):
     """Generates a grid plot from the inputs."""
     import matplotlib.pyplot as plt
     assert len(a) == z.shape[0]
@@ -113,7 +136,7 @@ def grid_plot(a: np.ndarray, b: np.ndarray, z: np.ndarray):
     for i in range(len(a)):
         for j in range(len(b)):
             ax.text(j, i, np.round(z[i, j], 2),
-                    ha='center', va='center', color='w')
+                    ha='center', va='center', color=text_color)
     fig.tight_layout()
     return fig, ax
 
@@ -137,8 +160,7 @@ def import_matlab_results(in_root: str, in_folders: list, out_folders: list):
 
 def plot_feature_importances(importances: np.ndarray, out_path):
     import matplotlib.pyplot as plt
-    shapes = {4800: (20, 240), 9600: (40, 240), 38400: (80, 480)}
-    cur_shape = shapes[importances.size]
+    cur_shape = find_shape(n_features=importances.size)
     importances = importances.reshape(cur_shape)
     plt.imshow(importances, cmap='jet')
     plt.axis('off')
@@ -153,9 +175,9 @@ def generate_dmatrix(x_arr: np.ndarray, y_arr: np.ndarray):
 
 
 def move_mod_v2():
-    """This function moves all files from dataMod and the modV2 conti-
+    """This function moves all images from dataMod and the modV2 conti-
     nuous CMIM arrays to the same folders used by the regular data,
-    while adding a _mod_v2 suffix to the files. This allows these files
+    while adding a _mod_v2 suffix to the images. This allows these images
     to be used with the same functions as the regular data.
 
     Used only once.
@@ -166,7 +188,7 @@ def move_mod_v2():
     out_folders = (Path('data'), Path('cmimArraysCont'),
                    Path('cmimArraysStdCont'))
     suf = '_mod_v2.mat'
-    # Move data and CMIM files
+    # Move data and CMIM images
     for cur_folder, cur_out in zip(mod_folders, out_folders):
         for file in cur_folder.glob('*.mat'):
             out_name = file.stem + suf
@@ -174,4 +196,17 @@ def move_mod_v2():
         cur_folder.unlink()
 
 
-# def plot_mask_distribution
+def get_hash(object, label=""):
+    """Gets the hash of object. Useful for ensuring it's always the same
+    object. This is done by iterating over it, turning its elements to
+    strings and concatenating them. If the object is not iterable, put
+    in a list or iterable. It must be convertible to string.
+    """
+    import hashlib
+    h = hashlib.sha256()
+    to_hash = "".join([str(v) for v in object])
+    to_hash = to_hash.encode()
+    h.update(to_hash)
+    hashed = h.hexdigest()
+    print(label, hashed)
+    return hashed

@@ -1,0 +1,8 @@
+{
+    "epochs": 100,
+    "use_val": true,
+    "learning_rate": 0.00002,
+    "batch_size": 32,
+    "architecture": "test4",
+    "_comment": "A fifth of lr vs regular fix 2"
+}
