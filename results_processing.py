@@ -598,9 +598,9 @@ def anova_test(
             ax.set_title(f'Distribution of results - {name_a}={c_a}',
                          fontsize=17)
             ax.set_xlabel('Accuracy')
-            ax.set_ylim((0, 20))
-            ax.set_xlim((0.49, 0.68))
-            ax.set_xticks(np.arange(0.49, 0.67, 0.03))
+            # ax.set_ylim((0, 20))
+            # ax.set_xlim((0.49, 0.68))
+            # ax.set_xticks(np.arange(0.49, 0.67, 0.03))
             ax.yaxis.set_major_locator(MaxNLocator(integer=True))
             ax.xaxis.label.set_size(15)
             ax.yaxis.label.set_size(15)
@@ -614,8 +614,8 @@ def anova_test(
             plt.close()
 
     # Test homogeneity of variance assumption
-    ratio = df.groupby([crit_a, crit_b]).std().max().values[0]
-    ratio /= df.groupby([crit_a, crit_b]).std().min().values[0]
+    ratio = df.groupby([crit_a, crit_b])['accuracy'].std().max()
+    ratio /= df.groupby([crit_a, crit_b])['accuracy'].std().min()
     if ratio < 2:
         print(f'Ratio between groups is less than 2 ({ratio:.2f})\n'
               f'Condition is satisfied.')
