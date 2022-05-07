@@ -646,4 +646,8 @@ def anova_test(
             plt.savefig(out_folder / 'box_plot.png')
             plt.close()
 
+    # Print summary of results per criteria
+    description = df.groupby([crit_a, crit_b]).accuracy.describe()
+    print(description[['mean', 'std']].applymap(lambda x: f'{x*100:0.2f}'))
+
     return df
