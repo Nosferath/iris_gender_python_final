@@ -131,7 +131,7 @@ def load_dataset_raw(size=None, sensor=SENSOR_LG4000, df=None):
         df = get_dataset_df(root_folder=root_folder, sensor=sensor)
     else:
         size = df['size'].iloc[0]
-    
+
     shape = NDIRIS_240x20_SHAPE if size == '240x20' \
         else NDIRIS_240x40_SHAPE
     n_features = np.prod(shape)
@@ -160,7 +160,7 @@ def train_test_split(df, test_size, partition):
 
     # Separate males and females into train and test
     rng = np.random.default_rng(seed=partition)
-    
+
     males = df[df.gender == MALES_LABEL]
     male_ids = np.sort(males.id_number.unique())
     n_males = males.id_number.nunique()
@@ -176,7 +176,7 @@ def train_test_split(df, test_size, partition):
     test_ids = np.hstack([test_males, test_females])
     test_images = df[df.id_number.isin(test_ids)]
     train_images = df[~df.id_number.isin(test_ids)]
-    
+
     # Balance number of male and female images
     def balance_df(df_to_balance):
         df_males = df_to_balance[df_to_balance.gender == MALES_LABEL]
@@ -184,13 +184,30 @@ def train_test_split(df, test_size, partition):
         n_balance = min(len(df_males), len(df_females))
         df_males = df_males.groupby('eye').head(int(n_balance / 2))
         df_females = df_females.groupby('eye').head(int(n_balance / 2))
-        
+
         return pd.concat([df_males, df_females])
 
     train_images = balance_df(train_images)
     test_images = balance_df(test_images)
-    
+
     return train_images, test_images
+
+
+def split_from_partition_df(x_array, y_array, m_array, l_array, part_df):
+    """Extracts the images in the part_df from the arrays. Useful for
+    loading and splitting pre-processed VGG data.
+    """
+    selected = np.isin(l_array, part_df.path.values)
+    x_array = x_array[selected, :]
+    y_array = y_array[selected]
+    to_return = [x_array, y_array]
+    if m_array is not None:
+        m_array = m_array[selected, :]
+        to_return.append(m_array)
+    l_array = l_array[selected]
+    to_return.append(l_array)
+
+    return to_return
 
 
 def apply_masks(x_array, y_array, m_array, use_pairs: bool):
@@ -202,16 +219,44 @@ def apply_masks(x_array, y_array, m_array, use_pairs: bool):
         m_array[~masked] = 0
     if use_pairs:
         from mask_pairs import generate_pairs, apply_pairs
-        
+
         pairs, pair_scores = generate_pairs(y_array, m_array)
         x_array = apply_pairs(pairs, x_array, m_array)
-    
+
     else:
         from load_data_utils import apply_masks_to_data
-        
+
         x_array = apply_masks_to_data(x_array, m_array)
-    
+
     return x_array
+
+
+def permute_images(train_x, train_y, train_m, train_l,
+                   test_x, test_y, test_m, test_l):
+    rng = np.random.default_rng(42)
+    train_idx = rng.permutation(len(train_y))
+    train_x = train_x[train_idx, :]
+    train_y = train_y[train_idx]
+    to_return = [train_x, train_y]
+    if train_m is not None:
+        train_m = train_m[train_idx, :]
+        to_return.append(train_m)
+    if train_l is not None:
+        train_l = train_l[train_idx]
+        to_return.append(train_l)
+    test_idx = rng.permutation(len(test_y))
+    test_x = test_x[test_idx, :]
+    to_return.append(test_x)
+    test_y = test_y[test_idx]
+    to_return.append(test_y)
+    if test_m is not None:
+        test_m = test_m[test_idx, :]
+        to_return.append(test_m)
+    if test_l is not None:
+        test_l = test_l[test_idx]
+        to_return.append(test_l)
+
+    return to_return
 
 
 def load_ndiris_dataset(size: str, partition, use_pairs: bool,
@@ -232,5 +277,10 @@ def load_ndiris_dataset(size: str, partition, use_pairs: bool,
     # Apply masks
     train_x = apply_masks(train_x, train_y, train_m, use_pairs)
     test_x = apply_masks(test_x, test_y, test_m, use_pairs=False)
+
+    # Permute images
+    train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l = \
+        permute_images(train_x, train_y, train_m, train_l,
+                       test_x, test_y, test_m, test_l)
 
     return train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l

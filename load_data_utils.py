@@ -233,7 +233,7 @@ def post_partition_processing_both_eyes(
     test_x, test_y = balance_partition(test_x, test_y, raise_error=True)
     # Permute partitions
     train_x, train_y, test_x, test_y = permute_partitions(
-        train_x, train_y, test_x, test_y, rng
+        train_x=train_x, train_y=train_y, test_x=test_x, test_y=test_y, rng=rng
     )
 
     return train_x, train_y, test_x, test_y
@@ -268,7 +268,7 @@ def post_partition_processing_pairs_both_eyes(
             train_x, train_y, train_pairs, train_values, threshold=0.09)
     # Permute partitions
     train_x, train_y, test_x, test_y = permute_partitions(
-        train_x, train_y, test_x, test_y, rng
+        train_x=train_x, train_y=train_y, test_x=test_x, test_y=test_y, rng=rng
     )
     return train_x, train_y, test_x, test_y
 
