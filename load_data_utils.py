@@ -295,10 +295,10 @@ def partition_both_eyes(all_data: dict, males_set: set, females_set: set,
     n_males = len(males)
     n_females = len(females)
     test_males = rng.choice(
-        males, np.int(test_size * n_males), replace=False
+        males, int(test_size * n_males), replace=False
     )
     test_females = rng.choice(
-        females, np.int(test_size * n_females), replace=False
+        females, int(test_size * n_females), replace=False
     )
 
     test_ids = np.hstack([test_males, test_females])
