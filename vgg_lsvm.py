@@ -308,6 +308,7 @@ def main_vgg_feat_lsvm_test():
         exit(1)
     if use_ndiris and use_peri:
         print('use_ndiris and use_peri are not compatible')
+        exit(2)
     if n_iters is None:
         folder_suffix = ''
     else:

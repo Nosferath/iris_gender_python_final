@@ -265,6 +265,7 @@ def load_ndiris_dataset(size: str, partition, use_pairs: bool,
     assert size in ['240x20', '240x40'], \
         'Size must be either "240x20" or "240x40"'
     root_folder = NDIRIS_240x20 if size == '240x20' else NDIRIS_240x40
+    print(f'[INFO] Loading NDIRIS {size} dataset, pairs={use_pairs}')
     # Load DF
     df = get_dataset_df(root_folder, sensor)
     # Split into train and test

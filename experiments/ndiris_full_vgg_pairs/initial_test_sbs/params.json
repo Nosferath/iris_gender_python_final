@@ -1,0 +1,8 @@
+{
+    "epochs": 100,
+    "use_val": true,
+    "learning_rate": 0.0001,
+    "batch_size": 32,
+    "architecture": "test4",
+	"_comment": "First vgg full test with ndiris and pairs, step by step. Based on Normalized postfix full, with early stopping val_loss 20 epochs"
+}
