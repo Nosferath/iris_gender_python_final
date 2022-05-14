@@ -210,9 +210,12 @@ def split_from_partition_df(x_array, y_array, m_array, l_array, part_df):
     return to_return
 
 
-def apply_masks(x_array, y_array, m_array, use_pairs: bool):
+def apply_masks(x_array, y_array, m_array, l_array, use_pairs: bool,
+                bad_bins_to_remove=0):
     # Apply masks (include scaling)
     # Change masks from 0-mask/255-nomask to 1-mask/0-nomask
+    if not use_pairs and bad_bins_to_remove > 0:
+        raise ValueError('bad_bins_to_remove can only be used wit use_pairs')
     if m_array.max() == 255:
         masked = m_array == 0
         m_array[masked] = 1
@@ -223,12 +226,20 @@ def apply_masks(x_array, y_array, m_array, use_pairs: bool):
         pairs, pair_scores = generate_pairs(y_array, m_array)
         x_array = apply_pairs(pairs, x_array, m_array)
 
+        if bad_bins_to_remove > 0:
+            from mask_pairs import remove_pairs
+            threshold = 0.11 - bad_bins_to_remove / 100
+            x_array, y_array, m_array, l_array = remove_pairs(
+                x_array, y_array, pairs, pair_scores, threshold,
+                m_array=m_array, l_array=l_array
+            )
+
     else:
         from load_data_utils import apply_masks_to_data
 
         x_array = apply_masks_to_data(x_array, m_array)
 
-    return x_array
+    return x_array, y_array, m_array, l_array
 
 
 def permute_images(train_x, train_y, train_m, train_l,
@@ -260,7 +271,8 @@ def permute_images(train_x, train_y, train_m, train_l,
 
 
 def load_ndiris_dataset(size: str, partition, use_pairs: bool,
-                        test_size=0.2, sensor=SENSOR_LG4000):
+                        test_size=0.2, sensor=SENSOR_LG4000,
+                        bad_bins_to_remove=0):
     """Full pipeline for loading NDIris dataset"""
     assert size in ['240x20', '240x40'], \
         'Size must be either "240x20" or "240x40"'
@@ -276,8 +288,12 @@ def load_ndiris_dataset(size: str, partition, use_pairs: bool,
     test_x, test_y, test_m, test_l, _ = load_dataset_raw(sensor=sensor,
                                                          df=test_df)
     # Apply masks
-    train_x = apply_masks(train_x, train_y, train_m, use_pairs)
-    test_x = apply_masks(test_x, test_y, test_m, use_pairs=False)
+    train_x, train_y, train_m, train_l = apply_masks(
+        train_x, train_y, train_m, train_l, use_pairs, bad_bins_to_remove
+    )
+    test_x, test_y, test_m, test_l = apply_masks(
+        test_x, test_y, test_m, test_l, use_pairs=False
+    )
 
     # Permute images
     train_x, train_y, train_m, train_l, test_x, test_y, test_m, test_l = \
