@@ -9,9 +9,8 @@ from load_data import load_iris_dataset, load_dataset_both_eyes
 from load_data_utils import partition_data, partition_both_eyes
 from utils import Timer
 from vgg_utils import load_vgg_model_finetune, prepare_data_for_vgg, \
-    labels_to_onehot, load_periocular_pre_vgg, prepare_botheyes_for_vgg, \
-    labels_to_onehot_botheyes, load_periocular_botheyes_pre_vgg, \
-    load_normalized_botheyes_pre_vgg
+    labels_to_onehot, load_periocular_pre_vgg, labels_to_onehot_botheyes, \
+    load_periocular_botheyes_pre_vgg, load_normalized_botheyes_pre_vgg
 
 
 def _perform_vgg_test(data, labels, dataset_name: str, partition: int,
@@ -187,6 +186,9 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         val_x_t = convert_to_tensor(val_x, dtype=tf_float32)
         val_y_t = convert_to_tensor(val_y, dtype=tf_float32)
         val_data = (val_x_t, val_y_t)
+    with open('experiments/images_per_partition.txt', 'a') as f:
+        f.write(f'dataset_name: {dataset_name}, ndiris: {use_ndiris} ')
+        f.write(f'out_folder: {str(out_folder)}, x_shape: {train_x.shape} ')
     if not step_by_step:
         from tensorflow.keras.callbacks import TensorBoard
         tb = TensorBoard(

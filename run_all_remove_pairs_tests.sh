@@ -8,7 +8,7 @@ run_all_remove_pairs_tests(){
     # done
 
     for nPart in $(seq 1 30); do  # CHANGE NUMBERS APPROPRIATELY
-        for bins in 6 8; do # for bins in $(seq 1 4); do
+        for bins in 9 10; do # for bins in $(seq 1 4); do
             for d in $(seq 2 3); do
                 python ./vgg_full.py -pf "experiments/ndiris_full_vgg_pairs_removebad_$bins/initial_test/params.json" -d "$d" -p "$nPart" --use_ndiris --use_pairs -rm $bins
             done

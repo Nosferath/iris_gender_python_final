@@ -475,9 +475,16 @@ def process_results_to_df(results_folder):
         cur_results = np.load(results_file, allow_pickle=True)
         cur_results = [r['accuracy'] for r in cur_results]
         results[dataset] = cur_results
+    lens = [len(r) for r in results.values()]
+    for k, v in results.items():
+        while len(v) < max(lens):
+            v.append(pd.NA)
+            results[k] = v
+
     df = pd.DataFrame(results)
     df = df.melt(value_vars=df.columns, var_name='dataset',
                  value_name='accuracy')
+    df = df.dropna()
     df.dataset = df.dataset.astype('category')
     df.accuracy = df.accuracy.astype('float64')
     return df
@@ -681,115 +688,12 @@ def anova_test_original(
     return anova_test(df, out_folder, crit_a, crit_b, name_a, name_b,
                       boxplot_title)
 
-    # df['fixed'] = df.dataset.apply(lambda x: x.endswith('fixed'))
-
-    # out_folder = Path(out_folder)
-    # out_folder.mkdir(exist_ok=True, parents=True)
-
-    # # Test whether samples follow normal distribution with Q-Q plot
-    # crit_a_values = df[crit_a].unique()
-    # crit_b_values = df[crit_b].unique()
-    # for c_a, c_b in product(crit_a_values, crit_b_values):
-    #     condition = (df[crit_a] == c_a) & (df[crit_b] == c_b)
-    #     fig, ax = plt.subplots()
-    #     scipy.stats.probplot(df[condition]['accuracy'], dist='norm', plot=ax)
-    #     ax.set_title(f'Probability plot - {name_a}: {c_a}, {name_b}: {c_b}',
-    #                  fontsize=15)
-    #     ax.xaxis.label.set_size(15)
-    #     ax.yaxis.label.set_size(15)
-    #     fig.tight_layout()
-    #     fig.savefig(out_folder / f'qq_a{str(c_a)}_b{str(c_b)}.png')
-    #     plt.close()
-
-    # # Test whether samples follow normal distribution with Shapiro-Wilk
-    # res = bioinfokit_stat()
-    # model_str = f'accuracy ~ C({crit_a}) + C({crit_b}) + ' \
-    #             f'C({crit_a}):C({crit_b})'
-    # res.tukey_hsd(
-    #     df=df, res_var='accuracy', xfac_var=[crit_a, crit_b],
-    #     anova_model=model_str
-    # )
-    # _, pvalue = scipy.stats.shapiro(res.anova_model_out.resid)
-    # if pvalue <= 0.01:
-    #     print(f'Shapiro-Wilk test p-value is less or equal than 0.01 '
-    #           f'({pvalue:.2f})\nCondition is NOT satisfied.')
-    # else:
-    #     print(f'Shapiro-Wilk test p-value is greater than 0.01 ({pvalue:.2f})'
-    #           f'\nCondition is satisfied.')
-
-    # # Plot distribution of data using histograms
-    # for c_a in crit_a_values:
-    #     cur_df = df[df[crit_a] == c_a]
-    #     # min_val = np.floor(cur_df.result.min()*100)/100
-    #     # max_val = np.ceil(cur_df.result.max()*100)/100
-    #     min_val = 0.49
-    #     max_val = 0.67
-    #     with sns.plotting_context('talk'):
-    #         ax = sns.histplot(data=cur_df, x='accuracy', hue=crit_b,
-    #                           binwidth=0.01, binrange=(min_val, max_val))
-    #         ax.grid(True, linewidth=0.5, alpha=0.5)
-    #         ax.set_title(f'Distribution of results - {name_a}={c_a}',
-    #                      fontsize=17)
-    #         ax.set_xlabel('Accuracy')
-    #         # ax.set_ylim((0, 20))
-    #         # ax.set_xlim((0.49, 0.68))
-    #         # ax.set_xticks(np.arange(0.49, 0.67, 0.03))
-    #         ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-    #         ax.xaxis.label.set_size(15)
-    #         ax.yaxis.label.set_size(15)
-    #         ax.tick_params(labelsize=15)
-    #         plt.tight_layout()
-    #         legend = ax.get_legend()
-    #         handles = legend.legendHandles
-    #         legend.remove()
-    #         ax.legend(handles, crit_b_values, title=name_b)
-    #         plt.savefig(out_folder / f'hist_a{c_a}.png')
-    #         plt.close()
-
-    # # Test homogeneity of variance assumption
-    # ratio = df.groupby([crit_a, crit_b])['accuracy'].std().max()
-    # ratio /= df.groupby([crit_a, crit_b])['accuracy'].std().min()
-    # if ratio < 2:
-    #     print(f'Ratio between groups is less than 2 ({ratio:.2f})\n'
-    #           f'Condition is satisfied.')
-    # else:
-    #     print(f'Ratio between groups is greater or equal than 2 ({ratio:.2f})'
-    #           f'\nCondition is NOT satisfied.')
-
-    # # Perform two-way ANOVA
-    # model = ols(model_str, data=df).fit()
-    # print(sm.stats.anova_lm(model, typ=2))
-    # # Generate box-plots
-    # with plt.style.context('seaborn-whitegrid'):
-    #     with sns.plotting_context('talk'):
-    #         ax = sns.boxplot(x=crit_a, y='accuracy',
-    #                          hue=crit_b, data=df, notch=True)
-    #         ax.set_xlabel(name_a)
-    #         ax.set_ylabel('Accuracy')
-    #         # ax.xaxis.label.set_size(15)
-    #         # ax.yaxis.label.set_size(15)
-    #         # ax.tick_params(labelsize=15)
-    #         # ax.legend(title=name_b, fontsize='medium',
-    #         #           bbox_to_anchor=(1.05, 1),
-    #         #           loc=2, borderaxespad=0.)
-    #         # ax.set_title(boxplot_title, fontsize=17)
-    #         ax.legend([], [], frameon=False)
-    #         ax.set_title(boxplot_title)
-    #         plt.tight_layout()
-    #         plt.savefig(out_folder / 'box_plot.png')
-    #         plt.close()
-
-    # # Print summary of results per criteria
-    # description = df.groupby([crit_a, crit_b]).accuracy.describe()
-    # print(description[['mean', 'std']].applymap(lambda x: f'{x*100:0.2f}'))
-
-    # return df
-
 
 def process_removebad_results():
     from itertools import product
     results = []
-    for db, bins in product(['gfi', 'ndiris'], range(1, 5)):
+    for db, bins in product(['gfi', 'ndiris'],
+                            list(range(1, 5)) + [6, 8, 9, 10]):
         cur_folder = Path(
             f'experiments/{db}_full_vgg_pairs_removebad_{bins}/initial_test')
         cur_df = process_results_to_df(cur_folder)
@@ -797,7 +701,7 @@ def process_removebad_results():
         cur_df['removed_bins'] = bins
         cur_df['test'] = 'vgg_full'
         results.append(cur_df)
-    for db, bins in product(['gfi', 'ndiris'], range(1, 5)):
+    for db, bins in product(['gfi', 'ndiris'], list(range(1, 5)) + [6, 8]):
         cur_folder = Path(
             f'experiments/{db}_vgg_lsvm_pairs_removebad_{bins}')
         cur_df = process_results_to_df(cur_folder)
@@ -809,4 +713,5 @@ def process_removebad_results():
     df = pd.concat(results, ignore_index=True)
     df['database'] = df['database'].astype('category')
     df['test'] = df['test'].astype('category')
+
     return df
