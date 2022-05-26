@@ -464,6 +464,32 @@ def plot_pairs_analysis(thresholds, avg_good_scores, n_bad_pairs, out_folder,
         plt.clf()
 
 
+def process_results_to_df(results_folder):
+    """Process the results inside the folder into a DataFrame, with
+    columns for the dataset and accuracy.
+    """
+    results = {}
+    results_folder = Path(results_folder)
+    for results_file in results_folder.glob('*.pickle'):
+        dataset = results_file.stem
+        cur_results = np.load(results_file, allow_pickle=True)
+        cur_results = [r['accuracy'] for r in cur_results]
+        results[dataset] = cur_results
+    lens = [len(r) for r in results.values()]
+    for k, v in results.items():
+        while len(v) < max(lens):
+            v.append(pd.NA)
+            results[k] = v
+
+    df = pd.DataFrame(results)
+    df = df.melt(value_vars=df.columns, var_name='dataset',
+                 value_name='accuracy')
+    df = df.dropna()
+    df.dataset = df.dataset.astype('category')
+    df.accuracy = df.accuracy.astype('float64')
+    return df
+
+    
 def process_pairs_thresh_results_to_df(results_folder):
     """Process the results inside the folder into a DataFrame, with
     columns for the dataset, threshold and accuracy.
@@ -521,15 +547,9 @@ def plot_pairs_thresh_results(
     return df
 
 
-def anova_test(
-        folders_list: list, diff_var_name: str, diff_var_list: list,
-        out_folder, crit_a='fixed', crit_b=None, name_a='Fixed masks',
-        name_b='Pair deletion thresh.', boxplot_title=None):
-    """Performs a two-way ANOVA test on the results of each folder.
-    Folders should contain the same type of results. The name of the
-    variable that differentiates should be set, and the value of this
-    variable should be indicated in a list.
-    """
+def anova_test(df, out_folder, crit_a='fixed', crit_b='paired',
+               name_a='Fixed masks', name_b='Use pairs', boxplot_title=None):
+    """Performs a two-way ANOVA test on the results of the df."""
     from itertools import product
     from bioinfokit.analys import stat as bioinfokit_stat
     import matplotlib.pyplot as plt
@@ -539,15 +559,6 @@ def anova_test(
     import statsmodels.api as sm
     from statsmodels.formula.api import ols
 
-    crit_b = diff_var_name if crit_b is None else crit_b
-
-    dfs_list = []
-    for i, f in enumerate(folders_list):
-        cur_df = process_pairs_thresh_results_to_df(f)
-        cur_df[diff_var_name] = diff_var_list[i]
-        dfs_list.append(cur_df)
-
-    df = pd.concat(dfs_list, ignore_index=True)
     df['fixed'] = df.dataset.apply(lambda x: x.endswith('fixed'))
 
     out_folder = Path(out_folder)
@@ -645,5 +656,62 @@ def anova_test(
             plt.tight_layout()
             plt.savefig(out_folder / 'box_plot.png')
             plt.close()
+
+    # Print summary of results per criteria
+    description = df.groupby([crit_a, crit_b]).accuracy.describe()
+    print(description[['mean', 'std']].applymap(lambda x: f'{x*100:0.2f}'))
+
+    return df
+
+
+def anova_test_original(
+        folders_list: list, diff_var_name: str, diff_var_list: list,
+        out_folder, crit_a='fixed', crit_b=None, name_a='Fixed masks',
+        name_b='Pair deletion thresh.', boxplot_title=None, use_thresh=False):
+    """Performs a two-way ANOVA test on the results of each folder.
+    Folders should contain the same type of results. The name of the
+    variable that differentiates should be set, and the value of this
+    variable should be indicated in a list.
+    """
+    crit_b = diff_var_name if crit_b is None else crit_b
+
+    dfs_list = []
+    for i, f in enumerate(folders_list):
+        if use_thresh:
+            cur_df = process_pairs_thresh_results_to_df(f)
+        else:
+            cur_df = process_results_to_df(f)
+        cur_df[diff_var_name] = diff_var_list[i]
+        dfs_list.append(cur_df)
+
+    df = pd.concat(dfs_list, ignore_index=True)
+    return anova_test(df, out_folder, crit_a, crit_b, name_a, name_b,
+                      boxplot_title)
+
+
+def process_removebad_results():
+    from itertools import product
+    results = []
+    for db, bins in product(['gfi', 'ndiris'],
+                            list(range(1, 5)) + [6, 8, 9, 10]):
+        cur_folder = Path(
+            f'experiments/{db}_full_vgg_pairs_removebad_{bins}/initial_test')
+        cur_df = process_results_to_df(cur_folder)
+        cur_df['database'] = db
+        cur_df['removed_bins'] = bins
+        cur_df['test'] = 'vgg_full'
+        results.append(cur_df)
+    for db, bins in product(['gfi', 'ndiris'], list(range(1, 5)) + [6, 8]):
+        cur_folder = Path(
+            f'experiments/{db}_vgg_lsvm_pairs_removebad_{bins}')
+        cur_df = process_results_to_df(cur_folder)
+        cur_df['database'] = db
+        cur_df['removed_bins'] = bins
+        cur_df['test'] = 'vgg_lsvm'
+        results.append(cur_df)
+
+    df = pd.concat(results, ignore_index=True)
+    df['database'] = df['database'].astype('category')
+    df['test'] = df['test'].astype('category')
 
     return df

@@ -252,6 +252,17 @@ def load_data(data_type: str, **kwargs):
     elif data_type == 'periocular_botheyes_vgg_feats':
         all_data, males_set, females_set = load_periocular_botheyes_vgg()
         data = (all_data, males_set, females_set)
+    elif data_type == 'ndiris':
+        import pickle
+        from load_ndiris_data import NDIRIS_DATA_FOLDER
+        size = kwargs['dataset_name']
+        with open(f'{NDIRIS_DATA_FOLDER}/{size}_LG4000.pickle', 'rb') as f:
+            loaded = pickle.load(f)
+        data = (loaded['x_array'], loaded['y_array'], loaded['l_array'],
+                loaded['df'])
+    elif data_type == 'ndiris_pairs':
+        # Data must be loaded in an inner function
+        data = None
     else:
         raise ValueError(f'Option {data_type} not recognized')
     return data

@@ -113,15 +113,23 @@ def apply_pairs(pairs, data_x, data_m):
     return data_x
 
 
-def remove_pairs(train_x, train_y, pairs, pair_values, threshold=0.1):
+def remove_pairs(train_x, train_y, pairs, pair_values, threshold=0.1,
+                 m_array=None, l_array=None):
     """Removes all pairs with scores strictly above the threshold."""
     good_pairs_idx_bool = pair_values <= threshold
     good_pairs_idx = pairs[:, good_pairs_idx_bool].flatten()
     good_pairs_idx.sort()
     train_x = train_x[good_pairs_idx, :]
     train_y = train_y[good_pairs_idx]
+    to_return = [train_x, train_y]
+    if m_array is not None:
+        m_array = m_array[good_pairs_idx, :]
+        to_return.append(m_array)
+    if l_array is not None:
+        l_array = l_array[good_pairs_idx]
+        to_return.append(l_array)
 
-    return train_x, train_y
+    return to_return
 
 
 def _test_remove_pairs():

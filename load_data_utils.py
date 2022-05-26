@@ -233,7 +233,7 @@ def post_partition_processing_both_eyes(
     test_x, test_y = balance_partition(test_x, test_y, raise_error=True)
     # Permute partitions
     train_x, train_y, test_x, test_y = permute_partitions(
-        train_x, train_y, test_x, test_y, rng
+        train_x=train_x, train_y=train_y, test_x=test_x, test_y=test_y, rng=rng
     )
 
     return train_x, train_y, test_x, test_y
@@ -241,7 +241,7 @@ def post_partition_processing_both_eyes(
 
 def post_partition_processing_pairs_both_eyes(
     train_data: dict, test_data: dict, rng, pairs_threshold=0.1,
-    remove_bad_pairs=None, generate_visualizations=False,
+    bad_bins_to_remove=0, generate_visualizations=False,
     dataset_name="no_dataset"
 ):
     from mask_pairs import generate_pairs, apply_pairs, remove_pairs
@@ -262,20 +262,21 @@ def post_partition_processing_pairs_both_eyes(
                                   pair_scores=train_values)
     # Apply pairs (includes scaling)
     train_x = apply_pairs(train_pairs, train_x, train_m)
-    if remove_bad_pairs:
+    if bad_bins_to_remove:
         print('[INFO] Removing bad pairs')
+        threshold = 0.11 - bad_bins_to_remove / 100
         train_x, train_y = remove_pairs(
-            train_x, train_y, train_pairs, train_values, threshold=0.09)
+            train_x, train_y, train_pairs, train_values, threshold=threshold)
     # Permute partitions
     train_x, train_y, test_x, test_y = permute_partitions(
-        train_x, train_y, test_x, test_y, rng
+        train_x=train_x, train_y=train_y, test_x=test_x, test_y=test_y, rng=rng
     )
     return train_x, train_y, test_x, test_y
 
 
 def partition_both_eyes(all_data: dict, males_set: set, females_set: set,
                         test_size: float, partition: int, apply_pairs=False,
-                        pairs_threshold=0.1, remove_bad_pairs=None,
+                        pairs_threshold=0.1, bad_bins_to_remove=0,
                         dataset_name=None, get_all_data_pairs=False):
     """Partition the data from both eyes ensuring both eyes of the same
     subject stay in the same partition. This is done by splitting the
@@ -295,10 +296,10 @@ def partition_both_eyes(all_data: dict, males_set: set, females_set: set,
     n_males = len(males)
     n_females = len(females)
     test_males = rng.choice(
-        males, np.int(test_size * n_males), replace=False
+        males, int(test_size * n_males), replace=False
     )
     test_females = rng.choice(
-        females, np.int(test_size * n_females), replace=False
+        females, int(test_size * n_females), replace=False
     )
 
     test_ids = np.hstack([test_males, test_females])
@@ -347,7 +348,7 @@ def partition_both_eyes(all_data: dict, males_set: set, females_set: set,
             post_partition_processing_pairs_both_eyes(
                 train_data, test_data, rng, dataset_name=dataset_name,
                 pairs_threshold=pairs_threshold,
-                remove_bad_pairs=remove_bad_pairs
+                bad_bins_to_remove=bad_bins_to_remove
             )
 
     else:

@@ -9,9 +9,8 @@ from load_data import load_iris_dataset, load_dataset_both_eyes
 from load_data_utils import partition_data, partition_both_eyes
 from utils import Timer
 from vgg_utils import load_vgg_model_finetune, prepare_data_for_vgg, \
-    labels_to_onehot, load_periocular_pre_vgg, prepare_botheyes_for_vgg, \
-    labels_to_onehot_botheyes, load_periocular_botheyes_pre_vgg, \
-    load_normalized_botheyes_pre_vgg
+    labels_to_onehot, load_periocular_pre_vgg, labels_to_onehot_botheyes, \
+    load_periocular_botheyes_pre_vgg, load_normalized_botheyes_pre_vgg
 
 
 def _perform_vgg_test(data, labels, dataset_name: str, partition: int,
@@ -101,7 +100,9 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
                                dataset_name: str, partition: int, params: dict,
                                out_folder, step_by_step=False,
                                use_mask_pairs=False,
-                               pairs_threshold=0.1):
+                               pairs_threshold=0.1,
+                               use_ndiris=False,
+                               bad_bins_to_remove=0):
     from tensorflow.keras import backend as K
     from tensorflow import convert_to_tensor
     from tensorflow import float32 as tf_float32
@@ -130,14 +131,22 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
 
     out_folder = Path(out_folder)
     results = []
-    train_x, train_y, test_x, test_y = partition_both_eyes(
-        all_data, males_set, females_set,
-        TEST_SIZE,
-        partition,
-        apply_pairs=use_mask_pairs,
-        pairs_threshold=pairs_threshold
-    )
-    if use_mask_pairs:
+    if not use_ndiris:
+        train_x, train_y, test_x, test_y = partition_both_eyes(
+            all_data, males_set, females_set,
+            TEST_SIZE,
+            partition,
+            apply_pairs=use_mask_pairs,
+            pairs_threshold=pairs_threshold,
+            bad_bins_to_remove=bad_bins_to_remove
+        )
+    else:
+        from load_ndiris_data import load_ndiris_dataset
+        train_x, train_y, _, _, test_x, test_y, _, _ = load_ndiris_dataset(
+            dataset_name, partition, use_mask_pairs, TEST_SIZE,
+            bad_bins_to_remove=bad_bins_to_remove
+        )
+    if use_mask_pairs or use_ndiris:
         train_x = prepare_data_for_vgg(train_x, preserve_shape=True)
         test_x = prepare_data_for_vgg(test_x, preserve_shape=True)
         train_y = labels_to_onehot(train_y)
@@ -177,6 +186,9 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
         val_x_t = convert_to_tensor(val_x, dtype=tf_float32)
         val_y_t = convert_to_tensor(val_y, dtype=tf_float32)
         val_data = (val_x_t, val_y_t)
+    with open('experiments/images_per_partition.txt', 'a') as f:
+        f.write(f'dataset_name: {dataset_name}, ndiris: {use_ndiris} ')
+        f.write(f'out_folder: {str(out_folder)}, x_shape: {train_x.shape} ')
     if not step_by_step:
         from tensorflow.keras.callbacks import TensorBoard
         tb = TensorBoard(
@@ -250,7 +262,9 @@ def perform_vgg_test_botheyes(
         out_folder='vgg_full_botheyes_results',
         step_by_step=False,
         use_mask_pairs=False,
-        pairs_threshold=0.1
+        pairs_threshold=0.1,
+        use_ndiris=False,
+        bad_bins_to_remove=0
 ):
     t = Timer(f"Loading dataset {dataset_name}")
     t.start()
@@ -271,7 +285,9 @@ def perform_vgg_test_botheyes(
                                partition, params=params, out_folder=out_folder,
                                step_by_step=step_by_step,
                                use_mask_pairs=use_mask_pairs,
-                               pairs_threshold=pairs_threshold)
+                               pairs_threshold=pairs_threshold,
+                               use_ndiris=use_ndiris,
+                               bad_bins_to_remove=bad_bins_to_remove)
     del all_data, males_set, females_set
 
 
@@ -339,6 +355,10 @@ def main_vgg_botheyes_test():
                     'and normalized.')
     ap.add_argument('-t', '--threshold', type=float, default=0.1,
                     help='Threshold for restricting pairs')
+    ap.add_argument('-rm', '--remove_bad_bins', type=int, default=0,
+                    help='Number of bad pair bins to remove.')
+    ap.add_argument('--use_ndiris', action='store_true',
+                    help='Use NDIris dataset')
     args = ap.parse_args()
     params_file = Path(args.params_file)
     with open(params_file, 'r') as f:
@@ -351,11 +371,16 @@ def main_vgg_botheyes_test():
     use_fix = args.use_fix
     use_mask_pairs = args.use_pairs
     pairs_threshold = args.threshold
+    use_ndiris = args.use_ndiris
+    bad_bins_to_remove = args.remove_bad_bins
     if any((use_quarter, use_half, use_fix)):
         use_peri = True
     if use_mask_pairs and use_peri:
         print('--use_pairs is only compatible with both eyes normalized')
         exit(1)
+    if use_ndiris and use_peri:
+        print('use_ndiris and use_peri are not compatible')
+        exit(2)
     out_folder = args.out_folder
     step_by_step = args.step_by_step
 
@@ -368,7 +393,9 @@ def main_vgg_botheyes_test():
                                   out_folder=out_folder,
                                   step_by_step=step_by_step,
                                   use_mask_pairs=use_mask_pairs,
-                                  pairs_threshold=pairs_threshold)
+                                  pairs_threshold=pairs_threshold,
+                                  use_ndiris=use_ndiris,
+                                  bad_bins_to_remove=bad_bins_to_remove)
     else:
         perform_peri_vgg_test_botheyes(n_part, params=params,
                                        out_folder=out_folder,
