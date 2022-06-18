@@ -489,7 +489,7 @@ def process_results_to_df(results_folder):
     df.accuracy = df.accuracy.astype('float64')
     return df
 
-    
+
 def process_pairs_thresh_results_to_df(results_folder):
     """Process the results inside the folder into a DataFrame, with
     columns for the dataset, threshold and accuracy.
@@ -548,7 +548,8 @@ def plot_pairs_thresh_results(
 
 
 def anova_test(df, out_folder, crit_a='fixed', crit_b='paired',
-               name_a='Fixed masks', name_b='Use pairs', boxplot_title=None):
+               name_a='Fixed masks', name_b='Use pairs', boxplot_title=None,
+               add_fixed_column=False):
     """Performs a two-way ANOVA test on the results of the df."""
     from itertools import product
     from bioinfokit.analys import stat as bioinfokit_stat
@@ -559,7 +560,8 @@ def anova_test(df, out_folder, crit_a='fixed', crit_b='paired',
     import statsmodels.api as sm
     from statsmodels.formula.api import ols
 
-    df['fixed'] = df.dataset.apply(lambda x: x.endswith('fixed'))
+    if add_fixed_column:
+        df['fixed'] = df.dataset.apply(lambda x: x.endswith('fixed'))
 
     out_folder = Path(out_folder)
     out_folder.mkdir(exist_ok=True, parents=True)
@@ -715,3 +717,60 @@ def process_removebad_results():
     df['test'] = df['test'].astype('category')
 
     return df
+
+
+def process_final_results(exclude_periocular=True):
+    """Processes the results from the final_results folder into a
+    DataFrame. This DF is ready for anova_test.
+    """
+    # Glob all folders
+    root_folder = Path('./final_results')
+    test_folders = root_folder.glob('*')
+    dfs = []
+    columns = ['test', 'database', 'use_pairs',
+               'removed_bins', 'dataset', 'corrected', 'accuracy']
+    if not exclude_periocular:
+        columns = columns[:-2] + ['use_peri'] + columns[-2:]
+    # Separate by test
+    for test_folder in test_folders:
+        cur_test = ' '.join(test_folder.name.split('_')).title()
+        subfolders = test_folder.glob('*')
+        for subfolder in subfolders:
+            # Separate by database
+            split_name = subfolder.name.split('_')
+            if exclude_periocular and 'peri' in split_name:
+                continue
+            cur_database = split_name[0]
+            # Separate by pairs
+            cur_pairs = 'pairs' in split_name
+            # Separate by removebad
+            cur_removebad = int(split_name[-1]) if 'removebad' in split_name \
+                else 0
+            cur_df = process_results_to_df(subfolder)
+            cur_df['test'] = cur_test
+            cur_df['database'] = cur_database
+            cur_df['use_pairs'] = cur_pairs
+            cur_df['removed_bins'] = cur_removebad
+            if not exclude_periocular:
+                cur_peri = 'peri' in split_name
+                cur_df['use_peri'] = cur_peri
+            # Separate by mask correction
+            cur_df['corrected'] = cur_df['dataset'].apply(
+                lambda x: x.endswith('fixed')
+            )
+            cur_df['dataset'] = cur_df['dataset'].apply(
+                lambda x: x.split('_')[0]
+            )
+            dfs.append(cur_df)
+    # Sort columns and rows
+    df = pd.concat(dfs, ignore_index=True)
+    df['accuracy'] = df['accuracy'] * 100
+    df = df[columns]
+    df = df.sort_values(by=columns[:-1], axis='index', ignore_index=True)
+    for column in ['test', 'database', 'dataset']:
+        df[column] = df[column].astype('category')
+    return df
+    # no_bins = df[df.removed_bins == 0].groupby(['test', 'database',
+    #                                             'use_pairs', 'dataset'])
+
+    # .apply(lambda x: f"{x['mean']:.2f} ± {x['std']:.2f}", axis=1)
