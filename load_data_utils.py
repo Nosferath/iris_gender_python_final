@@ -274,18 +274,12 @@ def post_partition_processing_pairs_both_eyes(
     return train_x, train_y, test_x, test_y
 
 
-def partition_both_eyes(all_data: dict, males_set: set, females_set: set,
-                        test_size: float, partition: int, apply_pairs=False,
-                        pairs_threshold=0.1, bad_bins_to_remove=0,
-                        dataset_name=None, get_all_data_pairs=False):
+def generate_partitions_both_eyes(all_data, males_set, females_set, partition,
+                                  test_size):
     """Partition the data from both eyes ensuring both eyes of the same
     subject stay in the same partition. This is done by splitting the
     subject IDs into train and test randomly (males and females separa-
     tely to ensure balanced partitions)
-
-    If apply_pairs is true, mask pairs are generated and applied.
-
-    get_all_data_pairs was added for testing mask pairs.
     """
     rng = np.random.default_rng(seed=partition)
     eyes = ('left', 'right')
@@ -326,21 +320,44 @@ def partition_both_eyes(all_data: dict, males_set: set, females_set: set,
     test_y = np.array(test_images['labels'])
     test_m = np.array(test_images['masks'])
     test_n = np.array(test_images['names'])
+    train_data = [train_x, train_y, train_m, train_n]
+    test_data = [test_x, test_y, test_m, test_n]
+    return train_data, test_data, rng
+
+
+def partition_mask_and_scale_both_eyes(all_data: dict, males_set: set,
+                                       females_set: set, test_size: float,
+                                       partition: int, apply_pairs=False,
+                                       pairs_threshold=0.1,
+                                       bad_bins_to_remove=0, dataset_name=None,
+                                       get_all_data_pairs=False):
+    """Partition the data from both eyes ensuring both eyes of the same
+    subject stay in the same partition. This is done by splitting the
+    subject IDs into train and test randomly (males and females separa-
+    tely to ensure balanced partitions)
+
+    If apply_pairs is true, mask pairs are generated and applied.
+
+    get_all_data_pairs was added for testing mask pairs.
+    """
+    train_data, test_data, rng = generate_partitions_both_eyes(
+        all_data, males_set, females_set, partition, test_size
+    )
 
     if apply_pairs:
         # This has to happen between scaling and permuting, thus, needs to
         # be done separately from the regular post-partition processing.
         train_data = {
-            "data_x": train_x,
-            "data_y": train_y,
-            "data_m": train_m,
-            "data_n": train_n
+            "data_x": train_data[0],
+            "data_y": train_data[1],
+            "data_m": train_data[2],
+            "data_n": train_data[3]
         }
         test_data = {
-            "data_x": test_x,
-            "data_y": test_y,
-            "data_m": test_m,
-            "data_n": test_n
+            "data_x": test_data[0],
+            "data_y": test_data[1],
+            "data_m": test_data[2],
+            "data_n": test_data[3],
         }
         if get_all_data_pairs:
             return train_data, test_data

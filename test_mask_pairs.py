@@ -3,7 +3,8 @@ from pathlib import Path
 import numpy as np
 
 from constants import datasets_botheyes, FEMALES_LABEL, MALES_LABEL
-from load_data_utils import partition_both_eyes, balance_partition
+from load_data_utils import partition_mask_and_scale_both_eyes, \
+    balance_partition
 from load_data import load_dataset_both_eyes
 from mask_pairs import generate_pairs, calculate_spp_matrix
 from results_processing import analize_pairs, plot_pairs_histogram, \
@@ -18,7 +19,7 @@ out_folder.mkdir(exist_ok=True, parents=True)
 
 for d in datasets_botheyes:
     all_data, males_set, females_set = load_dataset_both_eyes(d)
-    train_data, _ = partition_both_eyes(
+    train_data, _ = partition_mask_and_scale_both_eyes(
         all_data, males_set, females_set, 0.2, partition,
         apply_pairs=True, dataset_name=d, get_all_data_pairs=True
     )

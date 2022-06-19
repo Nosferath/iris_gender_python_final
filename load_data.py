@@ -212,6 +212,8 @@ def _load_dataset_both_eyes(dataset_name: str, use_peri: bool,
 
 def load_dataset_both_eyes(dataset_name: str, apply_masks=True,
                            scale_data=True):
+    """Returnes a data list (x, y, m, l), a list of males, and a list of
+    females"""
     return _load_dataset_both_eyes(dataset_name, use_peri=False,
                                    apply_masks=apply_masks,
                                    scale_data=scale_data)

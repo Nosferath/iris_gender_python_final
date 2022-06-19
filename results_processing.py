@@ -376,12 +376,17 @@ def analize_pairs(pair_scores, bad_score=0.1, delta=0.01):
     histogram, bins = calculate_histogram()
 
     # Sum of good pairs scores
-    good_scores_idx = pair_scores <= bad_score
-    good_scores = pair_scores[good_scores_idx]
-    sum_good_scores = np.sum(good_scores)
-    n_good_scores = np.sum(good_scores_idx)
+    # good_scores_idx = pair_scores <= bad_score
+    # good_scores = pair_scores[good_scores_idx]
+    # sum_good_scores = np.sum(good_scores)
+    # n_good_scores = np.sum(good_scores_idx)
 
-    avg_good_score = sum_good_scores / n_good_scores
+    # avg_good_score = sum_good_scores / n_good_scores
+
+    # Sum of all pairs scores
+    sum_scores = np.sum(pair_scores)
+    n_scores = len(pair_scores)
+    avg_score = sum_scores / n_scores
 
     # Count of bad pairs
     n_bad_pairs = histogram[-1]
@@ -389,7 +394,8 @@ def analize_pairs(pair_scores, bad_score=0.1, delta=0.01):
     to_return = {
         'histogram': histogram,
         'bins': bins,
-        'avg_good_score': avg_good_score,
+        # 'avg_good_score': avg_good_score,
+        'avg_score': avg_score,
         'n_bad_pairs': n_bad_pairs
     }
 
@@ -398,6 +404,7 @@ def analize_pairs(pair_scores, bad_score=0.1, delta=0.01):
 
 def plot_pairs_histogram(hist, bins, out_folder, dataset, threshold,
                          max_y=None):
+    """Plots a distribution of the growth coefficient of pairs."""
     import matplotlib.pyplot as plt
     import seaborn as sns
 
@@ -430,21 +437,40 @@ def plot_pairs_histogram(hist, bins, out_folder, dataset, threshold,
         plt.clf()
 
 
-def plot_pairs_analysis(thresholds, avg_good_scores, n_bad_pairs, out_folder,
-                        dataset_name):
+def plot_pairs_analysis(thresholds, avg_scores, n_bad_pairs, out_folder,
+                        dataset_name):  # avg_good_scores
+    """Plots average growth scores and number of bad pairs for multiple
+    thesholds.
+
+    Parameters
+    ----------
+    thresholds : iterable
+        List of the penalization thresholds for each score and number
+        of bad pairs
+    avg_scores : iterable
+        List of the growth scores obtained for each threshold
+    n_bad_pairs : iterable
+        List of the number of bad pairs for each threshold
+    out_folder : string or pathlib.Path
+        Folder for storing the resulting plot
+    dataset_name : string
+        Name of the dataset, only used for the plot title and filename
+    """
     import matplotlib.pyplot as plt
     import seaborn as sns
     out_folder = Path(out_folder)
     out_folder.mkdir(exist_ok=True, parents=True)
     df = pd.DataFrame({
         'threshold': thresholds,
-        'avg_good_score': np.array(avg_good_scores) * 100,
+        # 'avg_good_score': np.array(avg_good_scores) * 100,
+        'avg_score': np.array(avg_scores) * 100,
         'n_bad_pairs': n_bad_pairs
     })
     with sns.plotting_context('talk'):
         colors = sns.color_palette()[:2]
         ax1 = df.plot(
-            x='threshold', y='avg_good_score', color=colors[0], legend=False
+            # x='threshold', y='avg_good_score', color=colors[0], legend=False
+            x='threshold', y='avg_score', color=colors[0], legend=False
         )
         ax1.set_ylabel('Avg. growth [%]')
         ax1.yaxis.label.set_color(colors[0])

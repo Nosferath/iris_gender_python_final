@@ -6,7 +6,7 @@ from sklearn.metrics import classification_report
 
 from constants import TEST_SIZE
 from load_data import load_iris_dataset, load_dataset_both_eyes
-from load_data_utils import partition_data, partition_both_eyes
+from load_data_utils import partition_data, partition_mask_and_scale_both_eyes
 from utils import Timer
 from vgg_utils import load_vgg_model_finetune, prepare_data_for_vgg, \
     labels_to_onehot, load_periocular_pre_vgg, labels_to_onehot_botheyes, \
@@ -132,7 +132,7 @@ def _perform_vgg_test_botheyes(all_data, males_set, females_set,
     out_folder = Path(out_folder)
     results = []
     if not use_ndiris:
-        train_x, train_y, test_x, test_y = partition_both_eyes(
+        train_x, train_y, test_x, test_y = partition_mask_and_scale_both_eyes(
             all_data, males_set, females_set,
             TEST_SIZE,
             partition,
