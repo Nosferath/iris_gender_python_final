@@ -210,3 +210,26 @@ def get_hash(object, label=""):
     hashed = h.hexdigest()
     print(label, hashed)
     return hashed
+
+
+def calculate_ticks(ax, ticks, round_to=0.1, center=False):
+    """Generates the ticks to be used with plt.twinx(), when one wants
+    the grids of both y axis to match. Use:
+    ```py
+    ax1.set_yticks(calculate_ticks(ax1, 10))
+    ax2.set_yticks(calculate_ticks(ax2, 10))
+    ```
+    Source
+    ------
+    [Stack Overflow](https://stackoverflow.com/a/51597922)
+    """
+    upperbound = np.ceil(ax.get_ybound()[1]/round_to)
+    lowerbound = np.floor(ax.get_ybound()[0]/round_to)
+    dy = upperbound - lowerbound
+    fit = np.floor(dy/(ticks - 1)) + 1
+    dy_new = (ticks - 1)*fit
+    if center:
+        offset = np.floor((dy_new - dy)/2)
+        lowerbound = lowerbound - offset
+    values = np.linspace(lowerbound, lowerbound + dy_new, ticks)
+    return values*round_to

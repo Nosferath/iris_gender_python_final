@@ -2,7 +2,10 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import seaborn as sns
+
+from constants import MALES_LABEL, FEMALES_LABEL
 
 
 def _calculate_mask_percentages(data_y, data_m, genders: bool):
@@ -13,8 +16,8 @@ def _calculate_mask_percentages(data_y, data_m, genders: bool):
     mask_percentages = np.sum(data_m, axis=1)
     mask_percentages = 100 * mask_percentages / n_feats
     if genders:
-        masks_percentage_female = mask_percentages[data_y == 0]  # Female
-        masks_percentage_male = mask_percentages[data_y == 1]  # Male
+        masks_percentage_female = mask_percentages[data_y == FEMALES_LABEL]
+        masks_percentage_male = mask_percentages[data_y == MALES_LABEL]
         return masks_percentage_female, masks_percentage_male
     return mask_percentages
 
@@ -32,7 +35,11 @@ def _generate_mask_hists(data_y: np.array, data_m: np.array, out_folder: str,
     bins = np.linspace(0, 100, 21)
     # Generate histogram
     with sns.plotting_context('talk'), \
-            sns.axes_style(rc={'figure.figsize': (6.4, 4.8)}):
+            sns.axes_style(rc={'grid.color': '#b0b0b0',
+                               'axes.grid': True,
+                               'axes.axisbelow': True,
+                               'grid.linestyle': '-',
+                               'figure.figsize': (6.4, 4.8)}):
         fig, ax = plt.subplots()
         hist = sns.histplot(masks, bins=bins, ax=ax)
         title = f'Máscaras en dataset {dataset_name}'
@@ -73,7 +80,11 @@ def _generate_mask_hists_by_gender(
     bins = np.linspace(0, 100, 21)
     # Generate histogram
     with sns.plotting_context('talk'), \
-            sns.axes_style(rc={'figure.figsize': (6.4, 4.8)}):
+            sns.axes_style(rc={'grid.color': '#b0b0b0',
+                               'axes.grid': True,
+                               'axes.axisbelow': True,
+                               'grid.linestyle': '-',
+                               'figure.figsize': (6.4, 4.8)}):
         hist_f = sns.histplot(masks_f, bins=bins, color='red',
                               label='Mujeres', alpha=0.5)
         hist_m = sns.histplot(masks_m, bins=bins, color='blue',
@@ -110,6 +121,69 @@ def _generate_mask_hists_by_gender(
         plt.clf()
 
 
+def _plot_pairs_analysis(thresholds, avg_scores, n_bad_pairs, out_folder,
+                         dataset_name):  # avg_good_scores
+    """Plots average growth scores and number of bad pairs for multiple
+    thesholds.
+
+    Parameters
+    ----------
+    thresholds : iterable
+        List of the penalization thresholds for each score and number
+        of bad pairs
+    avg_scores : iterable
+        List of the growth scores obtained for each threshold
+    n_bad_pairs : iterable
+        List of the number of bad pairs for each threshold
+    out_folder : string or pathlib.Path
+        Folder for storing the resulting plot
+    dataset_name : string
+        Name of the dataset, only used for the plot title and filename
+    """
+    from utils import calculate_ticks
+    out_folder = Path(out_folder)
+    out_folder.mkdir(exist_ok=True, parents=True)
+    df = pd.DataFrame({
+        'Umbral [%]': thresholds,
+        # 'avg_good_score': np.array(avg_good_scores) * 100,
+        'Crec. promedio': np.array(avg_scores) * 100,
+        'Emparej. c/Alto Crec.': n_bad_pairs
+    })
+    with sns.plotting_context('talk'), \
+            sns.axes_style(rc={'grid.color': '#b0b0b0',
+                               'axes.grid': True,
+                               'axes.axisbelow': True,
+                               'grid.linestyle': '-',
+                               'figure.figsize': (6.4, 4.8)}):
+        colors = sns.color_palette()[:2]
+        ax1 = df.plot(
+            # x='threshold', y='avg_good_score', color=colors[0], legend=False
+            x='Umbral [%]', y='Crec. promedio', color=colors[0], legend=False
+        )
+        ax1.set_ylabel('Crecimiento promedio [%]')
+        ax1.yaxis.label.set_color(colors[0])
+        ax2 = plt.twinx()
+        df.plot(
+            x='Umbral [%]', y='Emparej. c/Alto Crec.', color=colors[1],
+            legend=False, ax=ax2
+        )
+        ax2.set_ylabel('Emparejam. c/alto crecimiento')
+        ax2.yaxis.label.set_color(colors[1])
+        plt.title(f'Análisis de pares, dataset {dataset_name}')
+        ax1.figure.legend(loc='lower right', markerscale=0.5,
+                          fontsize='x-small')
+        # ax1.set_yticks(np.around(np.linspace(ax1.get_ybound()[0],
+        #                                      ax1.get_ybound()[1], 5), 2))
+        # ax2.set_yticks(np.around(np.linspace(ax2.get_ybound()[0],
+        #                                      ax2.get_ybound()[1], 5), 0))
+        ax1.set_yticks(calculate_ticks(ax1, 5, 0.1))
+        ax2.set_yticks(calculate_ticks(ax2, 5, 1))
+        # plt.grid(True)
+        plt.tight_layout()
+        plt.savefig(out_folder / f'{dataset_name}_thresh_analysis.png')
+        plt.clf()
+
+
 def generate_pairs_plots(use_fixed_masks: bool, max_y=500, max_y_gender=260):
     """Generates plots about the pairs: histogram of mask distribution
     per gender before and after pairs, growth scores and number of bad
@@ -118,7 +192,8 @@ def generate_pairs_plots(use_fixed_masks: bool, max_y=500, max_y_gender=260):
     from load_data import load_dataset_both_eyes
     from load_data_utils import generate_partitions_both_eyes, \
         balance_partition
-    from mask_pairs import generate_pairs, apply_pairs
+    from mask_pairs import calculate_spp_matrix, generate_pairs, apply_pairs
+    from results_processing import analyze_pairs
 
     dataset_name = '240x20'
     if use_fixed_masks:
@@ -133,7 +208,25 @@ def generate_pairs_plots(use_fixed_masks: bool, max_y=500, max_y_gender=260):
     _generate_mask_hists_by_gender(data_y, data_m, out_folder, dataset_name,
                                    False, max_y_gender)
     # Paired
-    pairs, pair_scores = generate_pairs(data_y, data_m)
+    spp_mat = calculate_spp_matrix(data_m[data_y == FEMALES_LABEL, :],
+                                   data_m[data_y == MALES_LABEL, :])
+    pairs, pair_scores = generate_pairs(data_y, data_m, spp_mat=spp_mat)
     paired_x, paired_m = apply_pairs(pairs, data_x, data_m, return_masks=True)
     _generate_mask_hists_by_gender(data_y, paired_m, out_folder, dataset_name,
                                    True, max_y_gender)
+    # Pairs per threshold
+    thresholds = list(np.arange(0, 0.20, 0.005))
+    scores = {}
+    for t in thresholds:
+        if t == 0.1:
+            scores[t] = pair_scores
+            continue
+        cur_pairs, cur_scores = generate_pairs(data_y, data_m, threshold=t,
+                                               spp_mat=spp_mat)
+        scores[t] = cur_scores
+    analysis = {t: analyze_pairs(scores[t]) for t in thresholds}
+
+    avg_scores = [a['avg_score'] for a in analysis.values()]
+    n_bad_pairs = [a['n_bad_pairs'] for a in analysis.values()]
+    _plot_pairs_analysis([t*100 for t in thresholds], avg_scores, n_bad_pairs,
+                         out_folder, dataset_name)

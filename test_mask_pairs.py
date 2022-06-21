@@ -7,7 +7,7 @@ from load_data_utils import partition_mask_and_scale_both_eyes, \
     balance_partition
 from load_data import load_dataset_both_eyes
 from mask_pairs import generate_pairs, calculate_spp_matrix
-from results_processing import analize_pairs, plot_pairs_histogram, \
+from results_processing import analyze_pairs, plot_pairs_histogram, \
     plot_pairs_analysis
 
 BAD_SCORE = 0.1
@@ -34,13 +34,16 @@ for d in datasets_botheyes:
         train_pairs, pair_scores = generate_pairs(train_y, train_m,
                                                   threshold=threshold,
                                                   spp_mat=spp_mat)
-        cur_analysis = analize_pairs(pair_scores, bad_score=BAD_SCORE)
+        cur_analysis = analyze_pairs(pair_scores, bad_score=BAD_SCORE)
         analysis[threshold] = cur_analysis
 
-    avg_good_scores = [a['avg_good_score'] for a in analysis.values()]
+    # avg_good_scores = [a['avg_good_score'] for a in analysis.values()]
+    avg_scores = [a['avg_score'] for a in analysis.values()]
     n_bad_pairs = [a['n_bad_pairs'] for a in analysis.values()]
 
-    plot_pairs_analysis(thresholds, avg_good_scores,
+    # plot_pairs_analysis(thresholds, avg_good_scores,
+    #                     n_bad_pairs, out_folder, d)
+    plot_pairs_analysis(thresholds, avg_scores,
                         n_bad_pairs, out_folder, d)
 
     # Generate histograms

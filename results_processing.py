@@ -345,7 +345,7 @@ def save_pairs_visualizations(pairs, data_x, data_m, out_folder: str,
         img.save(out_folder / out_name)
 
 
-def analize_pairs(pair_scores, bad_score=0.1, delta=0.01):
+def analyze_pairs(pair_scores, bad_score=0.1, delta=0.01):
     def calculate_histogram():
         """This version treats bin edges opposite of numpy: first bin
         includes both edges, and from the second bin on it excludes the
@@ -486,7 +486,7 @@ def plot_pairs_analysis(thresholds, avg_scores, n_bad_pairs, out_folder,
                           fontsize='x-small')
         plt.grid(True)
         plt.tight_layout()
-        plt.savefig(out_folder / f'{dataset_name}.png')
+        plt.savefig(out_folder / f'{dataset_name}_thresh_analysis.png')
         plt.clf()
 
 
