@@ -44,6 +44,8 @@ def generate_pairs(data_y, data_m, threshold=0.1, maximize=False,
     in img_names will be used. This is done by checking on the
     male_img_names and female_img_names attributes of the SPPMat.
     """
+    if np.sum(data_y == 0) != np.sum(data_y == 1):
+        raise ValueError('Data must be balanced before pairing')
     female_masks = data_m[data_y == FEMALES_LABEL, :]
     female_idxs = np.where(data_y == FEMALES_LABEL)[0]
     male_masks = data_m[data_y == MALES_LABEL, :]
@@ -54,9 +56,6 @@ def generate_pairs(data_y, data_m, threshold=0.1, maximize=False,
         spp_mat = calculate_spp_matrix(female_masks, male_masks)
         t.stop()
     spp_mat_compensated = spp_mat.copy()
-
-    if spp_mat.shape[0] != spp_mat.shape[1]:
-        raise ValueError('Data must be balanced before pairing')
 
     # Apply thresholds
     if maximize:
@@ -79,7 +78,7 @@ def generate_pairs(data_y, data_m, threshold=0.1, maximize=False,
     return np.array([females_pair_idx, males_pair_idx]), final_values
 
 
-def apply_pairs(pairs, data_x, data_m):
+def apply_pairs(pairs, data_x, data_m, return_masks=False):
     """Applies mask pairs to the data. Uses the apply_masks_to_data
     function, which scales non-masked data appropriately. The returned
     data is in the same scale (0-1 or 0-255) as the input data.
@@ -100,6 +99,7 @@ def apply_pairs(pairs, data_x, data_m):
     """
     rescale = data_x.max() == 1
     n_pairs = pairs.shape[1]
+    data_m = data_m.copy()
     for i in range(n_pairs):
         cur_pair = pairs[:, i]
         cur_masks = data_m[cur_pair, :]
@@ -110,6 +110,8 @@ def apply_pairs(pairs, data_x, data_m):
         assert data_x.max() == 255, "apply masks does not scale to 0-255"
         data_x = data_x / 255
 
+    if return_masks:
+        return data_x, data_m
     return data_x
 
 

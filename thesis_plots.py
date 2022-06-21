@@ -22,7 +22,7 @@ def _calculate_mask_percentages(data_y, data_m, genders: bool):
 
 
 def _generate_mask_hists(data_y: np.array, data_m: np.array, out_folder: str,
-                         dataset_name: str, histogram_max_y: int = None):
+                         dataset_name: str, max_y: int = None):
     """Generates a histogram describing the percentage of mask present
     in every image of the provided data.
     """
@@ -46,8 +46,8 @@ def _generate_mask_hists(data_y: np.array, data_m: np.array, out_folder: str,
         #     title = '\n' + title
         out_name += '.png'
         ax.set_title(title)
-        if histogram_max_y is not None:
-            ax.set_ylim([0, histogram_max_y])
+        if max_y is not None:
+            ax.set_ylim([0, max_y])
         plt.xlim([0, 80])
         plt.xlabel('% de máscara en la imagen')
         plt.ylabel('No. de imágenes')
@@ -61,7 +61,7 @@ def _generate_mask_hists(data_y: np.array, data_m: np.array, out_folder: str,
 
 def _generate_mask_hists_by_gender(
     data_y, data_m, out_folder: str, dataset_name: str, use_pairs: bool,
-    histogram_max_y: int = None,
+    max_y: int = None
 ):
     """Generates a histogram describing the percentage of mask present
     in every image of the provided data, separated by gender.
@@ -89,14 +89,14 @@ def _generate_mask_hists_by_gender(
             out_name += '_pairs'
         elif dataset_name.endswith('_fixed'):
             title = title[:-6] + '\ntras corrección'
-        # else:
-        #     title = '\n' + title
+        else:
+            title = '\n' + title
         out_name += '.png'
         plt.title(title)
         plt.legend()
         # Generate and set legend
-        if histogram_max_y is not None:
-            plt.ylim([0, histogram_max_y])
+        if max_y is not None:
+            plt.ylim([0, max_y])
         plt.xlim([0, 80])
         plt.xlabel('% de máscara en la imagen')
         plt.ylabel('No. de imágenes')
@@ -110,13 +110,15 @@ def _generate_mask_hists_by_gender(
         plt.clf()
 
 
-def generate_pairs_plots(use_fixed_masks: bool):
+def generate_pairs_plots(use_fixed_masks: bool, max_y=500, max_y_gender=260):
     """Generates plots about the pairs: histogram of mask distribution
     per gender before and after pairs, growth scores and number of bad
     pairs at different thresholds.
     """
     from load_data import load_dataset_both_eyes
-    from load_data_utils import generate_partitions_both_eyes
+    from load_data_utils import generate_partitions_both_eyes, \
+        balance_partition
+    from mask_pairs import generate_pairs, apply_pairs
 
     dataset_name = '240x20'
     if use_fixed_masks:
@@ -124,8 +126,14 @@ def generate_pairs_plots(use_fixed_masks: bool):
     data, males, females = load_dataset_both_eyes(dataset_name, True, False)
     train_data, test_data, _ = generate_partitions_both_eyes(data, males,
                                                              females, 1, 0.2)
-    data_y, data_m, = train_data[1:3]
-    out_folder = 'thesis_plots'
-    _generate_mask_hists(data_y, data_m, out_folder, dataset_name)
+    data_x, data_y, data_m, _ = balance_partition(*train_data)
+    out_folder = '../thesis_plots/masks_and_pairs'
+    # Non-paired
+    _generate_mask_hists(data_y, data_m, out_folder, dataset_name, max_y)
     _generate_mask_hists_by_gender(data_y, data_m, out_folder, dataset_name,
-                                   False)
+                                   False, max_y_gender)
+    # Paired
+    pairs, pair_scores = generate_pairs(data_y, data_m)
+    paired_x, paired_m = apply_pairs(pairs, data_x, data_m, return_masks=True)
+    _generate_mask_hists_by_gender(data_y, paired_m, out_folder, dataset_name,
+                                   True, max_y_gender)
