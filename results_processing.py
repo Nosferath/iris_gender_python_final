@@ -346,13 +346,15 @@ def save_pairs_visualizations(pairs, data_x, data_m, out_folder: str,
 
 
 def analyze_pairs(pair_scores, bad_score=0.1, delta=0.01):
-    def calculate_histogram():
+    def calculate_histogram(group_bad=False):
         """This version treats bin edges opposite of numpy: first bin
         includes both edges, and from the second bin on it excludes the
         left edge and includes the right edge. This is done to ensure
         that pairs strictly over bad_score are not grouped with pairs
         that are exactly the bad_score (which is not bad)."""
-        _bins = np.arange(0, bad_score + delta, delta)
+        upper_limit = np.around(max(pair_scores), 1) + delta if group_bad \
+            else bad_score + delta
+        _bins = np.arange(0, upper_limit, delta)
         _bins = np.hstack([_bins, [1]])
         n_bins = len(_bins)
         _hist = []
@@ -374,7 +376,7 @@ def analyze_pairs(pair_scores, bad_score=0.1, delta=0.01):
 
     # Obtain histogram
     histogram, bins = calculate_histogram()
-
+    histogram_full, bins_full = calculate_histogram(group_bad=True)
     # Sum of good pairs scores
     # good_scores_idx = pair_scores <= bad_score
     # good_scores = pair_scores[good_scores_idx]
@@ -396,7 +398,9 @@ def analyze_pairs(pair_scores, bad_score=0.1, delta=0.01):
         'bins': bins,
         # 'avg_good_score': avg_good_score,
         'avg_score': avg_score,
-        'n_bad_pairs': n_bad_pairs
+        'n_bad_pairs': n_bad_pairs,
+        'histogram_full': histogram_full,
+        'bins_full': bins_full
     }
 
     return to_return
@@ -407,6 +411,9 @@ def plot_pairs_histogram(hist, bins, out_folder, dataset, threshold,
     """Plots a distribution of the growth coefficient of pairs."""
     import matplotlib.pyplot as plt
     import seaborn as sns
+
+    if isinstance(hist, list):
+        hist = np.array(hist)
 
     out_folder = Path(out_folder)
     out_folder.mkdir(exist_ok=True, parents=True)
@@ -549,18 +556,30 @@ def process_pairs_thresh_results_to_df(results_folder):
 def plot_pairs_thresh_results(
         results_folder, out_file,
         title='VGG+LSVM results using pairs, variable threshold',
-        ylim=(0.53, 0.64)):
+        ylim=(53, 64),
+        use_thesis_labels=False):
     import matplotlib.pyplot as plt
     import seaborn as sns
 
     df = process_pairs_thresh_results_to_df(results_folder)
+    df['accuracy'] = df['accuracy'] * 100
 
     with sns.axes_style('whitegrid', rc={'xtick.bottom': True,
                                          'ytick.left': True}), \
             sns.plotting_context('notebook', font_scale=1.4):
-        ax = sns.lmplot(data=df, x='threshold', y='accuracy', hue='dataset',
-                        col='dataset', x_estimator=np.mean, col_wrap=2,
-                        height=4, aspect=1.4)
+        if use_thesis_labels:
+            df['Exactitud [%]'] = df['accuracy']
+            df['Umbral [%]'] = df['threshold'] * 100
+            df['Resolución'] = df['dataset']
+            ax = sns.lmplot(data=df, x='Umbral [%]', y='Exactitud [%]',
+                            hue='Resolución', col='Resolución',
+                            x_estimator=np.mean, col_wrap=2, height=4,
+                            aspect=1.4)
+        else:
+            ax = sns.lmplot(data=df, x='threshold', y='accuracy',
+                            hue='dataset', col='dataset',
+                            x_estimator=np.mean, col_wrap=2, height=4,
+                            aspect=1.4)
         ax.fig.subplots_adjust(top=0.9)
         ax.fig.suptitle(title)
         plt.ylim(ylim)
@@ -687,7 +706,8 @@ def anova_test(df, out_folder, crit_a='fixed', crit_b='paired',
 
     # Print summary of results per criteria
     description = df.groupby([crit_a, crit_b]).accuracy.describe()
-    print(description[['mean', 'std']].applymap(lambda x: f'{x*100:0.2f}'))
+    mult = 100 if df.accuracy.max() <= 1 else 1
+    print(description[['mean', 'std']].applymap(lambda x: f'{x*mult:0.2f}'))
 
     return df
 
@@ -715,6 +735,117 @@ def anova_test_original(
     df = pd.concat(dfs_list, ignore_index=True)
     return anova_test(df, out_folder, crit_a, crit_b, name_a, name_b,
                       boxplot_title)
+
+
+def one_way_anova(df, out_folder, crit_a='fixed', name_a='Fixed masks',
+                  boxplot_title=None, add_fixed_column=False):
+    """Performs a one-way ANOVA test on the results of the df."""
+    from bioinfokit.analys import stat as bioinfokit_stat
+    import matplotlib.pyplot as plt
+    from matplotlib.ticker import MaxNLocator
+    import seaborn as sns
+    import scipy.stats
+    import statsmodels.api as sm
+    from statsmodels.formula.api import ols
+
+    if add_fixed_column:
+        df['fixed'] = df.dataset.apply(lambda x: x.endswith('fixed'))
+
+    out_folder = Path(out_folder)
+    out_folder.mkdir(exist_ok=True, parents=True)
+
+    # Test whether samples follow normal distribution with Q-Q plot
+    crit_a_values = df[crit_a].unique()
+    for c_a in crit_a_values:
+        condition = df[crit_a] == c_a
+        fig, ax = plt.subplots()
+        scipy.stats.probplot(df[condition]['accuracy'], dist='norm', plot=ax)
+        ax.set_title(f'Probability plot - {name_a}: {c_a}', fontsize=15)
+        ax.xaxis.label.set_size(15)
+        ax.yaxis.label.set_size(15)
+        fig.tight_layout()
+        fig.savefig(out_folder / f'qq_a{str(c_a)}.png')
+        plt.close()
+
+    # Test whether samples follow normal distribution with Shapiro-Wilk
+    res = bioinfokit_stat()
+    model_str = f'accuracy ~ C({crit_a})'
+    res.tukey_hsd(
+        df=df, res_var='accuracy', xfac_var=crit_a, anova_model=model_str
+    )
+    _, pvalue = scipy.stats.shapiro(res.anova_model_out.resid)
+    if pvalue <= 0.01:
+        print(f'Shapiro-Wilk test p-value is less or equal than 0.01 '
+              f'({pvalue:.2f})\nCondition is NOT satisfied.')
+    else:
+        print(f'Shapiro-Wilk test p-value is greater than 0.01 ({pvalue:.2f})'
+              f'\nCondition is satisfied.')
+
+    # Plot distribution of data using histograms
+    # min_val = np.floor(cur_df.result.min()*100)/100
+    # max_val = np.ceil(cur_df.result.max()*100)/100
+    min_val = 0.49
+    max_val = 0.67
+    with sns.plotting_context('talk'):
+        ax = sns.histplot(data=df, x='accuracy', hue=crit_a,
+                          binwidth=0.01, binrange=(min_val, max_val))
+        ax.grid(True, linewidth=0.5, alpha=0.5)
+        ax.set_title(f'Distribution of results - {name_a}',
+                     fontsize=17)
+        ax.set_xlabel('Accuracy')
+        # ax.set_ylim((0, 20))
+        # ax.set_xlim((0.49, 0.68))
+        # ax.set_xticks(np.arange(0.49, 0.67, 0.03))
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.xaxis.label.set_size(15)
+        ax.yaxis.label.set_size(15)
+        ax.tick_params(labelsize=15)
+        plt.tight_layout()
+        legend = ax.get_legend()
+        handles = legend.legendHandles
+        legend.remove()
+        ax.legend(handles, crit_a_values, title=name_a)
+        plt.savefig(out_folder / f'hist_{name_a}.png')
+        plt.close()
+
+    # Test homogeneity of variance assumption
+    ratio = df.groupby(crit_a)['accuracy'].std().max()
+    ratio /= df.groupby(crit_a)['accuracy'].std().min()
+    if ratio < 2:
+        print(f'Ratio between groups is less than 2 ({ratio:.2f})\n'
+              f'Condition is satisfied.')
+    else:
+        print(f'Ratio between groups is greater or equal than 2 ({ratio:.2f})'
+              f'\nCondition is NOT satisfied.')
+
+    # Perform two-way ANOVA
+    model = ols(model_str, data=df).fit()
+    print(sm.stats.anova_lm(model, typ=2))
+    # Generate box-plots
+    with plt.style.context('seaborn-whitegrid'):
+        with sns.plotting_context('talk'):
+            ax = sns.boxplot(x=crit_a, y='accuracy', data=df, notch=True)
+            ax.set_xlabel(name_a)
+            ax.set_ylabel('Accuracy')
+            # ax.xaxis.label.set_size(15)
+            # ax.yaxis.label.set_size(15)
+            # ax.tick_params(labelsize=15)
+            # ax.legend(title=name_b, fontsize='medium',
+            #           bbox_to_anchor=(1.05, 1),
+            #           loc=2, borderaxespad=0.)
+            # ax.set_title(boxplot_title, fontsize=17)
+            ax.legend([], [], frameon=False)
+            ax.set_title(boxplot_title)
+            plt.tight_layout()
+            plt.savefig(out_folder / 'box_plot.png')
+            plt.close()
+
+    # Print summary of results per criteria
+    description = df.groupby(crit_a).accuracy.describe()
+    mult = 100 if df.accuracy.max() <= 1 else 1
+    print(description[['mean', 'std']].applymap(lambda x: f'{x*mult:0.2f}'))
+
+    return df
 
 
 def process_removebad_results():
