@@ -355,3 +355,15 @@ def perform_one_way_anova_pairs():
             print(f'ANOVA with test {test} and dataset {dataset}')
             one_way_anova(cur_df, f'{out_folder}{test}_{dataset}', 'use_pairs',
                           'Use mask pairs')
+
+
+def perform_one_way_anova_fixed():
+    from results_processing import process_results_to_df, one_way_anova
+    out_folder = '../thesis_plots/one_way_fixed/'
+    for test in ('vgg_full', 'vgg_lsvm'):
+        df = process_results_to_df(f'final_results/{test}/gfi_norm')
+        for dataset in ('240x20', '240x40'):
+            cur_df = df[df.dataset.isin([dataset, f'{dataset}_fixed'])]
+            print(f'ANOVA with test {test} and dataset {dataset}')
+            one_way_anova(cur_df, f'{out_folder}{test}_{dataset}', 'fixed',
+                          'Use fixed masks', add_fixed_column=True)
