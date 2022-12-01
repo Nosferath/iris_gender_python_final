@@ -7,6 +7,8 @@ import seaborn as sns
 
 from constants import MALES_LABEL, FEMALES_LABEL
 
+ACC_LABEL = 'Accuracy'
+
 
 def _calculate_mask_percentages(data_y, data_m, genders: bool):
     """Calculates the percentage of mask for each sample of the dataset.
@@ -143,6 +145,7 @@ def _plot_pairs_analysis(thresholds, avg_scores, n_bad_pairs, out_folder,
     from utils import calculate_ticks
     out_folder = Path(out_folder)
     out_folder.mkdir(exist_ok=True, parents=True)
+    display_name = dataset_name.replace('_fixed', ' (correg.)')
     df = pd.DataFrame({
         'Umbral [%]': thresholds,
         # 'avg_good_score': np.array(avg_good_scores) * 100,
@@ -169,7 +172,7 @@ def _plot_pairs_analysis(thresholds, avg_scores, n_bad_pairs, out_folder,
         )
         ax2.set_ylabel('Pares c/alto crecimiento')
         ax2.yaxis.label.set_color(colors[1])
-        plt.title(f'Análisis de pares, dataset {dataset_name}')
+        plt.title(f'Análisis de pares, dataset {display_name}')
         ax1.figure.legend(loc='lower right', markerscale=0.5,
                           fontsize='x-small')
         ax1.set_yticks(calculate_ticks(ax1, 5, 0.1))
@@ -230,7 +233,8 @@ def _plot_pairs_histogram(hist, bins, out_folder, dataset, threshold,
 
 
 def generate_pairs_plots(use_fixed_masks: bool, max_y=500, max_y_gender=260,
-                         max_y_hist=25):
+                         max_y_hist=25,
+                         out_folder='../thesis_plots/masks_and_pairs'):
     """Generates plots about the pairs: histogram of mask distribution
     per gender before and after pairs, growth scores and number of bad
     pairs at different thresholds.
@@ -248,7 +252,6 @@ def generate_pairs_plots(use_fixed_masks: bool, max_y=500, max_y_gender=260,
     train_data, test_data, _ = generate_partitions_both_eyes(data, males,
                                                              females, 1, 0.2)
     data_x, data_y, data_m, _ = balance_partition(*train_data)
-    out_folder = '../thesis_plots/masks_and_pairs'
     # Non-paired
     _generate_mask_hists(data_y, data_m, out_folder, dataset_name, max_y)
     _generate_mask_hists_by_gender(data_y, data_m, out_folder, dataset_name,
@@ -289,11 +292,10 @@ def generate_pairs_plots(use_fixed_masks: bool, max_y=500, max_y_gender=260,
                               n_bad_bins=bad_bins)
 
 
-def generate_threshold_plots():
+def generate_threshold_plots(out_folder='../thesis_plots/threshold_plots'):
     from results_processing import process_pairs_thresh_results_to_df, \
         plot_pairs_thresh_results, anova_test
     results_folder = Path('experiments/vgg_lsvm_pairs_thresh')
-    out_folder = '../thesis_plots/threshold_plots'
     df = process_pairs_thresh_results_to_df(results_folder)
     df_anova = anova_test(df, out_folder + '/anova', crit_a='threshold',
                           crit_b='fixed', name_a='Umbral penaliz.',
@@ -312,7 +314,7 @@ def generate_removebad_plots():
     from results_processing import process_removebad_results
     df = process_removebad_results()
     df['Resolución'] = df['dataset']
-    df['Exactitud [%]'] = df['accuracy'] * 100
+    df[f'{ACC_LABEL} [%]'] = df['accuracy'] * 100
     df['Umbral elim.'] = df['removed_bins'].apply(lambda x: f'{11 - x}%')
     df['Prueba'] = df['test'].apply(lambda x: x.capitalize())
     df = df.sort_values('removed_bins')
@@ -320,7 +322,7 @@ def generate_removebad_plots():
         print(f'\nResultados database {d}')
         grouped = df[df.database == d].groupby(
             ['Resolución', 'Prueba', 'Umbral elim.'])
-        description = grouped['Exactitud [%]'].describe()
+        description = grouped[f'{ACC_LABEL} [%]'].describe()
         print(description[['mean', 'std']].applymap(lambda x: f'{x:0.2f}'))
 
 
@@ -344,7 +346,7 @@ def perform_one_way_anova_removebad():
 def perform_one_way_anova_pairs():
     from results_processing import process_results_to_df, one_way_anova
     out_folder = '../thesis_plots/one_way_pairs/'
-    for test in ('vgg_full', 'vgg_lsvm'):
+    for test in ('vgg_lsvm', 'vgg_full'):
         non_pair_df = process_results_to_df(f'final_results/{test}/gfi_norm')
         non_pair_df['use_pairs'] = False
         pair_df = process_results_to_df(f'final_results/{test}/gfi_norm_pairs')
@@ -360,10 +362,60 @@ def perform_one_way_anova_pairs():
 def perform_one_way_anova_fixed():
     from results_processing import process_results_to_df, one_way_anova
     out_folder = '../thesis_plots/one_way_fixed/'
-    for test in ('vgg_full', 'vgg_lsvm'):
+    for test in ('vgg_lsvm', 'vgg_full'):
         df = process_results_to_df(f'final_results/{test}/gfi_norm')
         for dataset in ('240x20', '240x40'):
             cur_df = df[df.dataset.isin([dataset, f'{dataset}_fixed'])]
             print(f'ANOVA with test {test} and dataset {dataset}')
             one_way_anova(cur_df, f'{out_folder}{test}_{dataset}', 'fixed',
                           'Use fixed masks', add_fixed_column=True)
+
+
+def perform_two_way_anova_fixed_pairs():
+    from results_processing import process_results_to_df, anova_test
+    out_folder = '../thesis_plots/two_way_fixed_pairs'
+    for test in ('vgg_lsvm', 'vgg_full'):
+        non_pair_df = process_results_to_df(f'final_results/{test}/gfi_norm')
+        non_pair_df['use_pairs'] = False
+        pair_df = process_results_to_df(f'final_results/{test}/gfi_norm_pairs')
+        pair_df['use_pairs'] = True
+        df = pd.concat([non_pair_df, pair_df], ignore_index=True)
+        for dataset in ('240x20', '240x40'):
+            cur_df = df[df.dataset.isin([dataset, f'{dataset}_fixed'])]
+            print(f'ANOVA with test {test} and dataset {dataset}')
+            anova_test(cur_df, f'{out_folder}{test}_{dataset}', 'use_pairs',
+                       'fixed', 'Use mask pairs', 'Use fixed masks',
+                       add_fixed_column=True)
+
+
+def perform_one_way_anova_ndiris_pairs():
+    from results_processing import process_results_to_df, one_way_anova
+    out_folder = '../thesis_plots/one_way_ndiris_pairs/'
+    pd.set_option('display.float_format',
+                  lambda x: np.format_float_scientific(x))
+    for test in ('vgg_lsvm', 'vgg_full'):
+        non_pair_df = process_results_to_df(f'final_results/{test}/ndiris')
+        non_pair_df['use_pairs'] = False
+        pair_df = process_results_to_df(f'final_results/{test}/ndiris_pairs')
+        pair_df['use_pairs'] = True
+        df = pd.concat([non_pair_df, pair_df], ignore_index=True)
+        for dataset in ('240x20', '240x40'):
+            cur_df = df[df.dataset == dataset]
+            print(f'ANOVA with test {test} and dataset {dataset}')
+            one_way_anova(cur_df, f'{out_folder}{test}_{dataset}', 'use_pairs',
+                          'Use mask pairs')
+
+
+def perform_one_way_anova_gfi_periocular():
+    from results_processing import process_results_to_df, one_way_anova
+    out_folder = '../thesis_plots/one_way_gfi_peri/'
+    for test in ('vgg_lsvm', 'vgg_full'):
+        df_peri = process_results_to_df(f'final_results/{test}/gfi_peri')
+        df_peri['image_type'] = 'periocular'
+        df_norm = process_results_to_df(f'final_results/{test}/gfi_norm')
+        df_norm['image_type'] = 'normalized'
+        df_norm = df_norm[df_norm.dataset == '240x40']
+        cur_df = pd.concat([df_peri, df_norm])
+        print(f'ANOVA test with test {test}')
+        one_way_anova(cur_df, f'{out_folder}{test}', 'image_type',
+                      'Image type')

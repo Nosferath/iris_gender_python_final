@@ -560,6 +560,7 @@ def plot_pairs_thresh_results(
         use_thesis_labels=False):
     import matplotlib.pyplot as plt
     import seaborn as sns
+    ACC_LABEL = 'Accuracy'
 
     df = process_pairs_thresh_results_to_df(results_folder)
     df['accuracy'] = df['accuracy'] * 100
@@ -568,10 +569,11 @@ def plot_pairs_thresh_results(
                                          'ytick.left': True}), \
             sns.plotting_context('notebook', font_scale=1.4):
         if use_thesis_labels:
-            df['Exactitud [%]'] = df['accuracy']
+            df[f'{ACC_LABEL} [%]'] = df['accuracy']
             df['Umbral [%]'] = df['threshold'] * 100
-            df['Resolución'] = df['dataset']
-            ax = sns.lmplot(data=df, x='Umbral [%]', y='Exactitud [%]',
+            df['Resolución'] = df['dataset'].apply(
+                lambda x: x.replace('_fixed', ' (correg.)'))
+            ax = sns.lmplot(data=df, x='Umbral [%]', y=f'{ACC_LABEL} [%]',
                             hue='Resolución', col='Resolución',
                             x_estimator=np.mean, col_wrap=2, height=4,
                             aspect=1.4)
