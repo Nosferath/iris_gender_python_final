@@ -106,9 +106,9 @@ def _generate_mask_hists_by_gender(
             'f': 'Females',
             'm': 'Males',
             'title': 'Masks per gender in dataset',
-            'corrected_pairs': '\ncorrected and paired',
-            'pairs': '\npaired',
-            'corrected': '\ncorrected',
+            'corrected_pairs': '\nafter correction and pairing',
+            'pairs': '\nafter pairing',
+            'corrected': '\nafter correction',
             'xlabel': '% of mask in the iris image',
             'ylabel': 'N. of images'
         }
@@ -125,21 +125,21 @@ def _generate_mask_hists_by_gender(
                                'axes.axisbelow': True,
                                'grid.linestyle': '-',
                                'figure.figsize': (6.4, 4.8)}):
-        hist_f = sns.histplot(masks_f, bins=bins, color='red',
+        hist_f = sns.histplot(masks_f, bins=bins, color='red', hatch='//',
                               label=texts['f'], alpha=0.5)
-        hist_m = sns.histplot(masks_m, bins=bins, color='blue',
+        hist_m = sns.histplot(masks_m, bins=bins, color='blue', hatch=r'\\',
                               label=texts['m'], alpha=0.5)
         # Generate and set title
-        title = f'{texts["title"]} {dataset_name}'
+        title = f'{texts["title"]} GFI'
         out_name = 'g' + dataset_name
         if use_pairs and dataset_name.endswith('_fixed'):
-            title = title[:-6] + texts['corrected_pairs']
+            title = title + texts['corrected_pairs']
             out_name += '_pairs'
         elif use_pairs:
             title += texts['pairs']
             out_name += '_pairs'
         elif dataset_name.endswith('_fixed'):
-            title = title[:-6] + texts['corrected']
+            title = title + texts['corrected']
         else:
             title = '\n' + title
         out_name += '.png'
@@ -204,7 +204,10 @@ def _plot_pairs_analysis(thresholds, avg_scores, n_bad_pairs, out_folder,
     }[language]
     out_folder = Path(out_folder)
     out_folder.mkdir(exist_ok=True, parents=True)
-    display_name = dataset_name.replace('_fixed', texts['fixed'])
+    # display_name = dataset_name.replace('_fixed', texts['fixed'])
+    display_name = 'GFI'
+    if '_fixed' in dataset_name:
+        display_name = f'{display_name}{texts["fixed"]}'
     df = pd.DataFrame({
         texts['xlabel']: thresholds,
         # 'avg_good_score': np.array(avg_good_scores) * 100,
@@ -220,14 +223,15 @@ def _plot_pairs_analysis(thresholds, avg_scores, n_bad_pairs, out_folder,
         colors = sns.color_palette()[:2]
         ax1 = df.plot(
             # x='threshold', y='avg_good_score', color=colors[0], legend=False
-            x=texts['xlabel'], y=texts['growth'], color=colors[0], legend=False
+            x=texts['xlabel'], y=texts['growth'], color=colors[0], style='-',
+            legend=False
         )
         ax1.set_ylabel(texts['ylabel1'])
         ax1.yaxis.label.set_color(colors[0])
         ax2 = plt.twinx()
         df.plot(
             x=texts['xlabel'], y=texts['n_high_growth'], color=colors[1],
-            legend=False, ax=ax2
+            style='--', legend=False, ax=ax2
         )
         ax2.set_ylabel(texts['ylabel2'])
         ax2.yaxis.label.set_color(colors[1])
@@ -252,12 +256,14 @@ def _plot_pairs_histogram(hist, bins, out_folder, dataset, threshold,
         'spanish': {
             'ylabel': '% de pares',
             'xlabel': '% de crecimiento',
-            'title': 'Distrib. crecimiento pares,'
+            'title': 'Distrib. crecimiento pares,',
+            'fixed': '(correg.)'
         },
         'english': {
             'ylabel': '% of pairs',
             'xlabel': '% of growth',
-            'title': 'Pair growth distribution,'
+            'title': 'Pair growth distribution,',
+            'fixed': '(fixed)'
         }
     }[language]
 
@@ -266,6 +272,10 @@ def _plot_pairs_histogram(hist, bins, out_folder, dataset, threshold,
 
     out_folder = Path(out_folder)
     out_folder.mkdir(exist_ok=True, parents=True)
+
+    display_name = 'GFI'
+    if 'fixed' in dataset:
+        display_name = f'{display_name} {texts["fixed"]}'
 
     with sns.plotting_context('talk'):
         colors = sns.color_palette()[:2]
@@ -298,7 +308,7 @@ def _plot_pairs_histogram(hist, bins, out_folder, dataset, threshold,
             if max_y < max(norm_hist):
                 max_y = max(norm_hist) + 1
             plt.ylim([0, max_y])
-        plt.title(f'{texts["title"]} {dataset}')
+        plt.title(f'{texts["title"]} {display_name}')
         plt.tight_layout()
         plt.savefig(out_folder / f'{dataset}_{threshold*100:.1f}.png')
         plt.clf()
@@ -348,6 +358,9 @@ def generate_pairs_plots(use_fixed_masks: bool, max_y=500, max_y_gender=260,
                                                spp_mat=spp_mat)
         scores[t] = cur_scores
     analysis = {t: analyze_pairs(scores[t]) for t in thresholds}
+    # sorted_scores = np.sort(np.array(list(scores.values())))
+    # np.savetxt(Path(out_folder) / 'scores.csv', sorted_scores[:, ::-1],
+    #            delimiter=',')
 
     avg_scores = [a['avg_score'] for a in analysis.values()]
     n_bad_pairs = [a['n_bad_pairs'] for a in analysis.values()]
