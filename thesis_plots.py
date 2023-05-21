@@ -380,36 +380,65 @@ def generate_pairs_plots(use_fixed_masks: bool, max_y=500, max_y_gender=260,
                               language=language)
 
 
-def generate_threshold_plots(out_folder='../thesis_plots/threshold_plots'):
+def generate_threshold_plots(out_folder='../thesis_plots/threshold_plots',
+                             language='spanish'):
     from results_processing import process_pairs_thresh_results_to_df, \
         plot_pairs_thresh_results, anova_test
+    texts = {
+        'spanish': {
+            'name_a': 'Umbral penaliz.',
+            'name_b': 'Correcc. másc.',
+            'title': 'Resultados de VGG+LSVM usando pares'
+                     ' y distintos umbrales de penaliz.'
+        },
+        'english': {
+            'name_a': 'Penaliz. thresh.',
+            'name_b': 'Correct. masks',
+            'title': 'VGG+LSVM results using pairs and'
+                     ' different penalizing thresh.'
+        }
+    }[language]
     results_folder = Path('experiments/vgg_lsvm_pairs_thresh')
     df = process_pairs_thresh_results_to_df(results_folder)
     df_anova = anova_test(df, out_folder + '/anova', crit_a='threshold',
-                          crit_b='fixed', name_a='Umbral penaliz.',
-                          name_b='Correcc. Másc.', boxplot_title=None,
+                          crit_b='fixed', name_a=texts['name_a'],
+                          name_b=texts['name_b'], boxplot_title=None,
                           add_fixed_column=True)
     df_anova.to_csv(out_folder + '/anova/df_anova.csv')
     _ = plot_pairs_thresh_results(
         results_folder, out_folder + '/thresh_results.png',
-        # 'Resultados de VGG+LSVM usando emparej. y distintos umbrales',
-        '',
-        use_thesis_labels=True
+        texts['title'],
+        # '',
+        use_thesis_labels=language == 'spanish'
     )
 
 
-def generate_removebad_plots():
+def generate_removebad_plots(language='spanish'):
     from results_processing import process_removebad_results
+    texts = {
+        'spanish': {
+            'resolution': 'Resolución',
+            'threshold': 'Umbral elim.',
+            'test': 'Prueba'
+        },
+        'english': {
+            'resolution': 'Resolution',
+            'threshold': 'Removal thresh.',
+            'test': 'Test'
+        }
+    }[language]
     df = process_removebad_results()
-    df['Resolución'] = df['dataset']
+    print(df[(df.removed_bins == 1) & (df.database == 'gfi') &
+             (df.test == 'vgg_full') & (df.dataset == '240x20')])
+    df[texts['resolution']] = df['dataset']
     df[f'{ACC_LABEL} [%]'] = df['accuracy'] * 100
-    df['Umbral elim.'] = df['removed_bins'].apply(lambda x: f'{11 - x}%')
-    df['Prueba'] = df['test'].apply(lambda x: x.capitalize())
+    df[texts['threshold']] = df['removed_bins'].apply(lambda x: f'{11 - x}%')
+    df[texts['test']] = df['test'].apply(lambda x: x.capitalize())
     df = df.sort_values('removed_bins')
     for d in ('gfi', 'ndiris'):
         print(f'\nResultados database {d}')
         grouped = df[df.database == d].groupby(
-            ['Resolución', 'Prueba', 'Umbral elim.'])
+            [texts['resolution'], texts['test'], texts['threshold']])
         description = grouped[f'{ACC_LABEL} [%]'].describe()
         print(description[['mean', 'std']].applymap(lambda x: f'{x:0.2f}'))
 

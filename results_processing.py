@@ -578,8 +578,12 @@ def plot_pairs_thresh_results(
                             x_estimator=np.mean, col_wrap=2, height=4,
                             aspect=1.4)
         else:
-            ax = sns.lmplot(data=df, x='threshold', y='accuracy',
-                            hue='dataset', col='dataset',
+            df[f'{ACC_LABEL} [%]'] = df['accuracy']
+            df['Threshold [%]'] = df['threshold'] * 100
+            df['Resolution'] = df['dataset'].apply(
+                lambda x: x.replace('_fixed', ' (corrected)'))
+            ax = sns.lmplot(data=df, x='Threshold [%]', y=f'{ACC_LABEL} [%]',
+                            hue='Resolution', col='Resolution',
                             x_estimator=np.mean, col_wrap=2, height=4,
                             aspect=1.4)
         ax.fig.subplots_adjust(top=0.9)
