@@ -1,0 +1,34 @@
+,title,accuracy,type,sorter
+0,"Thomas et al., 2007",0.8,normalized,2007
+1,"Lagree and Bowyer, 2011",0.62,normalized,2011
+2,"Bansal et al., 2012",0.8306,normalized,2012
+3,"Tapia et al., 2015",0.9133,normalized,2015
+4,"Fairhurst et al., 2015",0.8974,normalized,2015
+5,"Tapia et al., 2016",0.91,normalized,2016
+6,"Bobeldyk and Ross, 2016",0.69,normalized,2016
+13,"Bobeldyk and Ross, 2016",0.857,periocular,2016
+17,"Kuelkamp et al., 2017",0.8,periocular,2017
+15,"Tapia and Viedma, 2017",0.8969,periocular,2017
+14,"Singh et al., 2017",0.8317,periocular,2017
+16,"Rattani et al., 2017",0.902,periocular,2017
+8,"Kuehlkamp et al., 2017",0.66,normalized,2017
+7,"Tapia and Aravena, 2017",0.8466,normalized,2017
+18,"Rattani et al., 2018",0.9,periocular,2018
+19,"Tapia and Aravena, 2018",0.8726,periocular,2018
+20,"Viedma and Tapia, 2018",0.8593,periocular,2018
+21,"Bobeldyk and Ross, 2018",0.859,periocular,2018
+12,"Eskandari and Sharifi, 2019",0.6667,normalized,2019
+26,"Tapia et al., 2019",0.919,periocular,2019
+25,"Viedma et al., 2019",0.8689,periocular,2019
+24,"Manyala et al., 2019",0.9463,periocular,2019
+23,"Kuehlkamp and Bowyer, 2019",0.808,periocular,2019
+22,"Bobeldyk and Ross, 2019",0.854,periocular,2019
+9,"Tapia and Perez, 2019",0.9545,normalized,2019
+10,"Kuehlkamp and Bowyer, 2019",0.634,normalized,2019
+11,"Tapia and Arellano, 2019",0.9466,normalized,2019
+27,"Tapia and Arellano, 2019 (2)",0.919,periocular,2019 (2)
+28,"Tapia et al., 2019 (2)",0.9015,periocular,2019 (2)
+29,"Alonso-Fernandez et al., 2020",0.92,periocular,2020
+30,"Raja et al., 2020",0.8159,periocular,2020
+31,"Alonso-Fernandez et al., 2021",0.751,periocular,2021
+32,"Vetrekar et al., 2021",0.7572,periocular,2021

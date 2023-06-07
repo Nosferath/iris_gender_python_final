@@ -536,3 +536,57 @@ def perform_one_way_anova_gfi_periocular():
         print(f'ANOVA test with test {test}')
         one_way_anova(cur_df, f'{out_folder}{test}', 'image_type',
                       'Image type')
+
+
+def comparison_barplot():
+    data_normalized = [
+        ['Thomas et al., 2007', 0.8],
+        ['Lagree and Bowyer, 2011', 0.62],
+        ['Bansal et al., 2012', 0.8306],
+        ['Tapia et al., 2015', 0.9133],
+        ['Fairhurst et al., 2015', 0.8974],
+        ['Tapia et al., 2016', 0.91],
+        ['Bobeldyk and Ross, 2016', 0.69],
+        ['Tapia and Aravena, 2017', 0.8466],
+        ['Kuehlkamp et al., 2017', 0.66],
+        ['Tapia and Perez, 2019', 0.9545],
+        ['Kuehlkamp and Bowyer, 2019', 0.6340],
+        ['Tapia and Arellano, 2019', 0.9466],
+        ['Eskandari and Sharifi, 2019', 0.6667],
+    ]
+    data_normalized = [
+        {'title': a, 'accuracy': b, 'type': 'normalized'}
+        for a, b in data_normalized
+    ]
+    data_periocular = [
+        ['Bobeldyk and Ross, 2016', 0.857],
+        ['Singh et al., 2017', 0.8317],
+        ['Tapia and Viedma, 2017', 0.8969],
+        ['Rattani et al., 2017', 0.9020],
+        ['Kuelkamp et al., 2017', 0.80],
+        ['Rattani et al., 2018', 0.9000],
+        ['Tapia and Aravena, 2018', 0.8726],
+        ['Viedma and Tapia, 2018', 0.8593],
+        ['Bobeldyk and Ross, 2018', 0.8590],
+        ['Bobeldyk and Ross, 2019', 0.8540],
+        ['Kuehlkamp and Bowyer, 2019', 0.8080],
+        ['Manyala et al., 2019', 0.9463],
+        ['Viedma et al., 2019', 0.8689],
+        ['Tapia et al., 2019', 0.9190],
+        ['Tapia and Arellano, 2019 (2)', 0.9190],
+        ['Tapia et al., 2019 (2)', 0.9015],
+        ['Alonso-Fernandez et al., 2020', 0.9200],
+        ['Raja et al., 2020', 0.8159],
+        ['Alonso-Fernandez et al., 2021', 0.7510],
+        ['Vetrekar et al., 2021', 0.7572],
+    ]
+    data_periocular = [
+        {'title': a, 'accuracy': b, 'type': 'periocular'}
+        for a, b in data_periocular
+    ]
+    data = [*data_normalized, *data_periocular]
+    df = pd.DataFrame(data)
+    df['sorter'] = df.loc[:, 'title'].apply(lambda x: x.split(', '[1]))
+    df = df.sort_values('sorter')
+    print(df)
+    return df
