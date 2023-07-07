@@ -237,7 +237,7 @@ def _plot_pairs_analysis(thresholds, avg_scores, n_bad_pairs, out_folder,
         ax2.yaxis.label.set_color(colors[1])
         plt.title(f'{texts["title"]} {display_name}')
         ax1.figure.legend(loc='lower right', markerscale=0.5,
-                          fontsize='x-small')
+                          fontsize='xx-small')
         ax1.set_yticks(calculate_ticks(ax1, 5, 0.1))
         ax2.set_yticks(calculate_ticks(ax2, 5, 1))
         # plt.grid(True)
@@ -555,7 +555,7 @@ def comparison_barplot():
         ['Eskandari and Sharifi, 2019', 0.6667],
     ]
     data_normalized = [
-        {'title': a, 'accuracy': b, 'type': 'normalized'}
+        {'title': a, 'accuracy': b*100, 'type': 'normalized'}
         for a, b in data_normalized
     ]
     data_periocular = [
@@ -581,12 +581,261 @@ def comparison_barplot():
         ['Vetrekar et al., 2021', 0.7572],
     ]
     data_periocular = [
-        {'title': a, 'accuracy': b, 'type': 'periocular'}
+        {'title': a, 'accuracy': b*100, 'type': 'periocular'}
         for a, b in data_periocular
     ]
     data = [*data_normalized, *data_periocular]
     df = pd.DataFrame(data)
-    df['sorter'] = df.loc[:, 'title'].apply(lambda x: x.split(', '[1]))
-    df = df.sort_values('sorter')
+    df['year'] = df.loc[:, 'title'].apply(
+        lambda x: x.split(', ')[1].split(' ')[0]
+    )
+    df = df.sort_values(['year', 'title'])
     print(df)
-    return df
+    sns.set(rc={'figure.figsize': (16, 7)})
+    sns.set_palette('muted')
+    sns.set_style('ticks')
+    sns.set_context('talk')
+    plot: plt.Axes = sns.barplot(data=df, x='title', y='accuracy', hue='type')
+    plot.set_xlabel('')
+    plot.set_ylabel('Accuracy [%]')
+    plot.set_ylim([50, 100])
+    plot.set_title(
+        'Comparison of gender classification results using normalized '
+        'and periocular iris images'
+    )
+    plot.grid(True)
+    fig = plt.gcf()
+    fig.autofmt_xdate()
+    fig.tight_layout()
+    plt.legend(loc='lower right')
+    plt.savefig('/home/nosferath/TESIS/Defensa Tesis/state-of-the-art.png')
+    plt.show()
+    return df, plot, fig
+
+
+def show_mask_correction_differences(bottom_adjust=0.3, max_y=500,
+                                     out_folder='../Defensa Tesis/'):
+    """Plots a histogram of the masks distribution after fix, and an
+    outline of the distribution before the fix.
+    """
+    from load_data import load_dataset_both_eyes
+    from load_data_utils import generate_partitions_both_eyes, \
+        balance_partition
+
+    # Load data
+    dataset_name = '240x20'
+    data, males, females = load_dataset_both_eyes(dataset_name, True, False)
+    train_data, test_data, _ = generate_partitions_both_eyes(data, males,
+                                                             females, 1, 0.2)
+    _, data_y, data_m, _ = balance_partition(*train_data)
+    dataset_name += '_fixed'
+    data, males, females = load_dataset_both_eyes(dataset_name, True, False)
+    train_data, test_data, _ = generate_partitions_both_eyes(data, males,
+                                                             females, 1, 0.2)
+    _, data_y_fixed, data_m_fixed, _ = balance_partition(*train_data)
+    before_fix = np.sum(data_m * 100 / (240 * 20), axis=1)
+    after_fix = np.sum(data_m_fixed * 100 / (240 * 20), axis=1)
+
+    # Set the start and end values for binning
+    start = 0
+    end = 80
+    bin_width = 5
+
+    # Calculate histogram values for "beforeFix" with bin width of 5
+    num_bins_before = int((end - start) / bin_width)
+    hist_before, bins_before = np.histogram(before_fix, bins=num_bins_before,
+                                            range=(start, end))
+    hist_heights_before = np.insert(hist_before, 0, 0)
+    bin_edges_before = np.arange(start, end + bin_width, bin_width)
+
+    # Calculate histogram values for "afterFix" with bin width of 5
+    # num_bins_after = int((end - start) / bin_width)
+    # hist_after, bins_after = np.histogram(after_fix, bins=num_bins_after,
+    #                                       range=(start, end))
+    # hist_heights_after = np.insert(hist_after, 0, 0)
+    bin_edges_after = np.arange(start, end + bin_width, bin_width)
+
+    # Plot data
+    with sns.plotting_context('talk'), \
+            sns.axes_style(rc={'grid.color': '#b0b0b0',
+                               'axes.grid': True,
+                               'axes.axisbelow': True,
+                               'grid.linestyle': '-',
+                               'figure.figsize': (6.6, 4.8)}):
+        sns.histplot(after_fix, kde=False, bins=bin_edges_after,
+                     label='Después de corrección', linewidth=1)
+        plt.step(bin_edges_before, hist_heights_before, color='red',
+                 linewidth=2, linestyle='-', label='Antes de corrección')
+        # plt.legend(bbox_to_anchor=(0.5, -0.3), loc='upper center',
+        #            ncol=2, fancybox=False, shadow=False)
+        plt.legend([])
+        if max_y is not None:
+            plt.ylim([0, max_y])
+        plt.xlim([0, 80])
+        plt.xlabel('% de máscara en la imagen')
+        plt.ylabel('No. de imágenes')
+        plt.title('Máscaras en dataset 240x20 tras corrección')
+
+        plt.tight_layout()
+        plt.subplots_adjust(bottom=bottom_adjust)
+        # Save figure
+        out_folder = Path(out_folder)
+        out_name = 'before_after_fix.png'
+        plt.savefig(out_folder / out_name, bbox_inches='tight',
+                    transparent=False)
+        plt.close()
+
+
+def show_mask_pairs_differences(bottom_adjust=0.3, max_y=500,
+                                out_folder='../Defensa Tesis/'):
+    """Plots a histogram of the masks distribution after fix, and an
+    outline of the distribution before the fix.
+    """
+    from load_data import load_dataset_both_eyes
+    from load_data_utils import generate_partitions_both_eyes, \
+        balance_partition
+    from mask_pairs import calculate_spp_matrix, generate_pairs, apply_pairs
+
+    # Load data
+    dataset_name = '240x20'
+    data, males, females = load_dataset_both_eyes(dataset_name, True, False)
+    train_data, test_data, _ = generate_partitions_both_eyes(data, males,
+                                                             females, 1, 0.2)
+    data_x, data_y, data_m, _ = balance_partition(*train_data)
+    spp_mat = calculate_spp_matrix(data_m[data_y == FEMALES_LABEL, :],
+                                   data_m[data_y == MALES_LABEL, :])
+    pairs, pair_scores = generate_pairs(data_y, data_m, spp_mat=spp_mat)
+    paired_x, paired_m = apply_pairs(pairs, data_x, data_m, return_masks=True)
+    before_pairs = np.sum(data_m * 100 / (240 * 20), axis=1)
+    after_pairs = np.sum(paired_m * 100 / (240 * 20), axis=1)
+
+    # Set the start and end values for binning
+    start = 0
+    end = 80
+    bin_width = 5
+
+    # Calculate histogram values for "beforeFix" with bin width of 5
+    num_bins_before = int((end - start) / bin_width)
+    hist_before, bins_before = np.histogram(before_pairs, bins=num_bins_before,
+                                            range=(start, end))
+    hist_heights_before = np.insert(hist_before, 0, 0)
+    bin_edges_before = np.arange(start, end + bin_width, bin_width)
+
+    # Calculate histogram values for "afterFix" with bin width of 5
+    # num_bins_after = int((end - start) / bin_width)
+    # hist_after, bins_after = np.histogram(after_fix, bins=num_bins_after,
+    #                                       range=(start, end))
+    # hist_heights_after = np.insert(hist_after, 0, 0)
+    bin_edges_after = np.arange(start, end + bin_width, bin_width)
+
+    # Plot data
+    with sns.plotting_context('talk'), \
+            sns.axes_style(rc={'grid.color': '#b0b0b0',
+                               'axes.grid': True,
+                               'axes.axisbelow': True,
+                               'grid.linestyle': '-',
+                               'figure.figsize': (6.6, 4.8)}):
+        sns.histplot(after_pairs, kde=False, bins=bin_edges_after,
+                     label='Después de parear', linewidth=1)
+        plt.step(bin_edges_before, hist_heights_before, color='red',
+                 linewidth=2, linestyle='-', label='Antes de parear')
+        # plt.legend(bbox_to_anchor=(0.5, -0.3), loc='upper center',
+        #            ncol=2, fancybox=False, shadow=False)
+        plt.legend([])
+        if max_y is not None:
+            plt.ylim([0, max_y])
+        plt.xlim([0, 80])
+        plt.xlabel('% de máscara en la imagen')
+        plt.ylabel('No. de imágenes')
+        plt.title('Máscaras en dataset 240x20 tras pareo')
+
+        plt.tight_layout()
+        plt.subplots_adjust(bottom=bottom_adjust)
+        # Save figure
+        out_folder = Path(out_folder)
+        out_name = 'before_after_pairs.png'
+        plt.savefig(out_folder / out_name, bbox_inches='tight',
+                    transparent=False)
+        plt.close()
+
+
+def show_mask_both_differences(bottom_adjust=0.3, max_y=500,
+                               out_folder='../Defensa Tesis/'):
+    """Plots a histogram of the masks distribution after fix, and an
+    outline of the distribution before the fix.
+    """
+    from load_data import load_dataset_both_eyes
+    from load_data_utils import generate_partitions_both_eyes, \
+        balance_partition
+    from mask_pairs import calculate_spp_matrix, generate_pairs, apply_pairs
+
+    # Load data
+    dataset_name = '240x20'
+    data, males, females = load_dataset_both_eyes(dataset_name, True, False)
+    train_data, test_data, _ = generate_partitions_both_eyes(data, males,
+                                                             females, 1, 0.2)
+    _, data_y, data_m, _ = balance_partition(*train_data)
+    dataset_name += '_fixed'
+    data, males, females = load_dataset_both_eyes(dataset_name, True, False)
+    train_data, test_data, _ = generate_partitions_both_eyes(data, males,
+                                                             females, 1, 0.2)
+    data_x_fixed, data_y_fixed, data_m_fixed, _ = \
+        balance_partition(*train_data)
+    spp_mat = calculate_spp_matrix(
+        data_m_fixed[data_y_fixed == FEMALES_LABEL, :],
+        data_m_fixed[data_y_fixed == MALES_LABEL, :]
+    )
+    pairs, pair_scores = generate_pairs(data_y, data_m, spp_mat=spp_mat)
+    paired_x, paired_m = apply_pairs(pairs, data_x_fixed, data_m,
+                                     return_masks=True)
+    before_pairs = np.sum(data_m * 100 / (240 * 20), axis=1)
+    after_pairs = np.sum(paired_m * 100 / (240 * 20), axis=1)
+
+    # Set the start and end values for binning
+    start = 0
+    end = 80
+    bin_width = 5
+
+    # Calculate histogram values for "beforeFix" with bin width of 5
+    num_bins_before = int((end - start) / bin_width)
+    hist_before, bins_before = np.histogram(before_pairs, bins=num_bins_before,
+                                            range=(start, end))
+    hist_heights_before = np.insert(hist_before, 0, 0)
+    bin_edges_before = np.arange(start, end + bin_width, bin_width)
+
+    # Calculate histogram values for "afterFix" with bin width of 5
+    # num_bins_after = int((end - start) / bin_width)
+    # hist_after, bins_after = np.histogram(after_fix, bins=num_bins_after,
+    #                                       range=(start, end))
+    # hist_heights_after = np.insert(hist_after, 0, 0)
+    bin_edges_after = np.arange(start, end + bin_width, bin_width)
+
+    # Plot data
+    with sns.plotting_context('talk'), \
+            sns.axes_style(rc={'grid.color': '#b0b0b0',
+                               'axes.grid': True,
+                               'axes.axisbelow': True,
+                               'grid.linestyle': '-',
+                               'figure.figsize': (6.6, 4.8)}):
+        sns.histplot(after_pairs, kde=False, bins=bin_edges_after,
+                     label='Después de C+P', linewidth=1)
+        plt.step(bin_edges_before, hist_heights_before, color='red',
+                 linewidth=2, linestyle='-', label='Antes de C+P')
+        # plt.legend(bbox_to_anchor=(0.5, -0.3), loc='upper center',
+        #            ncol=2, fancybox=False, shadow=False)
+        plt.legend([])
+        if max_y is not None:
+            plt.ylim([0, max_y])
+        plt.xlim([0, 80])
+        plt.xlabel('% de máscara en la imagen')
+        plt.ylabel('No. de imágenes')
+        plt.title('Máscaras en dataset 240x20 tras corr. y pareo')
+
+        plt.tight_layout()
+        plt.subplots_adjust(bottom=bottom_adjust)
+        # Save figure
+        out_folder = Path(out_folder)
+        out_name = 'before_after_both.png'
+        plt.savefig(out_folder / out_name, bbox_inches='tight',
+                    transparent=False)
+        plt.close()

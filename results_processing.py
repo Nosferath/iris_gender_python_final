@@ -352,7 +352,7 @@ def analyze_pairs(pair_scores, bad_score=0.1, delta=0.01):
         left edge and includes the right edge. This is done to ensure
         that pairs strictly over bad_score are not grouped with pairs
         that are exactly the bad_score (which is not bad)."""
-        upper_limit = np.around(max(pair_scores), 1) + delta if group_bad \
+        upper_limit = np.around(max(pair_scores), 2) + delta if group_bad \
             else bad_score + delta
         _bins = np.arange(0, upper_limit, delta)
         _bins = np.hstack([_bins, [1]])
