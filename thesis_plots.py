@@ -628,11 +628,16 @@ def show_mask_correction_differences(bottom_adjust=0.3, max_y=500,
     train_data, test_data, _ = generate_partitions_both_eyes(data, males,
                                                              females, 1, 0.2)
     _, data_y, data_m, _ = balance_partition(*train_data)
+    original_average = np.mean(data_m)
+    print(f'Promedio original: {original_average:.2%}')
     dataset_name += '_fixed'
     data, males, females = load_dataset_both_eyes(dataset_name, True, False)
     train_data, test_data, _ = generate_partitions_both_eyes(data, males,
                                                              females, 1, 0.2)
     _, data_y_fixed, data_m_fixed, _ = balance_partition(*train_data)
+    fixed_average = np.mean(data_m_fixed)
+    print(f'Promedio fixed: {fixed_average:.2%}. Diferencia: '
+          f'{original_average - fixed_average:.2%}')
     before_fix = np.sum(data_m * 100 / (240 * 20), axis=1)
     after_fix = np.sum(data_m_fixed * 100 / (240 * 20), axis=1)
 
@@ -668,7 +673,7 @@ def show_mask_correction_differences(bottom_adjust=0.3, max_y=500,
                  linewidth=2, linestyle='-', label='Antes de corrección')
         # plt.legend(bbox_to_anchor=(0.5, -0.3), loc='upper center',
         #            ncol=2, fancybox=False, shadow=False)
-        plt.legend([])
+        plt.legend([], frameon=False)
         if max_y is not None:
             plt.ylim([0, max_y])
         plt.xlim([0, 80])
@@ -702,10 +707,15 @@ def show_mask_pairs_differences(bottom_adjust=0.3, max_y=500,
     train_data, test_data, _ = generate_partitions_both_eyes(data, males,
                                                              females, 1, 0.2)
     data_x, data_y, data_m, _ = balance_partition(*train_data)
+    original_average = np.mean(data_m)
+    print(f'Promedio original: {original_average:.2%}')
     spp_mat = calculate_spp_matrix(data_m[data_y == FEMALES_LABEL, :],
                                    data_m[data_y == MALES_LABEL, :])
     pairs, pair_scores = generate_pairs(data_y, data_m, spp_mat=spp_mat)
     paired_x, paired_m = apply_pairs(pairs, data_x, data_m, return_masks=True)
+    paired_average = np.mean(paired_m)
+    print(f'Promedio paired: {paired_average:.2%}. Diferencia:'
+          f' {original_average - paired_average:.2%}')
     before_pairs = np.sum(data_m * 100 / (240 * 20), axis=1)
     after_pairs = np.sum(paired_m * 100 / (240 * 20), axis=1)
 
@@ -741,7 +751,7 @@ def show_mask_pairs_differences(bottom_adjust=0.3, max_y=500,
                  linewidth=2, linestyle='-', label='Antes de parear')
         # plt.legend(bbox_to_anchor=(0.5, -0.3), loc='upper center',
         #            ncol=2, fancybox=False, shadow=False)
-        plt.legend([])
+        plt.legend([], frameon=False)
         if max_y is not None:
             plt.ylim([0, max_y])
         plt.xlim([0, 80])
@@ -775,19 +785,28 @@ def show_mask_both_differences(bottom_adjust=0.3, max_y=500,
     train_data, test_data, _ = generate_partitions_both_eyes(data, males,
                                                              females, 1, 0.2)
     _, data_y, data_m, _ = balance_partition(*train_data)
+    original_average = np.mean(data_m)
+    print(f'Promedio original: {original_average:.2%}')
     dataset_name += '_fixed'
     data, males, females = load_dataset_both_eyes(dataset_name, True, False)
     train_data, test_data, _ = generate_partitions_both_eyes(data, males,
                                                              females, 1, 0.2)
     data_x_fixed, data_y_fixed, data_m_fixed, _ = \
         balance_partition(*train_data)
+    fixed_average = np.mean(data_m_fixed)
+    print(f'Promedio fixed: {fixed_average:.2%}. Diferencia: '
+          f'{original_average - fixed_average:.2%}')
     spp_mat = calculate_spp_matrix(
         data_m_fixed[data_y_fixed == FEMALES_LABEL, :],
         data_m_fixed[data_y_fixed == MALES_LABEL, :]
     )
-    pairs, pair_scores = generate_pairs(data_y, data_m, spp_mat=spp_mat)
-    paired_x, paired_m = apply_pairs(pairs, data_x_fixed, data_m,
+    pairs, pair_scores = generate_pairs(data_y_fixed, data_m_fixed,
+                                        spp_mat=spp_mat)
+    paired_x, paired_m = apply_pairs(pairs, data_x_fixed, data_m_fixed,
                                      return_masks=True)
+    fixed_paired_average = np.mean(paired_m)
+    print(f'Promedio fixed+paired: {fixed_paired_average:.2%}. Diferencia:'
+          f' {original_average - fixed_paired_average:.2%}')
     before_pairs = np.sum(data_m * 100 / (240 * 20), axis=1)
     after_pairs = np.sum(paired_m * 100 / (240 * 20), axis=1)
 
@@ -823,7 +842,7 @@ def show_mask_both_differences(bottom_adjust=0.3, max_y=500,
                  linewidth=2, linestyle='-', label='Antes de C+P')
         # plt.legend(bbox_to_anchor=(0.5, -0.3), loc='upper center',
         #            ncol=2, fancybox=False, shadow=False)
-        plt.legend([])
+        plt.legend([], frameon=False)
         if max_y is not None:
             plt.ylim([0, max_y])
         plt.xlim([0, 80])
