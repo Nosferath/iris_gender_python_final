@@ -858,3 +858,90 @@ def show_mask_both_differences(bottom_adjust=0.3, max_y=500,
         plt.savefig(out_folder / out_name, bbox_inches='tight',
                     transparent=False)
         plt.close()
+
+
+def rotate_and_shift_images(periocular_path, normalized_path, delta=20,
+                            pause=5, center_x=291, center_y=239,
+                            output_path='../Defensa Tesis/gif/rotation.gif'):
+    # Thanks ChatGPT!
+    from PIL import Image
+    # Load the images
+    periocular_image = Image.open(periocular_path)
+    normalized_image = Image.open(normalized_path)
+
+    # Convert the images to numpy arrays
+    # periocular_array = np.array(periocular_image)
+    normalized_array = np.array(normalized_image)
+
+    # Determine the maximum width and height among the periocular and
+    # normalized images
+    max_width = max(periocular_image.width, normalized_image.width)
+    max_height = max(periocular_image.height, normalized_image.height)
+
+    # Define the rotation angle and horizontal shift parameters
+    rotation_angles = np.concatenate(
+        (np.zeros(pause), np.linspace(0, -360, 36))
+    )  # Rotate in 10-degree increments
+    horizontal_shifts = np.concatenate(
+        (np.zeros(pause),
+         np.linspace(0, normalized_array.shape[1],
+                     len(rotation_angles) - pause))
+    )
+
+    # Create a blank canvas for the frame with a width and height based
+    # on the maximum dimensions
+    frame_width = max_width + normalized_image.width + delta
+    frame_height = max_height  # max(max_width, max_height)
+    frame = Image.new("RGB", (frame_width, frame_height))
+
+    # Calculate Y position for the normalized image
+    normalized_y_position = frame_height // 2 - normalized_array.shape[0] // 2
+
+    # Create a list to store the frames for the GIF
+    frames = []
+
+    # Iterate over the rotation angles and horizontal shifts
+    for angle, shift in zip(rotation_angles, horizontal_shifts):
+        # Rotate the periocular image
+        rotated_periocular = \
+            periocular_image.rotate(angle, center=(center_x, center_y))
+
+        # Calculate the offset to align the rotated periocular and
+        # normalized images
+        periocular_offset = (frame_height - rotated_periocular.height) // 2
+
+        # Paste the rotated periocular image onto the frame
+        frame.paste(rotated_periocular, (0, periocular_offset))
+
+        # Calculate the shifted position for the normalized image
+        normalized_shifted_position = int(shift) % normalized_image.width
+
+        # Perform the horizontal shift using array slicing and concatenation
+        shifted_array = np.concatenate(
+            (normalized_array[:, normalized_shifted_position:],
+             normalized_array[:, :normalized_shifted_position]),
+            axis=1
+        )
+
+        # Create a new image from the shifted array
+        shifted_normalized = Image.fromarray(shifted_array)
+
+        # Paste the shifted normalized image to the right of the rotated
+        # periocular image
+        frame.paste(shifted_normalized,
+                    (rotated_periocular.width + delta, normalized_y_position))
+
+        # Append the frame to the list of frames
+        frames.append(frame.copy())
+
+    # Save the frames as a GIF file
+    frames[0].save(
+        output_path,
+        format="GIF",
+        append_images=frames[1:],
+        save_all=True,
+        duration=200,
+        loop=0,
+    )
+
+    print(f"GIF saved to {output_path}")
