@@ -862,7 +862,8 @@ def show_mask_both_differences(bottom_adjust=0.3, max_y=500,
 
 def rotate_and_shift_images(periocular_path, normalized_path, delta=20,
                             pause=5, center_x=291, center_y=239,
-                            output_path='../Defensa Tesis/gif/rotation.gif'):
+                            output_path='../Defensa Tesis/gif/rotation.gif',
+                            save_as_frames=True):
     # Thanks ChatGPT!
     from PIL import Image
     # Load the images
@@ -935,13 +936,24 @@ def rotate_and_shift_images(periocular_path, normalized_path, delta=20,
         frames.append(frame.copy())
 
     # Save the frames as a GIF file
-    frames[0].save(
-        output_path,
-        format="GIF",
-        append_images=frames[1:],
-        save_all=True,
-        duration=200,
-        loop=0,
-    )
+    if save_as_frames:
+        output_path = Path(output_path)
+        output_name = output_path.stem
+        frame: Image
+        for i, frame in enumerate(frames):
+            frame.save(
+                output_path.parent / f'{output_name}-{i}.png',
+                format='png'
+            )
+        print(f'Frames saved to {output_path.parent}')
+    else:
+        frames[0].save(
+            output_path,
+            format="GIF",
+            append_images=frames[1:],
+            save_all=True,
+            duration=200,
+            loop=0,
+        )
 
-    print(f"GIF saved to {output_path}")
+        print(f"GIF saved to {output_path}")
