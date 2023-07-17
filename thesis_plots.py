@@ -861,10 +861,11 @@ def show_mask_both_differences(bottom_adjust=0.3, max_y=500,
 
 
 def rotate_and_shift_images(periocular_path, normalized_path, delta=20,
-                            pause=5, center_x=291, center_y=239,
+                            pause=5, center_x=291, center_y=239, fps_factor=1,
                             output_path='../Defensa Tesis/gif/rotation.gif',
                             save_as_frames=True):
     # Thanks ChatGPT!
+    import cv2
     from PIL import Image
     # Load the images
     periocular_image = Image.open(periocular_path)
@@ -880,14 +881,31 @@ def rotate_and_shift_images(periocular_path, normalized_path, delta=20,
     max_height = max(periocular_image.height, normalized_image.height)
 
     # Define the rotation angle and horizontal shift parameters
-    rotation_angles = np.concatenate(
-        (np.zeros(pause), np.linspace(0, -360, 36))
-    )  # Rotate in 10-degree increments
-    horizontal_shifts = np.concatenate(
-        (np.zeros(pause),
-         np.linspace(0, normalized_array.shape[1],
-                     len(rotation_angles) - pause))
-    )
+    rotation_angles = np.concatenate((
+        np.zeros(pause*fps_factor),
+        np.linspace(0, -45, 7*fps_factor),
+        np.ones(pause*fps_factor) * -45,
+        np.linspace(-45, 45, 12*fps_factor),
+        np.ones(pause*fps_factor) * 45,
+        np.linspace(45, 0, 7*fps_factor)
+    ))  # Rotate in 10-degree increments
+    horizontal_pixels = normalized_array.shape[1] * 45 / 360
+    horizontal_shifts = np.concatenate((
+        np.zeros(pause*fps_factor),
+        np.linspace(0, horizontal_pixels, 7*fps_factor),
+        np.ones(pause*fps_factor) * horizontal_pixels,
+        np.linspace(horizontal_pixels, -horizontal_pixels, 12*fps_factor),
+        np.ones(pause*fps_factor) * -horizontal_pixels,
+        np.linspace(-horizontal_pixels, 0, 7*fps_factor)
+    ))
+    # rotation_angles = np.concatenate(
+    #     (np.zeros(pause), np.linspace(0, -360, 36))
+    # )  # Rotate in 10-degree increments
+    # horizontal_shifts = np.concatenate(
+    #     (np.zeros(pause),
+    #      np.linspace(0, normalized_array.shape[1],
+    #                  len(rotation_angles) - pause))
+    # )
 
     # Create a blank canvas for the frame with a width and height based
     # on the maximum dimensions
@@ -947,13 +965,28 @@ def rotate_and_shift_images(periocular_path, normalized_path, delta=20,
             )
         print(f'Frames saved to {output_path.parent}')
     else:
-        frames[0].save(
-            output_path,
-            format="GIF",
-            append_images=frames[1:],
-            save_all=True,
-            duration=200,
-            loop=0,
-        )
+        # frames[0].save(
+        #     output_path,
+        #     format="GIF",
+        #     append_images=frames[1:],
+        #     save_all=True,
+        #     duration=200,
+        #     loop=0,
+        # )
 
-        print(f"GIF saved to {output_path}")
+        # print(f"GIF saved to {output_path}")
+        output_path = Path(output_path)
+        output_path = output_path.with_suffix('.avi')
+
+        # Create a VideoWriter object
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        video_writer = cv2.VideoWriter(str(output_path), fourcc,
+                                       5.0*fps_factor,
+                                       (frame_width, frame_height))
+        for frame in frames:
+            frame = np.array(frame)
+            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+            video_writer.write(frame)
+        video_writer.release()
+        print(f'AVI file saved to {output_path.parent}')
+    return frames
